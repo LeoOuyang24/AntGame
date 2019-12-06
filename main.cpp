@@ -27,6 +27,7 @@ struct A
 
 int main(int args, char* argsc[])
 {
+
     const int screenWidth = 640;
     const int screenHeight = 640;
     srand(time(NULL));

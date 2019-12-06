@@ -14,13 +14,15 @@ class Map
 {
     friend class GameWindow;
     glm::vec4 rect = {0,0,0,0};
+    std::vector<glm::vec4> chunks;
 public:
     Map()
     {
 
     }
     void init(const glm::vec4& region);
-    inline const glm::vec4& getRect() const
+    void render();
+    const glm::vec4& getRect() const
     {
         return rect;
     }
@@ -28,41 +30,53 @@ public:
 };
 
 class Ant;
+
+class AntManager //handles ant movement and targeting
+{
+    const static int spacing; //spacing between ants when they move
+    Manager* manager = nullptr;
+    std::vector<std::shared_ptr<Ant>> selected;
+    std::weak_ptr<Unit> targetUnit; //used to keep track of an ant group's main target
+    void change(std::shared_ptr<Unit> newUnit, glm::vec2& newPoint); //sets the member variables and notifies the ants
+public:
+    AntManager(Manager& newManager) : manager(&newManager)
+    {
+
+    }
+    ~AntManager()
+    {
+        clear();
+    }
+    void addAnt(std::shared_ptr<Ant>& ant)
+    {
+        selected.push_back(ant);
+    }
+    void update();
+    void remove(Unit& unit);
+    void clear()
+    {
+        selected.clear();
+    }
+    const Unit* getTargetUnit()
+    {
+        return targetUnit.lock().get();
+    }
+};
+
 class Manager
 {
-    class AntManager //handles ant movement and targeting
-    {
-        std::vector<std::shared_ptr<Ant>> selected;
-        Unit* targetUnit = nullptr; //used to keep track of an ant group's main target
-    public:
-        AntManager()
-        {
-
-        }
-        ~AntManager()
-        {
-            clear();
-        }
-        void addAnt(std::shared_ptr<Ant>& ant)
-        {
-            selected.push_back(ant);
-        }
-        void update(RawQuadTree& tree);
-        void remove(Unit& unit);
-        void clear()
-        {
-            selected.clear();
-        }
-    };
-    const static int spacing; //spacing between ants when they move
+    friend class AntManager;
     glm::vec2 target;
-    std::vector<std::unique_ptr<Unit>> entities;
+    std::map<Unit*, std::shared_ptr<Unit>> entities;
     std::vector<std::shared_ptr<Ant>> ants;
     std::unique_ptr<RawQuadTree> tree;
-    AntManager antManager;
     void spawnCreatures(); //spawn a creature at a random position
+    AntManager antManager;
 public:
-    Manager();
+    Manager() : antManager(*this)
+    {
+
+    }
     void init(const glm::vec4& region);
     void update();
     void addEntity(Unit& entity);
