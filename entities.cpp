@@ -238,8 +238,8 @@ void Bug::BugMove::update()
         double radius = rand()%(100 - 10) + maxDimen + 10;
         glm::vec2 point = {rect.x + rect.z/2 + cos(angle)*radius, rect.y + rect.a/2 + sin(angle)*radius};
         const glm::vec4* levelRect = &(GameWindow::getLevel().getRect());
-        point.x = std::max(levelRect->x, std::min(point.x, levelRect->x + levelRect->z));
-        point.y = std::max(levelRect->y, std::min(point.y, levelRect->y + levelRect->a));
+        point.x = std::max(levelRect->x, std::min(point.x, levelRect->x + levelRect->z - rect.z));
+        point.y = std::max(levelRect->y, std::min(point.y, levelRect->y + levelRect->a - rect.a));
         setTarget(point);
     }
     else

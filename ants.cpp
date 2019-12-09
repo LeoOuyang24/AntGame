@@ -169,6 +169,11 @@ void ResourceCountComponent::collide(Entity& other)
     }
 }
 
+void ResourceCountComponent::update()
+{
+    //setResource(-(((Anthill*)entity)->getAnts().size())*.01);
+}
+
 Anthill::CreateAnt::CreateAnt(Anthill& hill) : Button({0,0,64, 16},nullptr,nullptr,{"Create Ant"},&Font::alef), hill(&hill)
 {
 
@@ -178,21 +183,26 @@ void Anthill::CreateAnt::press()
 {
     if (hill)
     {
-        ResourceCountComponent* counter = hill->getComponent<ResourceCountComponent>();
-        if (counter->getResource() >= 10)
-        {
-            Manager* manager = &(hill->getManager());
-            glm::vec2 center = hill->getCenter();
-            manager->addAnt( *(new Ant({center.x - 5,center.y - 5,10,10},*hill)));
-            counter->setResource(-10);
-        }
+        hill->createAnt();
     }
 }
 
 Anthill::Anthill(const glm::vec2& pos) : Unit(*(new ClickableComponent("Anthill",*this)), *(new RectComponent({pos.x,pos.y,64,64}, *this)), *(new AntHillRender(*this)), *(new HealthComponent(*this, 100)))
 {
     getClickable().addButton(*(new CreateAnt(*this)));
-    addComponent(*(new ResourceCountComponent(100,*this)));
+    addComponent(*(new ResourceCountComponent(1000,*this)));
+}
+
+void Anthill::createAnt()
+{
+    ResourceCountComponent* counter = getComponent<ResourceCountComponent>();
+    if (counter->getResource() >= 10)
+    {
+        Manager* manager = &(getManager());
+        glm::vec2 center = getCenter();
+        counter->setResource(-10);
+        ants.emplace_back(manager->addAnt( *(new Ant({center.x - 5,center.y - 5,10,10},*this))));
+    }
 }
 
 

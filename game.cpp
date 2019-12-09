@@ -62,7 +62,14 @@ void AntManager::update()
                     }
             }
         }
-        targetUnit = *newTarget;
+        if (newTarget)
+        {
+            targetUnit = *newTarget;
+        }
+        else
+        {
+            targetUnit.reset();
+        }
         if (targetUnit.expired())
         {
              clumpDimen = {sqrt(chosen),sqrt(chosen)};
@@ -129,24 +136,28 @@ void Manager::init(const glm::vec4& region)
     tree.reset(new RawQuadTree(region));
 }
 
-void Manager::addEntity(Unit& entity)
+std::shared_ptr<Unit> Manager::addEntity(Unit& entity)
 {
     entity.setManager(*this);
-    entities[&entity] = std::shared_ptr<Unit>(&entity);
+    auto ptr = std::shared_ptr<Unit>(&entity);
+    entities[&entity] = ptr;
     tree->add(entity.getRect());
+    return ptr;
 }
 
-void Manager::addAnt(Ant& ant)
+std::shared_ptr<Ant> Manager::addAnt(Ant& ant)
 {
     ant.setManager(*this);
-    ants.emplace_back(&ant);
+    auto ptr = std::shared_ptr<Ant>(&ant);
+    ants.push_back(ptr);
     tree->add(ant.getRect());
+    return ptr;
 }
 
 void Manager::spawnCreatures()
 {
     const glm::vec4* mapSize = &(GameWindow::getLevel().getRect());
-    addEntity(*(new Bug(rand()%((int)(640)), rand() % ((int)(640)))));
+    addEntity(*(new Bug(rand()%((int)(mapSize->z)) + mapSize->x, rand() % ((int)(mapSize->a)) + mapSize->y)));
 }
 
 void Manager::update()
@@ -283,10 +294,9 @@ GameWindow::GameWindow() : Window({0,0},nullptr)
     Anthill* hill = (new Anthill({320,320}));
     manager.addEntity(*hill);
     //manager.addEntity(*(new Resource({160,160,100})));
-    manager.addEntity(*(new Bug(160,160)));
     for (int i = 0; i < 100; i ++)
     {
-        manager.addAnt(*(new Ant({320,320,10,10},*hill)));
+        hill->createAnt();
     }
 }
 

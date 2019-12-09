@@ -79,8 +79,8 @@ public:
     }
     void init(const glm::vec4& region);
     void update();
-    void addEntity(Unit& entity);
-    void addAnt(Ant& ant);
+    std::shared_ptr<Unit> addEntity(Unit& entity);//this method returns the shared_ptr in case any other class wants to share ownership.
+    std::shared_ptr<Ant> addAnt(Ant& ant);
     void remove(Unit& unit);
 };
 

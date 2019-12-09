@@ -82,11 +82,12 @@ public:
         resource = std::max(std::min(resource + amount, maxResource),0);
     }
     void collide(Entity& other);
+    void update();
 };
 
 class Anthill : public Unit
 {
-
+    std::vector<std::weak_ptr<Ant>> ants;
     class CreateAnt : public Button
     {
         Anthill* hill = nullptr;
@@ -96,6 +97,11 @@ class Anthill : public Unit
     };
 public:
     Anthill(const glm::vec2& pos);
+    void createAnt();
+    std::vector<std::weak_ptr<Ant>>& getAnts()
+    {
+        return ants;
+    }
 
 };
 
