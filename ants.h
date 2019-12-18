@@ -65,7 +65,7 @@ public:
 
 class ResourceCountComponent : public Component, public ComponentContainer<ResourceCountComponent> //used to count the number of resources in an anthill
 {
-    int resource;
+    double resource;
     int maxResource;
 public:
     ResourceCountComponent(int amount, Entity& entity);
@@ -77,9 +77,9 @@ public:
     {
         return maxResource;
     }
-    void setResource(int amount)
+    void setResource(double amount)
     {
-        resource = std::max(std::min(resource + amount, maxResource),0);
+        resource = std::max(std::min(resource + amount, (double)maxResource),0.0);
     }
     void collide(Entity& other);
     void update();

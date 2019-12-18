@@ -28,8 +28,8 @@ struct A
 int main(int args, char* argsc[])
 {
 
-    const int screenWidth = 640;
-    const int screenHeight = 640;
+    const int screenWidth = 960;
+    const int screenHeight = 960;
     srand(time(NULL));
     SDL_Window* window = SDL_CreateWindow("Project",SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,screenWidth, screenHeight, SDL_WINDOW_OPENGL);
     SDL_StopTextInput();
@@ -67,6 +67,10 @@ int main(int args, char* argsc[])
         }
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         interface.update();
+        if (game.quit)
+        {
+            quit = true;
+        }
        // squares = SDL_GetTicks()/500;
        //PolyRender::requestNGon(4,{320,320},20,{0,0,0,1},90,false,0);
         //PolyRender::requestRect({0,0,64,64},{1,0,0,.5},true,-.1);

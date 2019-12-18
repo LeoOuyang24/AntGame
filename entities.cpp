@@ -38,7 +38,7 @@ void ClickableComponent::update()
             buttons[i]->changeRect(buttonRect);
             glm::vec4 disp = GameWindow::getCamera().getRect();
             buttons[i]->render(-disp.x,-disp.y);
-            GameWindow::requestRect(buttonRect,{0,1,0,1},true,0,0);
+            //GameWindow::requestRect(buttonRect,{0,1,0,1},true,0,0);
             if (pointInVec(buttonRect,mousePos.x,mousePos.y,0))
             {
                 stillClicked = true;
@@ -130,7 +130,7 @@ ResourceComponent::ResourceComponent(Entity& entity, int amount) : Component(ent
 
 }
 
-void ResourceComponent::collide(Entity& other)
+void ResourceComponent::collect(Ant& other)
 {
     Ant::AntMoveComponent* antMove = other.getComponent<Ant::AntMoveComponent>();
     if (antMove)
@@ -140,12 +140,12 @@ void ResourceComponent::collide(Entity& other)
     }
 }
 
-void CorpseComponent::collide(Entity& other)
+void CorpseComponent::collect(Entity& other)
 {
-    if (entity->getComponent<HealthComponent>()->getHealth() <= 0)
+    /*if (entity->getComponent<HealthComponent>()->getHealth() <= 0)
     {
         ResourceComponent::collide(other);
-    }
+    }*/
 }
 
 void CorpseComponent::update()

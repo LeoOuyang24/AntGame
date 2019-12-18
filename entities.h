@@ -90,7 +90,7 @@ protected:
     int amount;
 public:
     ResourceComponent(Entity& component, int amount);
-    virtual void collide(Entity& other);
+    virtual void collect(Ant& other);
 };
 
 class CorpseComponent : public ResourceComponent, public ComponentContainer<CorpseComponent> //the corpse component handles everything about the entity after death
@@ -101,7 +101,7 @@ public:
     {
 
     }
-    void collide(Entity& other);
+    void collect(Entity& other);
     void update();
 };
 

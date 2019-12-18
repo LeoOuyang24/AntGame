@@ -6,6 +6,7 @@
 
 #include "components.h"
 #include "entities.h"
+#include "ants.h"
 
 
 extern SpriteWrapper frame;
@@ -33,10 +34,19 @@ class Ant;
 
 class AntManager //handles ant movement and targeting
 {
+    enum Task
+    {
+        IDLE, //not doing anything.
+        ATTACK, //moving to destroy a unit
+        MOVE, //moving to a point on the map rather than a unit
+        COLLECT //in the process of collecting, even if all the ants are moving towards the target
+    };
+    Task currentTask = IDLE;
     const static int spacing; //spacing between ants when they move
     Manager* manager = nullptr;
     std::vector<std::shared_ptr<Ant>> selected;
     std::weak_ptr<Unit> targetUnit; //used to keep track of an ant group's main target
+    glm::vec2 targetPoint;
     void change(std::shared_ptr<Unit> newUnit, glm::vec2& newPoint); //sets the member variables and notifies the ants
 public:
     AntManager(Manager& newManager) : manager(&newManager)
@@ -112,8 +122,23 @@ class GameWindow : public Window //the gamewindow is mostly static because most 
     static Camera camera;
     static Map level;
     static Manager manager;
+    static Window* gameOver;
+    std::weak_ptr<Unit> anthill; //pointer to the anthill. Keeps track of whether or not the player has lost
     bool updateSelect(); //updates the selection window and returns whether or not the player is selecting
+    struct QuitButton : public Button
+    {
+        GameWindow* window = nullptr;
+        QuitButton(GameWindow& window_) : Button({10,10,32,32},nullptr,nullptr, {"Quit"},&Font::alef,{0,1,0,1}), window(&window_)
+        {
+
+        }
+        void press()
+        {
+            window->quit = true;
+        }
+    };
 public:
+    bool quit = false;
     const static glm::vec4 selectColor;
     const static glm::vec4& getSelection()
     {

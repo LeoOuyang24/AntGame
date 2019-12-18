@@ -45,14 +45,14 @@ void Ant::AntMoveComponent::update()
 
     if (targetUnit)
     {
-        if (atTarget())
+       /* if (atTarget())
         {
             HealthComponent* health = targetUnit->getComponent<HealthComponent>();
             if (health)
             {
                 health->addHealth(-1);
             }
-        }
+        }*/
     }
 }
 
@@ -171,10 +171,10 @@ void ResourceCountComponent::collide(Entity& other)
 
 void ResourceCountComponent::update()
 {
-    //setResource(-(((Anthill*)entity)->getAnts().size())*.01);
+    setResource((((Anthill*)entity)->getAnts().size())*.0001*-1);
 }
 
-Anthill::CreateAnt::CreateAnt(Anthill& hill) : Button({0,0,64, 16},nullptr,nullptr,{"Create Ant"},&Font::alef), hill(&hill)
+Anthill::CreateAnt::CreateAnt(Anthill& hill) : Button({0,0,64, 16},nullptr,nullptr,{"Create Ant"},&Font::alef,{0,1,0,1}), hill(&hill)
 {
 
 }
@@ -191,6 +191,7 @@ Anthill::Anthill(const glm::vec2& pos) : Unit(*(new ClickableComponent("Anthill"
 {
     getClickable().addButton(*(new CreateAnt(*this)));
     addComponent(*(new ResourceCountComponent(1000,*this)));
+    health->addHealth(-1000);
 }
 
 void Anthill::createAnt()
