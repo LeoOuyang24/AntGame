@@ -46,9 +46,9 @@ void AntManager::update()
     glm::vec2 clumpDimen = {0,0}; //how many ants horizontally and vertically
     glm::vec2 space; //space between ants horizontally and vertically
     glm::vec2 target;
+    std::shared_ptr<Unit>* newTarget = nullptr;
     if (justClicked == SDL_BUTTON_RIGHT)
     {
-        std::shared_ptr<Unit>* newTarget = nullptr;
         int nearSize = nearest.size();
         if (nearSize > 0)
         {
@@ -80,7 +80,6 @@ void AntManager::update()
         }
     }
     Unit* unitPtr = targetUnit.lock().get(); //if we have a target
-    bool fit = true; //whether or not the ants fit perfectly on the targetUnit. Vacuously true if there is no targetUnit
     const glm::vec4* targetRect  = nullptr;
     HealthComponent* health = nullptr;
     ResourceComponent* resource = nullptr;
@@ -94,10 +93,6 @@ void AntManager::update()
                 std::min(spacing, (int)((targetRect->a - clumpDimen.y*Ant::dimen)/clumpDimen.y))};
         health = unitPtr->getComponent<HealthComponent>();
         resource = unitPtr->getComponent<ResourceComponent>();
-        if ( ((space.x + Ant::dimen)*clumpDimen.x > targetRect->z || (space.y + Ant::dimen)*clumpDimen.y > targetRect->a))
-        {
-            fit = false;
-        }
         if (health && health->getHealth() > 0)
         {
             currentTask = ATTACK;
@@ -123,10 +118,7 @@ void AntManager::update()
                 {
                     if (currentTask == ATTACK)
                     {
-                        if (health)
-                        {
-                            health->addHealth(-1);
-                        }
+                        selected[i]->getComponent<AttackComponent>()->attack(health);
                     }
                     else if (currentTask == COLLECT)
                     {
@@ -134,19 +126,29 @@ void AntManager::update()
                         {
                             resource->collect(*selected[i]);
                              collected = false;
-                            selected[i]->setTarget(*(selected[i]->getComponent<Ant::AntMoveComponent>()->getHome()));
                         }
                     }
                 }
                 else if (clumpDimen.x != 0)
                 {
                     glm::vec2 moveTo = {target.x + i%((int)clumpDimen.x)*(Ant::dimen + space.x), target.y + (i/((int)clumpDimen.y))%((int)clumpDimen.y)*(Ant::dimen+space.y)};
-                    selected[i]->setTarget(moveTo,nullptr);
+                    if (unitPtr)
+                    {
+                        selected[i]->setTarget(moveTo, &manager->entities[unitPtr]);
+                    }
+                    else
+                    {
+                        selected[i]->setTarget(moveTo,nullptr);
+                    }
                 }
                 if (currentTask == MOVE && atTarget && !selected[i]->getComponent<MoveComponent>()->atTarget())
                 {
                     atTarget = false;
                 }
+            }
+            else
+            {
+                selected[i]->setTarget(manager->entities[(selected[i]->getComponent<Ant::AntMoveComponent>()->getHome())]);
             }
         }
         if (currentTask == MOVE && atTarget)
@@ -173,7 +175,7 @@ void AntManager::remove(Unit& unit)
     {
         targetUnit.reset();
     }
-    if (unit.getComponent<Ant::AntClickable>() != nullptr && unit.clicked()) //if the unit is an ant and is clicked
+    if (unit.getComponent<Ant::AntMoveComponent>() != nullptr) //if the unit is an ant and is clicked
     {
         int size = selected.size();
         for (int i = 0; i < size; ++i)
@@ -206,23 +208,38 @@ std::shared_ptr<Ant> Manager::addAnt(Ant& ant)
 {
     ant.setManager(*this);
     auto ptr = std::shared_ptr<Ant>(&ant);
-    ants.push_back(ptr);
+    ants[&ant] = ptr;
     tree->add(ant.getRect());
     return ptr;
 }
 
 void Manager::spawnCreatures()
 {
+    int random = rand()%2;
+    Unit* toSpawn = nullptr;
+    switch(random)
+    {
+    case 0:
+        toSpawn = new Bug(0,0);
+        break;
+    case 1:
+        toSpawn = new Beetle(0,0);
+        break;
+    default:
+        toSpawn = new Bug(0,0);
+    }
+
     const glm::vec4* mapSize = &(GameWindow::getLevel().getRect());
     const glm::vec4* camera = &(GameWindow::getCamera().getRect());
-    int x = rand()%((int)(mapSize->z - camera->z)) + mapSize->x;
-    int y = rand() % ((int)(mapSize->a - camera->a)) + mapSize->y;
-    if (pointInVec(*camera,x,y,0))
-    {
-        x += camera->z;
-        y += camera->a;
-    }
-    addEntity(*(new Bug( x,y )));
+    const glm::vec4* entityRect = &(toSpawn->getRect().getRect());
+    int x = rand()%((int)(mapSize->z -  entityRect->z)) + mapSize->x; //we want to make sure our object spawns outside of the camera's view and doesn't spawn partially out of the map
+    bool cameraInTheWay = (x >= camera->x && x <= camera->x + camera->z); //if we chose an x coordinate that may overlap with the camera's rect, we need to adjust our y coordinate
+    int y = rand() % ((int)(mapSize->a - entityRect->a - camera->a*cameraInTheWay)) + mapSize->y;
+    //modify coordinates so our object doesn't spawn where in the player's view
+    y += camera->a*(y > camera->y)*cameraInTheWay;
+    toSpawn->getRect().setRect({x,y,entityRect->z,entityRect->a});
+    addEntity(*toSpawn);
+
 }
 
 void Manager::update()
@@ -235,32 +252,38 @@ void Manager::update()
         antManager.clear();
     }
 
-    for (int i = 0; i < size; ++ i)
+    for (auto i = ants.begin(); i != ants.end(); ++i)
     {
-        RectPositional* rectPos = &(ants[i]->getRect());
-        const glm::vec4* rect = &(rectPos->getRect());
-        RawQuadTree* oldTree = tree->find(*rectPos);
-        ants[i]->update();
-        RawQuadTree* newTree = tree->update(*rectPos,*oldTree);
-        std::vector<Positional*> vec;
-        tree->getNearest(vec,*(rectPos));
-        for (int j = vec.size() - 1; j >= 0; j --)
+        if (i->second->getComponent<HealthComponent>()->getHealth() > 0)
         {
-            Entity* ptr = &(((RectComponent*)vec[j])->getEntity());
-            if (ptr == ants[i]->getComponent<Ant::AntMoveComponent>()->getTargetUnit() && vec[j]->collides(*rect))
+            RectPositional* rectPos = &(i->second->getRect());
+            const glm::vec4* rect = &(rectPos->getRect());
+            RawQuadTree* oldTree = tree->find(*rectPos);
+            i->second->update();
+            tree->update(*rectPos,*oldTree);
+            std::vector<Positional*> vec;
+            tree->getNearest(vec,*(rectPos));
+            for (int j = vec.size() - 1; j >= 0; j --)
             {
-                //std::cout << "ASDF" << std::endl;
-                ants[i]->collide(*ptr);
-                ptr->collide(*(ants[i].get()));
+                Entity* ptr = &(((RectComponent*)vec[j])->getEntity());
+                if (ptr == i->second->getComponent<ApproachComponent>()->getTargetUnit() && vec[j]->collides(*rect))
+                {
+                    //std::cout << "ASDF" << std::endl;
+                    i->second->collide(*ptr);
+                    ptr->collide(*(i->second.get()));
+                }
+            }
+            if (released == SDL_BUTTON_LEFT && i->second->clicked())
+            {
+                antManager.addAnt(i->second);
             }
         }
-        if (released == SDL_BUTTON_LEFT && ants[i]->clicked())
+        else
         {
-            antManager.addAnt(ants[i]);
+            remove(static_cast<Unit&>(*(i->first)));
         }
     }
     antManager.update();
-    int c = 0;
     for (auto i = entities.begin(); i !=  entities.end(); ++i)
     {
         Unit* current = i->first;
@@ -289,7 +312,7 @@ void Manager::update()
         }
     }
     size = entities.size();
-    if (size < 3)
+    if (size < 10)
     {
         spawnCreatures();
     }
@@ -302,7 +325,14 @@ void Manager::remove(Unit& unit)
 {
     tree->remove(unit.getRect());
     antManager.remove(unit);
-    entities.erase(&unit);
+    if (unit.getComponent<Ant::AntMoveComponent>())
+    {
+        ants.erase(static_cast<Ant*>(&unit));
+    }
+    else
+    {
+        entities.erase(&unit);
+    }
 }
 
 void Camera::init(int w, int h)
@@ -355,12 +385,12 @@ Manager GameWindow::manager;
 Map GameWindow::level;
 Window* GameWindow::gameOver = nullptr;
 
-GameWindow::GameWindow() : Window({0,0},nullptr)
+GameWindow::GameWindow() : Window({0,0},nullptr,{0,0,0,0})
 {
     level.init({-1000,-1000,2000,2000});
     glm::vec2 screenDimen = RenderProgram::getScreenDimen();
     camera.init(screenDimen.x,screenDimen.y);
-    gameOver = new Window({screenDimen.x/10, screenDimen.y/10},nullptr);
+    gameOver = new Window({screenDimen.x/10, screenDimen.y/10},nullptr, {1,0,0,1});
     gameOver->addButton(*(new QuitButton(*this)));
     manager.init(level.getRect());
     Anthill* hill = (new Anthill({320,320}));
@@ -398,7 +428,8 @@ bool GameWindow::updateSelect()
 
 void GameWindow::update(int x, int y, bool clicked)
 {
-    if (anthill.expired())
+    Anthill* hill = static_cast<Anthill*>(anthill.lock().get());
+    if (!hill || manager.ants.size() <= 0)
     {
         gameOver->update(x,y,clicked);
         level.render();

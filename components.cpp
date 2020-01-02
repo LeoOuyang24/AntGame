@@ -31,11 +31,6 @@ MoveComponent::MoveComponent(double speed, const glm::vec4& rect, Entity& entity
     target = {rect.x + rect.z/2, rect.y + rect.a/2};
 }
 
-void MoveComponent::setTarget(const glm::vec2& point)
-{
-    target = point;
-}
-
 void MoveComponent::update()
 {
     glm::vec2 center = {rect.x + rect.z/2, rect.y + rect.a/2};
@@ -56,11 +51,6 @@ bool MoveComponent::atTarget()
 RenderComponent::RenderComponent(Entity& entity) : Component(entity), ComponentContainer<RenderComponent>(entity)
 {
 
-}
-
-void Entity::addComponent(Component& comp)
-{
-    components.emplace_back(&comp);
 }
 
 void Entity::update()

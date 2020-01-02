@@ -15,7 +15,10 @@ class ClickableComponent : public Component, public ComponentContainer<Clickable
     bool clicked = false;
     std::vector<std::unique_ptr<Button>> buttons;
 public:
-    ClickableComponent(std::string name, Unit& entity);
+    ClickableComponent(std::string name, Entity& entity) : Component(entity), ComponentContainer<ClickableComponent>(entity), name(name)
+    {
+
+    }
     virtual void update();
     void click(bool val);
     bool getClicked();
@@ -27,7 +30,10 @@ class RectRenderComponent : public RenderComponent, public ComponentContainer<Re
 {
     glm::vec4 color;
 public:
-    RectRenderComponent(const glm::vec4& color, Unit& unit);
+    RectRenderComponent(const glm::vec4& color, Entity& unit) : RenderComponent(unit), ComponentContainer<RectRenderComponent>(unit), color(color)
+    {
+
+    }
     void update();
 };
 
@@ -41,7 +47,10 @@ class HealthComponent : public Component, public ComponentContainer<HealthCompon
     bool visible = true;
     DeltaTime invincible; //keeps track of how many frames of invincibility
 public:
-    HealthComponent(Entity& entity, double h, int height = 10, int displacement = 20); //height defaults to 10 and displacement defaults to 20
+    HealthComponent(Entity& entity, double health_, int height_ = 10, int displacement_ = 20) : Component(entity), ComponentContainer<HealthComponent>(entity), health(health_), maxHealth(health_), height(height_), displacement(displacement_)//height defaults to 10 and displacement defaults to 20
+    {
+
+    }
     void addHealth(int amount); //increases health by amount. Health cannot exceed maxHealth nor go below 0
     int getHealth();
     void update(); //render health bar and reset invincibility frames
@@ -81,7 +90,20 @@ public:
         dead = isDead;
     }
 
+};
 
+
+class AttackComponent : public Component, public ComponentContainer<AttackComponent>
+{
+    float damage = 0;
+    int endLag = 0; //how much time must pass before the attack can be reused.
+    DeltaTime attackTimer;
+public:
+    AttackComponent(float damage_, int endLag_, Unit& unit) : Component(unit), ComponentContainer<AttackComponent>(unit),  damage(damage_), endLag(endLag_)
+    {
+
+    }
+    void attack(HealthComponent* health); //this is a pointer so you can legally pass in a null pointer. This function will make sure it's not null
 };
 
 class ResourceComponent : public Component, public ComponentContainer<ResourceComponent> //when Ants collide with this unit, they collect resources
@@ -89,7 +111,10 @@ class ResourceComponent : public Component, public ComponentContainer<ResourceCo
 protected:
     int amount;
 public:
-    ResourceComponent(Entity& component, int amount);
+    ResourceComponent(Entity& entity, int amount) : Component(entity),ComponentContainer<ResourceComponent>(entity), amount(amount)
+    {
+
+    }
     virtual void collect(Ant& other);
 };
 
@@ -111,7 +136,10 @@ class Resource : public Unit
     class ResourceRender : public RenderComponent, public ComponentContainer<ResourceRender>
     {
     public:
-        ResourceRender(Entity& entity);
+        ResourceRender(Entity& entity) : RenderComponent(entity), ComponentContainer<ResourceRender>(entity)
+        {
+
+        }
         void update();
     };
 public:
@@ -119,18 +147,61 @@ public:
     void interact(Ant& ant);
 };
 
+class WanderMove : public MoveComponent, public ComponentContainer<WanderMove>
+{
+public:
+    WanderMove(double speed, const glm::vec4& rect, Entity& unit) : MoveComponent(speed, rect, unit), ComponentContainer<WanderMove>(unit)
+    {
 
+    }
+    void update();
+};
+
+
+
+class ApproachComponent : public Component, public ComponentContainer<ApproachComponent> //a component that can move towards a unit. It is NOT a movecomponent because it by itself cannot function. If the targetUnit is null, it uses the owning entity's movecomponent to decide what to do.
+{
+protected:
+    glm::vec2 displacement = {0,0};
+    std::weak_ptr<Unit> targetUnit;
+    MoveComponent* move = nullptr;
+public:
+    ApproachComponent(Unit& entity) : Component(entity), ComponentContainer<ApproachComponent>(entity), move(entity.getComponent<MoveComponent>())
+    {
+
+    }
+    virtual void setTarget(const glm::vec2& target, const std::shared_ptr<Unit>* unit);
+    virtual void setTarget(const std::shared_ptr<Unit>& unit);
+    void setMove(MoveComponent& move_)
+    {
+        move = &move_;
+    }
+    virtual void update();
+    Unit* getTargetUnit()
+    {
+        return targetUnit.lock().get();
+    }
+};
 
 class Bug : public Unit
 {
-    class BugMove : public MoveComponent, public ComponentContainer<BugMove>
+public:
+    Bug(int x, int y);
+};
+
+class Beetle : public Unit
+{
+    class BeetleMove : public ApproachComponent, public ComponentContainer<BeetleMove>
     {
     public:
-        BugMove(double speed, const glm::vec4& rect, Unit& unit);
+        BeetleMove(Unit& unit) : ApproachComponent(unit), ComponentContainer<BeetleMove>(unit)
+        {
+
+        }
         void update();
     };
 public:
-    Bug(int x, int y);
+    Beetle(int x, int y);
 };
 
 #endif // ENTITIES_H_INCLUDED

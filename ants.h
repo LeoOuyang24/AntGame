@@ -14,16 +14,12 @@ public:
     {
         Anthill* home = nullptr;
         int carrying = 0;
-        Unit* targetUnit = nullptr;
         glm::vec2 displacement = {0,0};
     public:
         AntMoveComponent(Anthill* hill, double speed, const glm::vec4& rect, Entity& entity);
-        void setTarget(const glm::vec2& target, Unit* unit);
-        void update();
         void setCarrying(int amount);
         int getCarrying();
         Anthill* getHome();
-        Unit* getTargetUnit();
     };
 
     class AntRenderComponent : public RenderComponent, public ComponentContainer<AntRenderComponent>
@@ -47,9 +43,9 @@ public:
 
     };
     Ant(const glm::vec4& rect, Anthill& home);
-    void setTarget(const glm::vec2& target, Unit* unit);
+    void setTarget(const glm::vec2& target, std::shared_ptr<Unit>* unit);
     void setTarget(const glm::vec2& target);
-    void setTarget(Unit& unit); //calls the other target function but the target is the center of unit
+    void setTarget(std::shared_ptr<Unit>& unit); //calls the other target function but the target is the center of unit
     void setCarrying(int amount);
     void goHome();
     int getCarrying();
@@ -98,7 +94,7 @@ class Anthill : public Unit
 public:
     Anthill(const glm::vec2& pos);
     void createAnt();
-    std::vector<std::weak_ptr<Ant>>& getAnts()
+    const std::vector<std::weak_ptr<Ant>>& getAnts()
     {
         return ants;
     }

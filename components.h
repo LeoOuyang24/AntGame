@@ -21,7 +21,7 @@ struct ComponentContainer
     }
     ~ComponentContainer()
     {
-        components[entities[this]] = nullptr;
+        components.erase(components.find(entities[this]));
         entities.erase(entities.find(this));
     }
 };
@@ -56,6 +56,10 @@ class RectComponent : public Component, public ComponentContainer<RectComponent>
 public:
     RectComponent(const glm::vec4& rect, Entity& entity);
     void setRect(const glm::vec4& rect);
+    glm::vec2 getCenter()
+    {
+        return {rect.x + rect.z/2, rect.y + rect.a/2};
+    }
 };
 
 class MoveComponent : public RectComponent, public ComponentContainer<MoveComponent>
@@ -66,7 +70,14 @@ protected:
     glm::vec2 target; //point to move towards
 public:
     MoveComponent(double speed, const glm::vec4& rect, Entity& entity);
-    void setTarget(const glm::vec2& point);
+    void setTarget(const glm::vec2& point)
+    {
+        target = point;
+    }
+    const glm::vec2& getTarget()
+    {
+        return target;
+    }
     virtual void update();
     bool atTarget(); //returns whether or not we have arrived at the target
 };
@@ -92,9 +103,12 @@ public:
     template<typename T>
     T* getComponent()
     {
-        return (static_cast<T*>((ComponentContainer<T>::components[this])));
+        return (static_cast<T*>(ComponentContainer<T>::components[this]));
     }
-    void addComponent(Component& comp);
+    void addComponent(Component& comp)
+    {
+        components.emplace_back(&comp);
+    }
 
 };
 

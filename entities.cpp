@@ -7,11 +7,6 @@
 
 const glm::vec2 ClickableComponent::spacing = {10,5};
 
-ClickableComponent::ClickableComponent(std::string name, Unit& entity) : Component(entity), ComponentContainer<ClickableComponent>(entity), name(name)
-{
-
-}
-
 void ClickableComponent::click(bool val)
 {
     clicked = val;
@@ -66,23 +61,57 @@ void ClickableComponent::addButton(Button& button)
     buttons.emplace_back(&button);
 }
 
-RectRenderComponent::RectRenderComponent(const glm::vec4& color, Unit& unit) : RenderComponent(unit), ComponentContainer<RectRenderComponent>(unit), color(color)
-{
-
-}
-
 void RectRenderComponent::update()
 {
     GameWindow::requestRect(((Unit*)entity)->getRect().getRect(),color,true,0,0);
 }
 
+
+void HealthComponent::addHealth(int amount)
+{
+    if (amount < 0)
+    {
+        if (!invincible.isSet())
+        {
+            invincible.set();
+            health = std::max(0.0,std::min(health + amount, maxHealth));
+        }
+    }
+}
+
+int HealthComponent::getHealth()
+{
+    return health;
+}
+
+void HealthComponent::update()
+{
+    RectComponent* rectComp = entity->getComponent<RectComponent>();
+    if (rectComp && visible)
+    {
+        const glm::vec4* rect = &(rectComp->getRect());
+        GameWindow::requestRect({rect->x ,rect->y - displacement, health/maxHealth*rect->z, height},{1,0,0,1},true,0,0);
+    }
+
+    if (invincible.isSet() && invincible.framesPassed(10))
+    {
+        invincible.reset();
+    }
+}
+
 Unit::Unit(ClickableComponent& click, RectComponent& rect, RenderComponent& render, HealthComponent& health) : clickable(&click), rect(&rect), render(&render), health(&health)
 {
-    addComponent(click);
     addComponent(rect);
+    addComponent(click);
     addComponent(render);
     addComponent(health);
 }
+
+void Unit::setManager(Manager& manager)
+{
+    this->manager = &manager;
+}
+
 
 RectComponent& Unit::getRect()
 {
@@ -106,8 +135,7 @@ bool Unit::clicked()
 
 glm::vec2 Unit::getCenter()
 {
-    const glm::vec4* ptr = &(rect->getRect());
-    return {ptr->x + ptr->z/2, ptr->y + ptr->a/2};
+    return rect->getCenter();
 }
 
 void Unit::interact(Ant& ant)
@@ -120,14 +148,14 @@ Manager& Unit::getManager()
     return *manager;
 }
 
-void Unit::setManager(Manager& manager)
-{
-    this->manager = &manager;
-}
 
-ResourceComponent::ResourceComponent(Entity& entity, int amount) : Component(entity),ComponentContainer<ResourceComponent>(entity), amount(amount)
+void AttackComponent::attack(HealthComponent* health)
 {
-
+    if (health && (attackTimer.framesPassed(endLag) || !attackTimer.isSet()))
+    {
+        health->addHealth(-1);
+        attackTimer.set();
+    }
 }
 
 void ResourceComponent::collect(Ant& other)
@@ -164,11 +192,6 @@ void CorpseComponent::update()
 
 }
 
-Resource::ResourceRender::ResourceRender(Entity& entity) : RenderComponent(entity), ComponentContainer<ResourceRender>(entity)
-{
-
-}
-
 void Resource::ResourceRender::update()
 {
     GameWindow::requestRect(entity->getComponent<RectComponent>()->getRect(),{0,.5,1,1},true,0,0);
@@ -187,49 +210,7 @@ void Resource::interact(Ant& ant)
     rect->setRect({pos->x,pos->y,pos->z*.9,pos->a*.9});
 }
 
-HealthComponent::HealthComponent(Entity& entity, double h, int height, int displacement) : Component(entity), ComponentContainer<HealthComponent>(entity),health(h), maxHealth(h), height(height), displacement(displacement)
-{
-
-}
-
-void HealthComponent::addHealth(int amount)
-{
-    if (amount < 0)
-    {
-        if (!invincible.isSet())
-        {
-            invincible.set();
-            health = std::max(0.0,std::min(health + amount, maxHealth));
-        }
-    }
-}
-
-int HealthComponent::getHealth()
-{
-    return health;
-}
-
-void HealthComponent::update()
-{
-    RectComponent* rectComp = entity->getComponent<RectComponent>();
-    if (rectComp && visible)
-    {
-        const glm::vec4* rect = &(rectComp->getRect());
-        GameWindow::requestRect({rect->x ,rect->y - displacement, health/maxHealth*rect->z, height},{1,0,0,1},true,0,0);
-    }
-
-    if (invincible.isSet() && invincible.framesPassed(10))
-    {
-        invincible.reset();
-    }
-}
-
-Bug::BugMove::BugMove(double speed, const glm::vec4& rect, Unit& unit) : MoveComponent(speed, rect, unit), ComponentContainer<BugMove>(unit)
-{
-
-}
-
-void Bug::BugMove::update()
+void WanderMove::update()
 {
     if (atTarget())
     {
@@ -248,8 +229,105 @@ void Bug::BugMove::update()
     }
 }
 
-Bug::Bug(int x, int y) : Unit(*(new ClickableComponent("Bug", *this)), *(new BugMove(.02,{x,y,64,64},*this)), *(new RectRenderComponent({1,.5,0,1},*this)),*(new HealthComponent(*this, 100)))
+void ApproachComponent::setTarget(const glm::vec2& target, const std::shared_ptr<Unit>* unit)
+{
+    if (unit)
+    {
+        const glm::vec4* tarRect = &((*unit)->getRect().getRect());
+        displacement = {target.x - (tarRect->x + tarRect->z/2) , target.y - (tarRect->y + tarRect->a/2)};
+        targetUnit = *unit;
+    }
+    else
+    {
+        targetUnit.reset();
+    }
+    move->setTarget(target);
+}
+
+void ApproachComponent::setTarget(const std::shared_ptr<Unit>& unit)
+{
+    setTarget(unit->getCenter(),&unit);
+}
+
+void ApproachComponent::update()
+{
+    if (move)
+    {
+        Unit* ptr = targetUnit.lock().get();
+        if (ptr)
+        {
+            glm::vec2 center = ptr->getRect().getCenter() + displacement;
+            if (move->getTarget() != center)
+            {
+                move->setTarget(center);
+            }
+        }
+       // move->update();
+    }
+}
+
+Bug::Bug(int x, int y) : Unit(*(new ClickableComponent("Bug", *this)), *(new WanderMove(.02,{x,y,64,64},*this)), *(new RectRenderComponent({1,.5,1,1},*this)),*(new HealthComponent(*this, 100)))
 {
     //getComponent<MoveComponent>()->setTarget({0,0});
-    addComponent(*(new CorpseComponent(*this, 101)));
+    addComponent(*(new CorpseComponent(*this, 100)));
 }
+
+
+
+/*void Beetle::BeetleMove::update()
+{
+
+}
+*/
+Beetle::Beetle(int x, int y) : Unit(*(new ClickableComponent("Beetle", *this)), *(new WanderMove(.02,{x,y,64,64},*this)), *(new RectRenderComponent({1,.5,0,1},*this)),*(new HealthComponent(*this, 100)))
+{
+    addComponent(*(new AttackComponent(1,10,*this)));
+    addComponent(*(new BeetleMove(*this)));
+    addComponent(*(new CorpseComponent(*this,200)));
+}
+
+void Beetle::BeetleMove::update()
+{
+    Unit* targetPtr = getTargetUnit();
+    Unit* owner = ((Unit*)entity);
+    if (owner)
+    {
+        if (!targetPtr)
+        {
+                Manager* manager = &(owner->getManager());
+                if (manager)
+                {
+                    RawQuadTree* tree = manager->getQuadTree();
+                    if (tree)
+                    {
+                        std::vector<Positional*> nearby;
+                        glm::vec4 rect = owner->getRect().getRect();
+                        tree->getNearest(nearby, {rect.x - 200, rect.y - 200, rect.z + 400, rect.a + 400});
+                        int size = nearby.size();
+                        for (int i = 0; i < size; ++i)
+                        {
+                            Entity* current = &(static_cast<RectComponent*>(nearby[i])->getEntity());
+                            if (current->getComponent<Ant::AntMoveComponent>())
+                            {
+                                setTarget((manager->getAnt(static_cast<Ant*>(current))));
+                                return;
+                            }
+                        }
+                    }
+                }
+        }
+        else
+        {
+            if ( targetPtr->getRect().collides(owner->getRect().getRect()))
+            {
+                AttackComponent* attack = owner->getComponent<AttackComponent>();
+                if (attack)
+                {
+                    attack->attack(targetPtr->getComponent<HealthComponent>());
+                }
+            }
+        }
+    }
+    ApproachComponent::update();
+}
+

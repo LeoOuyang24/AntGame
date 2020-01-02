@@ -12,23 +12,6 @@ Ant::AntMoveComponent::AntMoveComponent(Anthill* hill, double speed, const glm::
 {
 
 }
-
-void Ant::AntMoveComponent::setTarget(const glm::vec2& target, Unit* unit)
-{
-    targetUnit = unit;
-    if (unit)
-    {
-        const glm::vec4* tarRect = &(unit->getRect().getRect());
-        displacement = {target.x - (tarRect->x + tarRect->z/2) , target.y - (tarRect->y + tarRect->a/2)};
-    }
-    MoveComponent::setTarget(target);
-}
-
-Unit* Ant::AntMoveComponent::getTargetUnit()
-{
-    return targetUnit;
-}
-
 void Ant::AntMoveComponent::setCarrying(int amount)
 {
     carrying = amount;
@@ -37,23 +20,6 @@ void Ant::AntMoveComponent::setCarrying(int amount)
 int Ant::AntMoveComponent::getCarrying()
 {
     return carrying;
-}
-
-void Ant::AntMoveComponent::update()
-{
-    MoveComponent::update();
-
-    if (targetUnit)
-    {
-       /* if (atTarget())
-        {
-            HealthComponent* health = targetUnit->getComponent<HealthComponent>();
-            if (health)
-            {
-                health->addHealth(-1);
-            }
-        }*/
-    }
 }
 
 Anthill* Ant::AntMoveComponent::getHome()
@@ -107,25 +73,27 @@ void Ant::AntClickable::clicked()
     }
 }
 
-Ant::Ant(const glm::vec4& rect, Anthill& home) : Unit(*(new ClickableComponent("Ant",*this)), *(new AntMoveComponent(&home,.1,rect,*this)),*(new AntRenderComponent({0,0,0,1},*this)),
+Ant::Ant(const glm::vec4& rect, Anthill& home) : Unit(*(new ClickableComponent("Ant",*this)), *(new AntMoveComponent(&home,.5,rect,*this)),*(new AntRenderComponent({0,0,0,1},*this)),
                                                       *(new HealthComponent(*this, 1)))
 {
     health->setVisible(false);
+    addComponent(*(new AttackComponent(1,10,*this)));
+    addComponent(*(new ApproachComponent(*this)));
 }
 
-void Ant::setTarget(const glm::vec2& target, Unit* unit)
+void Ant::setTarget(const glm::vec2& target, std::shared_ptr<Unit>* unit)
 {
-    getComponent<AntMoveComponent>()->setTarget(target, unit);
+    getComponent<ApproachComponent>()->setTarget(target, unit);
 }
 
 void Ant::setTarget(const glm::vec2& target)
 {
-    ((MoveComponent&)(getRect())).setTarget(target);
+    setTarget(target,nullptr);
 }
 
-void Ant::setTarget(Unit& unit)
+void Ant::setTarget(std::shared_ptr<Unit>& unit)
 {
-    setTarget(unit.getCenter(),&unit);
+    setTarget(unit->getCenter(), &unit);
 }
 
 void Ant::setCarrying(int amount)
@@ -191,7 +159,6 @@ Anthill::Anthill(const glm::vec2& pos) : Unit(*(new ClickableComponent("Anthill"
 {
     getClickable().addButton(*(new CreateAnt(*this)));
     addComponent(*(new ResourceCountComponent(1000,*this)));
-    health->addHealth(-1000);
 }
 
 void Anthill::createAnt()
@@ -202,6 +169,9 @@ void Anthill::createAnt()
         Manager* manager = &(getManager());
         glm::vec2 center = getCenter();
         counter->setResource(-10);
+        /*std::shared_ptr<Ant> ptr = ;
+        std::cout << ptr.use_count() << std::endl;
+        std::weak_ptr<Ant> weak = ptr;*/
         ants.emplace_back(manager->addAnt( *(new Ant({center.x - 5,center.y - 5,10,10},*this))));
     }
 }

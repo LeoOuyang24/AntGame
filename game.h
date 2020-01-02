@@ -76,9 +76,10 @@ public:
 class Manager
 {
     friend class AntManager;
+    friend class GameWindow;
     glm::vec2 target;
     std::map<Unit*, std::shared_ptr<Unit>> entities;
-    std::vector<std::shared_ptr<Ant>> ants;
+    std::map<Ant*, std::shared_ptr<Ant>> ants;
     std::unique_ptr<RawQuadTree> tree;
     void spawnCreatures(); //spawn a creature at a random position
     AntManager antManager;
@@ -86,6 +87,14 @@ public:
     Manager() : antManager(*this)
     {
 
+    }
+    RawQuadTree* getQuadTree() //returns a pointer in case tree is null
+    {
+        return tree.get();
+    }
+    std::shared_ptr<Ant>& getAnt(Ant* address)
+    {
+        return ants[address];
     }
     void init(const glm::vec4& region);
     void update();
@@ -128,7 +137,7 @@ class GameWindow : public Window //the gamewindow is mostly static because most 
     struct QuitButton : public Button
     {
         GameWindow* window = nullptr;
-        QuitButton(GameWindow& window_) : Button({10,10,32,32},nullptr,nullptr, {"Quit"},&Font::alef,{0,1,0,1}), window(&window_)
+        QuitButton(GameWindow& window_) : Button({10,50,32,32},nullptr,nullptr, {"Quit"},&Font::alef,{0,1,0,1}), window(&window_)
         {
 
         }
