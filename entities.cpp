@@ -158,14 +158,24 @@ void AttackComponent::attack(HealthComponent* health)
     }
 }
 
-void ResourceComponent::collect(Ant& other)
+ResourceComponent::ResourceComponent(int amount, Entity& entity) : Component(entity), ComponentContainer<ResourceComponent>(entity), resource(amount), maxResource(amount)
+{
+
+}
+
+void ResourceComponent::update()
+{
+    setResource((((Anthill*)entity)->getAnts().size())*.0001*-1);
+}
+
+void ResourceComponent::collect(Unit& other)
 {
     Ant::AntMoveComponent* antMove = other.getComponent<Ant::AntMoveComponent>();
     if (antMove)
     {
         antMove->setCarrying(1);
-        amount -=1;
     }
+    resource -=1;
 }
 
 void CorpseComponent::collect(Entity& other)
@@ -184,30 +194,12 @@ void CorpseComponent::update()
         {
             render->update();
         }
-        if (amount <= 0)
+        if (resource <= 0)
         {
             ((Unit*)entity)->setDead(true);
         }
     }
 
-}
-
-void Resource::ResourceRender::update()
-{
-    GameWindow::requestRect(entity->getComponent<RectComponent>()->getRect(),{0,.5,1,1},true,0,0);
-}
-
-Resource::Resource(int x, int y, int amount) : Unit(*(new ClickableComponent("Resource",*this)), *(new RectComponent({x,y,100,100},*this)), *(new ResourceRender(*this)), *(new HealthComponent(*this, 10)))
-{
-    this->amount = amount;
-}
-
-void Resource::interact(Ant& ant)
-{
-    ant.setCarrying(10);
-    amount -= 10;
-    const glm::vec4* pos = &(rect->getRect());
-    rect->setRect({pos->x,pos->y,pos->z*.9,pos->a*.9});
 }
 
 void WanderMove::update()
@@ -227,6 +219,42 @@ void WanderMove::update()
     {
         MoveComponent::update();
     }
+}
+
+template <typename T>
+Unit* ApproachComponent::findNearestUnit(double radius)
+{
+    Unit* owner = ((Unit*)entity);
+    Entity* closest = nullptr;
+    double minDistance = -1;
+    if (owner)
+    {
+        Manager* manager = &(owner->getManager());
+        if (manager)
+        {
+            RawQuadTree* tree = manager->getQuadTree();
+            if (tree)
+            {
+                glm::vec2 center = owner->getRect().getCenter();
+                std::vector<Positional*> nearby = tree->getNearest( center , radius);
+                int size = nearby.size();
+                for (int i = 0; i < size; ++i)
+                {
+                    Entity* current = &(static_cast<RectComponent*>(nearby[i])->getEntity());
+                    if (current->getComponent<T>())
+                    {
+                        double distance = current->getComponent<RectComponent>()->distance(center);
+                        if (distance < minDistance || minDistance == -1)
+                        {
+                            minDistance = distance;
+                            closest = current;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return static_cast<Unit*>(closest);
 }
 
 void ApproachComponent::setTarget(const glm::vec2& target, const std::shared_ptr<Unit>* unit)
@@ -294,26 +322,44 @@ void Beetle::BeetleMove::update()
     {
         if (!targetPtr)
         {
+            Manager* manager = &(owner->getManager());
+            if (manager)
+            {
+                Unit* nearest = findNearestUnit<Ant::AntMoveComponent>(100);
+                if (nearest)
+                {
+                    setTarget(manager->getAnt(static_cast<Ant*>(nearest)));
+                }
+            }
+        }
+        else
+        {
+            if ( targetPtr->getRect().collides(owner->getRect().getRect()))
+            {
+                AttackComponent* attack = owner->getComponent<AttackComponent>();
+                if (attack)
+                {
+                    attack->attack(targetPtr->getComponent<HealthComponent>());
+                }
+            }
+        }
+    }
+    ApproachComponent::update();
+}
+
+void ResourceEatComponent::update()
+{
+    Unit* targetPtr = getTargetUnit();
+    Unit* owner = ((Unit*)entity);
+    if (owner)
+    {
+        if (!targetPtr)
+        {
                 Manager* manager = &(owner->getManager());
                 if (manager)
                 {
-                    RawQuadTree* tree = manager->getQuadTree();
-                    if (tree)
-                    {
-                        std::vector<Positional*> nearby;
-                        glm::vec4 rect = owner->getRect().getRect();
-                        tree->getNearest(nearby, {rect.x - 200, rect.y - 200, rect.z + 400, rect.a + 400});
-                        int size = nearby.size();
-                        for (int i = 0; i < size; ++i)
-                        {
-                            Entity* current = &(static_cast<RectComponent*>(nearby[i])->getEntity());
-                            if (current->getComponent<Ant::AntMoveComponent>())
-                            {
-                                setTarget((manager->getAnt(static_cast<Ant*>(current))));
-                                return;
-                            }
-                        }
-                    }
+                    Unit* nearest = findNearestUnit<ResourceComponent>(100);
+                    setTarget((manager->getAnt(static_cast<Ant*>(nearest))));
                 }
         }
         else

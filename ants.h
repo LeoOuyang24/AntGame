@@ -17,9 +17,19 @@ public:
         glm::vec2 displacement = {0,0};
     public:
         AntMoveComponent(Anthill* hill, double speed, const glm::vec4& rect, Entity& entity);
-        void setCarrying(int amount);
-        int getCarrying();
-        Anthill* getHome();
+        void collide(Entity& entity);
+        void setCarrying(int amount)
+        {
+            carrying = amount;
+        }
+        int getCarrying()
+        {
+            return carrying;
+        }
+        Anthill* getHome()
+        {
+            return home;
+        }
     };
 
     class AntRenderComponent : public RenderComponent, public ComponentContainer<AntRenderComponent>
@@ -59,27 +69,7 @@ public:
     void update();
 };
 
-class ResourceCountComponent : public Component, public ComponentContainer<ResourceCountComponent> //used to count the number of resources in an anthill
-{
-    double resource;
-    int maxResource;
-public:
-    ResourceCountComponent(int amount, Entity& entity);
-    int getResource()
-    {
-        return resource;
-    }
-    int getMaxResource()
-    {
-        return maxResource;
-    }
-    void setResource(double amount)
-    {
-        resource = std::max(std::min(resource + amount, (double)maxResource),0.0);
-    }
-    void collide(Entity& other);
-    void update();
-};
+
 
 class Anthill : public Unit
 {

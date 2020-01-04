@@ -106,45 +106,39 @@ public:
     void attack(HealthComponent* health); //this is a pointer so you can legally pass in a null pointer. This function will make sure it's not null
 };
 
-class ResourceComponent : public Component, public ComponentContainer<ResourceComponent> //when Ants collide with this unit, they collect resources
+class ResourceComponent : public Component, public ComponentContainer<ResourceComponent> //represents the amount of resources this object has
 {
 protected:
-    int amount;
+    double resource;
+    int maxResource;
 public:
-    ResourceComponent(Entity& entity, int amount) : Component(entity),ComponentContainer<ResourceComponent>(entity), amount(amount)
+    ResourceComponent(int amount, Entity& entity);
+    int getResource()
     {
-
+        return resource;
     }
-    virtual void collect(Ant& other);
+    int getMaxResource()
+    {
+        return maxResource;
+    }
+    void setResource(double amount)
+    {
+        resource = std::max(std::min(resource + amount, (double)maxResource),0.0);
+    }
+    void collect(Unit& other);
+    void update();
 };
 
 class CorpseComponent : public ResourceComponent, public ComponentContainer<CorpseComponent> //the corpse component handles everything about the entity after death
 {
     RenderComponent* render = nullptr;
 public:
-    CorpseComponent(Unit& unit, int amount) : ResourceComponent(unit, amount), ComponentContainer<CorpseComponent>(unit), render(unit.getComponent<RenderComponent>())
+    CorpseComponent(Unit& unit, int amount) : ResourceComponent(amount, unit), ComponentContainer<CorpseComponent>(unit), render(unit.getComponent<RenderComponent>())
     {
 
     }
     void collect(Entity& other);
     void update();
-};
-
-class Resource : public Unit
-{
-    int amount;
-    class ResourceRender : public RenderComponent, public ComponentContainer<ResourceRender>
-    {
-    public:
-        ResourceRender(Entity& entity) : RenderComponent(entity), ComponentContainer<ResourceRender>(entity)
-        {
-
-        }
-        void update();
-    };
-public:
-    Resource(int x, int y, int amount);
-    void interact(Ant& ant);
 };
 
 class WanderMove : public MoveComponent, public ComponentContainer<WanderMove>
@@ -165,6 +159,8 @@ protected:
     glm::vec2 displacement = {0,0};
     std::weak_ptr<Unit> targetUnit;
     MoveComponent* move = nullptr;
+    template<typename T>
+    Unit* findNearestUnit(double radius); //finds the nearest unit that has a component T in radius radius. Returns null if none found
 public:
     ApproachComponent(Unit& entity) : Component(entity), ComponentContainer<ApproachComponent>(entity), move(entity.getComponent<MoveComponent>())
     {
@@ -172,11 +168,11 @@ public:
     }
     virtual void setTarget(const glm::vec2& target, const std::shared_ptr<Unit>* unit);
     virtual void setTarget(const std::shared_ptr<Unit>& unit);
+    virtual void update();
     void setMove(MoveComponent& move_)
     {
         move = &move_;
     }
-    virtual void update();
     Unit* getTargetUnit()
     {
         return targetUnit.lock().get();
@@ -191,7 +187,7 @@ public:
 
 class Beetle : public Unit
 {
-    class BeetleMove : public ApproachComponent, public ComponentContainer<BeetleMove>
+    class BeetleMove : public ApproachComponent, public ComponentContainer<BeetleMove> // finds and attacks the nearest ant
     {
     public:
         BeetleMove(Unit& unit) : ApproachComponent(unit), ComponentContainer<BeetleMove>(unit)
@@ -202,6 +198,16 @@ class Beetle : public Unit
     };
 public:
     Beetle(int x, int y);
+};
+
+class ResourceEatComponent : public ApproachComponent, public ComponentContainer<ResourceEatComponent> //finds and eats the nearest ResourceCountComponent, including anthills
+{
+public:
+    ResourceEatComponent(Unit& unit) : ApproachComponent(unit), ComponentContainer<ResourceEatComponent>(unit)
+    {
+
+    }
+    void update();
 };
 
 #endif // ENTITIES_H_INCLUDED

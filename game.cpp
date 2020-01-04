@@ -252,8 +252,11 @@ void Manager::update()
         antManager.clear();
     }
 
-    for (auto i = ants.begin(); i != ants.end(); ++i)
+    int index = 0;
+    auto it = ants.begin();
+    for (auto i = ants.begin(); i != ants.end(); i = it)
     {
+        ++it;
         if (i->second->getComponent<HealthComponent>()->getHealth() > 0)
         {
             RectPositional* rectPos = &(i->second->getRect());
@@ -280,12 +283,15 @@ void Manager::update()
         }
         else
         {
-            remove(static_cast<Unit&>(*(i->first)));
+            remove(static_cast<Unit&>(*((i)->first)));
         }
+        index ++;
     }
     antManager.update();
-    for (auto i = entities.begin(); i !=  entities.end(); ++i)
+    auto it2 = entities.begin();
+    for (auto i = entities.begin(); i !=  entities.end(); i = it2)
     {
+        ++it2;
         Unit* current = i->first;
         RectPositional* rectPos = &(current->getRect());
         RawQuadTree* oldTree = tree->find(*rectPos);
@@ -400,7 +406,7 @@ GameWindow::GameWindow() : Window({0,0},nullptr,{0,0,0,0})
     {
         hill->createAnt();
     }
-    hill->getComponent<ResourceCountComponent>()->setResource(1000);
+    hill->getComponent<ResourceComponent>()->setResource(1000);
 }
 
 bool GameWindow::updateSelect()

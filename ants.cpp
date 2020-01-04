@@ -12,7 +12,17 @@ Ant::AntMoveComponent::AntMoveComponent(Anthill* hill, double speed, const glm::
 {
 
 }
-void Ant::AntMoveComponent::setCarrying(int amount)
+
+void Ant::AntMoveComponent::collide(Entity& entity)
+{
+    if (&entity == home && carrying > 0)
+    {
+        home->getComponent<ResourceComponent>()->setResource(carrying);
+        carrying = 0;
+    }
+}
+
+/*void Ant::AntMoveComponent::setCarrying(int amount)
 {
     carrying = amount;
 }
@@ -25,7 +35,7 @@ int Ant::AntMoveComponent::getCarrying()
 Anthill* Ant::AntMoveComponent::getHome()
 {
     return home;
-}
+}*/
 
 Ant::AntRenderComponent::AntRenderComponent(const glm::vec4& color, Entity& entity) : RenderComponent(entity), ComponentContainer<AntRenderComponent>(entity), color(color)
 {
@@ -116,31 +126,12 @@ void AntHillRender::update()
     glm::vec4 rect = entity->getComponent<RectComponent>()->getRect();
     GameWindow::requestNGon(10,{rect.x + rect.z/2, rect.y + rect.a/2},20,{.5,.5,.5,1},0,true,-.1);
 
-    ResourceCountComponent* counter = entity->getComponent<ResourceCountComponent>();
+    ResourceComponent* counter = entity->getComponent<ResourceComponent>();
     int width = counter->getResource()/((float)(counter->getMaxResource()))*rect.z, height = 10;
     GameWindow::requestRect({rect.x, rect.y + rect.a + 10, width, height},{0,1,0,1},true,0,0);
     GameWindow::requestRect({rect.x + width, rect.y + rect.a + 10, rect.z - width, height}, {1,0,0,1}, true, 0, 0);
 }
 
-ResourceCountComponent::ResourceCountComponent(int amount, Entity& entity) : Component(entity), ComponentContainer<ResourceCountComponent>(entity), resource(amount), maxResource(amount)
-{
-
-}
-
-void ResourceCountComponent::collide(Entity& other)
-{
-    Ant::AntMoveComponent* antMove = other.getComponent<Ant::AntMoveComponent>();
-    if (antMove)
-    {
-        setResource(antMove->getCarrying());
-        antMove->setCarrying(0);
-    }
-}
-
-void ResourceCountComponent::update()
-{
-    setResource((((Anthill*)entity)->getAnts().size())*.0001*-1);
-}
 
 Anthill::CreateAnt::CreateAnt(Anthill& hill) : Button({0,0,64, 16},nullptr,nullptr,{"Create Ant"},&Font::alef,{0,1,0,1}), hill(&hill)
 {
@@ -158,12 +149,12 @@ void Anthill::CreateAnt::press()
 Anthill::Anthill(const glm::vec2& pos) : Unit(*(new ClickableComponent("Anthill",*this)), *(new RectComponent({pos.x,pos.y,64,64}, *this)), *(new AntHillRender(*this)), *(new HealthComponent(*this, 100)))
 {
     getClickable().addButton(*(new CreateAnt(*this)));
-    addComponent(*(new ResourceCountComponent(1000,*this)));
+    addComponent(*(new ResourceComponent(1000,*this)));
 }
 
 void Anthill::createAnt()
 {
-    ResourceCountComponent* counter = getComponent<ResourceCountComponent>();
+    ResourceComponent* counter = getComponent<ResourceComponent>();
     if (counter->getResource() >= 10)
     {
         Manager* manager = &(getManager());

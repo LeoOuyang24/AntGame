@@ -1,5 +1,9 @@
 This document keeps track of all changes as well as considered changes made to the resources as well as why they were made. Consider this a "learning from the past" kind of document. 
 
+1/2/2020:
+	ResourceComponent now has all the functionality of ResourceCountComponent and ResourceCountComponent has been deleted. There is simply no reason to have both of these components. ResourceCountComponent not only kept track of the amount of resources like a ResourceComponent but also rendered the amount. Fusing these two classes will standardize things and allow more than just ants to collect resources.
+	ApproachComponent::setTarget(const std::shared_ptr&) has now been changed to accept a non-const pointer. This is a small change; it's made so that setTarget can be called on ApproachComponent's findNearest function without having to test if findNearest returned null
+
 12/19/2019:
 	ApproachComponent's setTarget member functions now takes in const references to std::shared_ptr rather than just a reference. This allows us to use std::shared_ptr<Ant> in place of std::shared_ptr<Unit>, since having a const reference allows us to take an r-value, in this case the conversion of std::shared_ptr<Ant> to std::shared_ptr<Unit>.
 
