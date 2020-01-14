@@ -225,16 +225,18 @@ std::shared_ptr<Ant> Manager::addAnt(Ant& ant)
 
 void Manager::spawnCreatures()
 {
-    int random = rand()%2;
+    int random = rand()%3;
     Unit* toSpawn = nullptr;
     switch(random)
     {
     case 0:
-        toSpawn = new Bug(0,0);
+        toSpawn = new Mushroom(0,0);
         break;
     case 1:
-        toSpawn = new Beetle(0,0);
+        toSpawn = new Mushroom(0,0);
         break;
+    case 2:
+        toSpawn = new Mushroom(0,0);
     default:
         toSpawn = new Bug(0,0);
     }
@@ -473,7 +475,7 @@ void GameWindow::renderSelectedUnits()
     for (int i = 0; i < size; ++i)
     {
         Ant* current = selectedUnits->at(i).get();
-        glm::vec4 outlineRect = {.1*rect.z + i%10*(.06*rect.z),rect.a - height + .2*height + i/10*.06*height,.03*rect.z,.03*rect.z};
+        glm::vec4 outlineRect = {.1*rect.z + i%10*(.06*rect.z),rect.a - height + .2*height + i/10*.3*height,.03*rect.z,.03*rect.z};
         HealthComponent* health = current->getComponent<HealthComponent>();
         double healthRatio = health->getHealth()/health->getMaxHealth();//how much health this ant currently has;
         current->getComponent<RenderComponent>()->render({{outlineRect.x + 2, outlineRect.y + 2, outlineRect.z - 4, outlineRect.a - 4},0,NONE,{1-healthRatio,0,0,1},&RenderProgram::basicProgram,.2});

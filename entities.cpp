@@ -293,6 +293,12 @@ void ApproachComponent::update()
     }
 }
 
+Mushroom::Mushroom(int x, int y) : Unit(*(new ClickableComponent("Mushroom", *this)), *(new RectComponent({x,y,10,10},*this)),*(new RectRenderComponent({0,.5,1,1},*this)),*(new HealthComponent(*this,1)))
+{
+    addComponent(*(new ResourceComponent(rand()%5,*this)));
+    health->setVisible(false);
+}
+
 Bug::Bug(int x, int y) : Unit(*(new ClickableComponent("Bug", *this)), *(new WanderMove(.02,{x,y,64,64},*this)), *(new RectRenderComponent({1,.5,1,1},*this)),*(new HealthComponent(*this, 100)))
 {
     //getComponent<MoveComponent>()->setTarget({0,0});
@@ -300,13 +306,6 @@ Bug::Bug(int x, int y) : Unit(*(new ClickableComponent("Bug", *this)), *(new Wan
     addComponent(*(new ResourceEatComponent(*this)));
 }
 
-
-
-/*void Beetle::BeetleMove::update()
-{
-
-}
-*/
 Beetle::Beetle(int x, int y) : Unit(*(new ClickableComponent("Beetle", *this)), *(new WanderMove(.02,{x,y,64,64},*this)), *(new RectRenderComponent({1,.5,0,1},*this)),*(new HealthComponent(*this, 100)))
 {
     addComponent(*(new AttackComponent(1,10,*this)));
@@ -320,19 +319,16 @@ void Beetle::BeetleMove::update()
     Unit* owner = ((Unit*)entity);
     if (owner)
     {
-        if (!targetPtr)
+        Manager* manager = &(owner->getManager());
+        if (manager)
         {
-            Manager* manager = &(owner->getManager());
-            if (manager)
+            Unit* nearest = findNearestUnit<Ant::AntMoveComponent>(100);
+            if (nearest)
             {
-                Unit* nearest = findNearestUnit<Ant::AntMoveComponent>(100);
-                if (nearest)
-                {
-                    setTarget(manager->getAnt(static_cast<Ant*>(nearest)));
-                }
+                setTarget(manager->getAnt(static_cast<Ant*>(nearest)));
             }
         }
-        else
+        if (targetPtr)
         {
             if ( targetPtr->getRect().collides(owner->getRect().getRect()))
             {
@@ -343,6 +339,7 @@ void Beetle::BeetleMove::update()
                 }
             }
         }
+
     }
     ApproachComponent::update();
 }

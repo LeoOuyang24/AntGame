@@ -52,10 +52,14 @@ int main(int args, char* argsc[])
 
     const int screenWidth = 960;
     const int screenHeight = 960;
+
+    SDL_Init(SDL_INIT_VIDEO);
+
     srand(time(NULL));
     SDL_Window* window = SDL_CreateWindow("Project",SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,screenWidth, screenHeight, SDL_WINDOW_OPENGL);
     SDL_StopTextInput();
     SDL_GL_CreateContext(window);
+
     RenderProgram::init(screenWidth,screenHeight);
     PolyRender::init(screenWidth,screenHeight);
     Font::init(screenWidth, screenHeight);

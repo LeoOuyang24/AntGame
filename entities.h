@@ -192,6 +192,12 @@ public:
     }
 };
 
+class Mushroom : public Unit
+{
+public:
+    Mushroom(int x, int y);
+};
+
 class Bug : public Unit
 {
 public:

@@ -966,7 +966,7 @@
 	<stdlib.h>
 	<memory>
 
-1578878323 source:c:\users\leoou\onedrive\desktop\projects\ants\main.cpp
+1578968736 source:c:\users\leoou\onedrive\desktop\projects\ants\main.cpp
 	<iostream>
 	<time.h>
 	<typeinfo>
@@ -1009,7 +1009,7 @@
 	"components.h"
 	"entities.h"
 
-1578881114 source:c:\users\leoou\onedrive\desktop\projects\ants\game.cpp
+1579019012 source:c:\users\leoou\onedrive\desktop\projects\ants\game.cpp
 	"SDLHelper.h"
 	"vanilla.h"
 	"game.h"
@@ -1022,12 +1022,12 @@
 	"entities.h"
 	"ants.h"
 
-1578877036 c:\users\leoou\onedrive\desktop\projects\ants\entities.h
+1579018639 c:\users\leoou\onedrive\desktop\projects\ants\entities.h
 	"glInterface.h"
 	"SDLhelper.h"
 	"components.h"
 
-1578881159 source:c:\users\leoou\onedrive\desktop\projects\ants\entities.cpp
+1579020942 source:c:\users\leoou\onedrive\desktop\projects\ants\entities.cpp
 	"SDLHelper.h"
 	"render.h"
 	"entities.h"
