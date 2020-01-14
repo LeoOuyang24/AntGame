@@ -69,6 +69,11 @@ void Ant::AntRenderComponent::update()
     }
 }
 
+void Ant::AntRenderComponent::render(const SpriteParameter& param)
+{
+    PolyRender::requestRect(param.rect,param.tint,true,param.radians,param.z);
+}
+
 Ant::AntClickable::AntClickable(std::string name, Unit& entity) : ClickableComponent(name, entity), ComponentContainer<AntClickable>(entity)
 {
 
@@ -84,10 +89,10 @@ void Ant::AntClickable::clicked()
 }
 
 Ant::Ant(const glm::vec4& rect, Anthill& home) : Unit(*(new ClickableComponent("Ant",*this)), *(new AntMoveComponent(&home,.5,rect,*this)),*(new AntRenderComponent({0,0,0,1},*this)),
-                                                      *(new HealthComponent(*this, 1)))
+                                                      *(new HealthComponent(*this, 10)))
 {
     health->setVisible(false);
-    addComponent(*(new AttackComponent(1,10,*this)));
+    addComponent(*(new AttackComponent(1,100,*this)));
     addComponent(*(new ApproachComponent(*this)));
 }
 
@@ -164,6 +169,7 @@ void Anthill::createAnt()
         std::cout << ptr.use_count() << std::endl;
         std::weak_ptr<Ant> weak = ptr;*/
         ants.emplace_back(manager->addAnt( *(new Ant({center.x - 5,center.y - 5,10,10},*this))));
+        //std::cout << ants.size() << std::endl;
     }
 }
 

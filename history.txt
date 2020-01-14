@@ -1,8 +1,34 @@
 This document keeps track of all changes as well as considered changes made to the resources as well as why they were made. Consider this a "learning from the past" kind of document. 
 
+1/8/2020:
+	ApproachComponent has been changed to no longer be a MoveComponent but rather a vanilla component that requires the user to already have a MoveComponent. Essentially, ApproachComponent "guides" the MoveComponent. While the user hasn't collided with the target yet, ApproachComponent will constantly set the target to be the target unit. If the user has collided, ApproachComponent will set the target to the entity's current center so it stops moving. If there is no targetUnit, ApproachComponent does nothing, allowing the MoveComponent to take over. This was done because of the problem of needing ApproachComponents that operated differently when there is no target. Ants do nothing while there is no target and have a MoveComponent that does nothing. Beetles wander around and uses WanderMove as its MoveComponent. In order to maximize flexibility, ApproachComponent influences an entity's MoveComponent. 
+	Why not have each ApproachComponent that needs to do something different inherit from a different MoveComponent? While this problem can be done by inheritance, the ApproachComponent::update() is always the same, except that a different parent function is called. This seems redundant.
+Here is some pseudocode for what a child of ApproachComponent's update function looks like:
+
+void ApproachChild::Update()
+{
+    	<Code unique to this child. Usually unique way of finding a target> 
+
+	if no target:	
+		MoveParent::Update()
+	if at target:
+		stop moving
+	else:
+		move towards target.
+} 
+The unique way of finding a target and which parent update to call  is the only code that changes. It doesn't make sense to constantly make new classes just to change a couple lines. Besides, repeating code is usually a bad sign as changing one copy of a line of code will mean that all the copies must be changed. Our solution minimizes code reptition. Here's what the code looks like now:
+	
+void ApproachChild::Update()
+{
+	<Code unique to this child>
+	ApproachParent::Update()
+}
+ApproachParent::Update() is the only code that is the same constantly, and even it may change if an ApproachComponent inherits from an ApproachComponent. 
+	Another idea is to have MoveComponent inherit from ApproachComponent, but that really doesn't make much sense. An object that can move may not be able to approach but an object that can approach can definitely move. 
+
 1/2/2020:
 	ResourceComponent now has all the functionality of ResourceCountComponent and ResourceCountComponent has been deleted. There is simply no reason to have both of these components. ResourceCountComponent not only kept track of the amount of resources like a ResourceComponent but also rendered the amount. Fusing these two classes will standardize things and allow more than just ants to collect resources.
-	ApproachComponent::setTarget(const std::shared_ptr&) has now been changed to accept a non-const pointer. This is a small change; it's made so that setTarget can be called on ApproachComponent's findNearest function without having to test if findNearest returned null
+
 
 12/19/2019:
 	ApproachComponent's setTarget member functions now takes in const references to std::shared_ptr rather than just a reference. This allows us to use std::shared_ptr<Ant> in place of std::shared_ptr<Unit>, since having a const reference allows us to take an r-value, in this case the conversion of std::shared_ptr<Ant> to std::shared_ptr<Unit>.

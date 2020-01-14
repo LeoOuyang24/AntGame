@@ -25,8 +25,30 @@ struct A
     }
 };
 
+template <typename T>
+struct B
+{
+    B()
+    {
+
+    }
+    ~B()
+    {
+        std::cout <<"ASDF" << std::endl;
+    }
+};
+
+struct C : public A, public B<C>
+{
+
+};
+
 int main(int args, char* argsc[])
 {
+
+    Entity* unit = new Entity();
+    unit->addComponent(*(new RectComponent({0,0,10,10},*unit)));
+    delete unit;
 
     const int screenWidth = 960;
     const int screenHeight = 960;
@@ -46,6 +68,11 @@ int main(int args, char* argsc[])
     Interface interface;
     GameWindow game;
     interface.switchCurrent(&game);
+
+   /* SpriteWrapper spr;
+    spr.init("image.png",true);
+
+    SpriteManager::addSprite(spr);*/
 
 
     while (!quit)
@@ -71,9 +98,18 @@ int main(int args, char* argsc[])
         {
             quit = true;
         }
+        /*spr.request({{1,1,100,100}});
+        spr.request({{100,100,100,100}});
+        spr.request({{200,200,100,100},0,NONE,{1,1,1,.5}});*/
+        /*for (int i = 0; i < 10; ++i)
+        {
+            PolyRender::requestRect({i*32,i*32 + 100,64,64},{1,0,0,.5},false,0,0);
+        }*/
        // squares = SDL_GetTicks()/500;
        //PolyRender::requestNGon(4,{320,320},20,{0,0,0,1},90,false,0);
-        //PolyRender::requestRect({0,0,64,64},{1,0,0,.5},true,-.1);
+        //PolyRender::requestRect({32,32,64,64},{1,0,0,.5},false,0,-.1);
+        //PolyRender::requestRect({64,64,64,64},{1,0,0,.5},false,0,-.1);
+       //PolyRender::requestLine({0,0,100,100},{1,1,1,1},0);
 
         //int move = SDL_GetTicks()/10.0;
       // wrap.request({{0,0,640,640}});

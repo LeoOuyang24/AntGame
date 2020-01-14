@@ -6,7 +6,7 @@
 
 #include "components.h"
 
-Component::Component(Entity& entity)
+Component::Component(Entity& entity) : ComponentContainer<Component>(entity)
 {
     this->entity = &entity;
 }
@@ -16,7 +16,7 @@ Entity& Component::getEntity()
     return *entity;
 }
 
-RectComponent::RectComponent(const glm::vec4& rect, Entity& entity) : Component(entity), ComponentContainer(entity), RectPositional(rect)
+RectComponent::RectComponent(const glm::vec4& rect, Entity& entity) : Component(entity), ComponentContainer<RectComponent>(entity), RectPositional(rect)
 {
 
 }
@@ -26,7 +26,7 @@ void RectComponent::setRect(const glm::vec4& rect)
     this->rect = rect;
 }
 
-MoveComponent::MoveComponent(double speed, const glm::vec4& rect, Entity& entity) : speed(speed),RectComponent(rect, entity), ComponentContainer<MoveComponent>(entity)
+MoveComponent::MoveComponent(double speed, const glm::vec4& rect, Entity& entity) : RectComponent(rect, entity), ComponentContainer<MoveComponent>(entity), speed(speed)
 {
     target = {rect.x + rect.z/2, rect.y + rect.a/2};
 }
@@ -66,5 +66,14 @@ void Entity::collide(Entity& entity)
     for (int i= components.size() - 1; i >= 0; --i)
     {
         components[i]->collide(entity);
+    }
+}
+
+void Entity::onDeath()
+{
+    std::cout << this << std::endl;
+    for (int i = components.size() - 1; i >= 0; --i)
+    {
+        components[i]->onDeath();
     }
 }

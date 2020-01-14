@@ -35,6 +35,7 @@ public:
 
     }
     void update();
+    virtual void render(const SpriteParameter& param);
 };
 
 
@@ -52,7 +53,14 @@ public:
 
     }
     void addHealth(int amount); //increases health by amount. Health cannot exceed maxHealth nor go below 0
-    int getHealth();
+    double getHealth()
+    {
+        return health;
+    }
+    double getMaxHealth()
+    {
+        return maxHealth;
+    }
     void update(); //render health bar and reset invincibility frames
     void inline setVisible(bool value)
     {
@@ -126,19 +134,24 @@ public:
         resource = std::max(std::min(resource + amount, (double)maxResource),0.0);
     }
     void collect(Unit& other);
-    void update();
 };
 
-class CorpseComponent : public ResourceComponent, public ComponentContainer<CorpseComponent> //the corpse component handles everything about the entity after death
+class CorpseComponent : public Component, public ComponentContainer<CorpseComponent> //the corpse component spawns a corpse object after the entity dies
 {
+    int amount = 0;
     RenderComponent* render = nullptr;
 public:
-    CorpseComponent(Unit& unit, int amount) : ResourceComponent(amount, unit), ComponentContainer<CorpseComponent>(unit), render(unit.getComponent<RenderComponent>())
+    CorpseComponent(Unit& unit, int amount_) : Component(unit), ComponentContainer<CorpseComponent>(unit), amount(amount_), render(unit.getComponent<RenderComponent>())
     {
 
     }
-    void collect(Entity& other);
-    void update();
+    void onDeath();
+};
+
+class ResourceUnit : public Unit
+{
+public:
+    ResourceUnit(int resources, const glm::vec4& rect);
 };
 
 class WanderMove : public MoveComponent, public ComponentContainer<WanderMove>

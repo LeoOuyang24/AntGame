@@ -48,7 +48,8 @@ void ClickableComponent::update()
         glm::vec2 dimen = {unitRect->z, unitRect->a};
         GameWindow::requestRect({unitRect->x + unitRect->z/2 -dimen.x/2,unitRect->y + unitRect->a/2 -dimen.y/2,dimen.x,dimen.y},GameWindow::selectColor,true,0,1);
     }
-        stillClicked = stillClicked || (!MouseManager::isPressed(SDL_BUTTON_LEFT) && clicked)  || (MouseManager::isPressed(SDL_BUTTON_LEFT) && vecIntersect(GameWindow::getSelection(),*unitRect));
+    bool becomeClicked = (MouseManager::isPressed(SDL_BUTTON_LEFT) && vecIntersect(GameWindow::getSelection(),*unitRect));
+        stillClicked = stillClicked || (!MouseManager::isPressed(SDL_BUTTON_LEFT) && clicked)  ||  becomeClicked;
         click(stillClicked);
 }
 void ClickableComponent::display(const glm::vec4& rect)
@@ -66,22 +67,26 @@ void RectRenderComponent::update()
     GameWindow::requestRect(((Unit*)entity)->getRect().getRect(),color,true,0,0);
 }
 
+void RectRenderComponent::render(const SpriteParameter& param)
+{
+    PolyRender::requestRect(param.rect,color*param.tint,true,param.radians,param.z);
+}
+
 
 void HealthComponent::addHealth(int amount)
 {
     if (amount < 0)
     {
-        if (!invincible.isSet())
+        if (invincible.framesPassed(10) || !invincible.isSet())
         {
             invincible.set();
             health = std::max(0.0,std::min(health + amount, maxHealth));
         }
     }
-}
-
-int HealthComponent::getHealth()
-{
-    return health;
+    else
+    {
+        health = std::max(0.0,std::min(health + amount, maxHealth));
+    }
 }
 
 void HealthComponent::update()
@@ -91,11 +96,6 @@ void HealthComponent::update()
     {
         const glm::vec4* rect = &(rectComp->getRect());
         GameWindow::requestRect({rect->x ,rect->y - displacement, health/maxHealth*rect->z, height},{1,0,0,1},true,0,0);
-    }
-
-    if (invincible.isSet() && invincible.framesPassed(10))
-    {
-        invincible.reset();
     }
 }
 
@@ -153,7 +153,7 @@ void AttackComponent::attack(HealthComponent* health)
 {
     if (health && (attackTimer.framesPassed(endLag) || !attackTimer.isSet()))
     {
-        health->addHealth(-1);
+        health->addHealth(-1*damage);
         attackTimer.set();
     }
 }
@@ -163,43 +163,38 @@ ResourceComponent::ResourceComponent(int amount, Entity& entity) : Component(ent
 
 }
 
-void ResourceComponent::update()
-{
-    setResource((((Anthill*)entity)->getAnts().size())*.0001*-1);
-}
-
 void ResourceComponent::collect(Unit& other)
 {
-    Ant::AntMoveComponent* antMove = other.getComponent<Ant::AntMoveComponent>();
-    if (antMove)
+    if (entity && !((Unit*)entity)->getDead())
     {
-        antMove->setCarrying(1);
-    }
-    resource -=1;
-}
-
-void CorpseComponent::collect(Entity& other)
-{
-    /*if (entity->getComponent<HealthComponent>()->getHealth() <= 0)
-    {
-        ResourceComponent::collide(other);
-    }*/
-}
-
-void CorpseComponent::update()
-{
-    if (entity->getComponent<HealthComponent>()->getHealth() <= 0)
-    {
-        if (render)
+          Ant::AntMoveComponent* antMove = other.getComponent<Ant::AntMoveComponent>();
+        if (antMove)
         {
-            render->update();
+            antMove->setCarrying(1);
         }
+        resource -=1;
         if (resource <= 0)
         {
-            ((Unit*)entity)->setDead(true);
+            ((Unit*)(entity))->setDead(true);
         }
     }
 
+}
+
+
+void CorpseComponent::onDeath()
+{
+    if (entity)
+    {
+        Manager* manager = &(((Unit*)entity)->getManager());
+        ResourceUnit* resource = new ResourceUnit(amount,entity->getComponent<RectComponent>()->getRect());
+        manager->addEntity(*(resource));
+    }
+}
+
+ResourceUnit::ResourceUnit(int resources, const glm::vec4& rect) : Unit(*(new ClickableComponent("Resource", *this)), *(new RectComponent(rect, *this)), *(new RectRenderComponent({1,1,1,1},*this)), *(new HealthComponent(*this,1,false)))
+{
+    addComponent(*(new ResourceComponent(resources,*this)));
 }
 
 void WanderMove::update()
@@ -244,7 +239,7 @@ Unit* ApproachComponent::findNearestUnit(double radius)
                     if (current->getComponent<T>())
                     {
                         double distance = current->getComponent<RectComponent>()->distance(center);
-                        if (distance < minDistance || minDistance == -1)
+                        if ((distance < minDistance || minDistance == -1) && current != owner)
                         {
                             minDistance = distance;
                             closest = current;
@@ -285,7 +280,11 @@ void ApproachComponent::update()
         if (ptr)
         {
             glm::vec2 center = ptr->getRect().getCenter() + displacement;
-            if (move->getTarget() != center)
+            if (move->collides(ptr->getRect().getRect()))
+            {
+                move->setTarget(entity->getComponent<RectComponent>()->getCenter());
+            }
+            else
             {
                 move->setTarget(center);
             }
@@ -298,6 +297,7 @@ Bug::Bug(int x, int y) : Unit(*(new ClickableComponent("Bug", *this)), *(new Wan
 {
     //getComponent<MoveComponent>()->setTarget({0,0});
     addComponent(*(new CorpseComponent(*this, 100)));
+    addComponent(*(new ResourceEatComponent(*this)));
 }
 
 
@@ -355,22 +355,21 @@ void ResourceEatComponent::update()
     {
         if (!targetPtr)
         {
-                Manager* manager = &(owner->getManager());
-                if (manager)
+            Manager* manager = &(owner->getManager());
+            if (manager)
+            {
+                Unit* nearest = findNearestUnit<ResourceComponent>(500);
+                if (nearest)
                 {
-                    Unit* nearest = findNearestUnit<ResourceComponent>(100);
-                    setTarget((manager->getAnt(static_cast<Ant*>(nearest))));
+                    setTarget((manager->getUnit(static_cast<Unit*>(nearest))));
                 }
+            }
         }
         else
         {
             if ( targetPtr->getRect().collides(owner->getRect().getRect()))
             {
-                AttackComponent* attack = owner->getComponent<AttackComponent>();
-                if (attack)
-                {
-                    attack->attack(targetPtr->getComponent<HealthComponent>());
-                }
+                targetPtr->getComponent<ResourceComponent>()->collect(*targetPtr);
             }
         }
     }

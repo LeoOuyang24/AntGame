@@ -19,11 +19,12 @@ struct ComponentContainer
         components[&entity] = static_cast<C*>(this);
         entities[this] = &entity;
     }
-    ~ComponentContainer()
+    virtual ~ComponentContainer()
     {
-        components.erase(components.find(entities[this]));
-        entities.erase(entities.find(this));
+    //components.erase(components.find(entities[this]));
+      // entities.erase(entities.find(this));
     }
+
 };
 
 template<class C>
@@ -33,7 +34,7 @@ template<class C>
 std::map<ComponentContainer<C>*, Entity*> ComponentContainer<C>::entities;
 
 
-class Component
+class Component : public ComponentContainer<Component>
 {
 protected:
     Entity* entity;
@@ -45,6 +46,10 @@ public:
 
     }
     virtual void collide(Entity& other)
+    {
+
+    }
+    virtual void onDeath()
     {
 
     }
@@ -86,6 +91,10 @@ class RenderComponent : public Component, public ComponentContainer<RenderCompon
 {
 public:
     RenderComponent(Entity& entity);
+    virtual void render(const SpriteParameter& param) //every rendercomponent can take in a SpriteParameter and render it accordingly
+    {
+
+    }
 };
 
 class Entity
@@ -109,6 +118,7 @@ public:
     {
         components.emplace_back(&comp);
     }
+    void onDeath();
 
 };
 

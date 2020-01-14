@@ -32,6 +32,8 @@ public:
 
 class Ant;
 
+typedef std::weak_ptr<Unit> UnitPtr;
+
 class AntManager //handles ant movement and targeting
 {
     enum Task
@@ -45,7 +47,7 @@ class AntManager //handles ant movement and targeting
     const static int spacing; //spacing between ants when they move
     Manager* manager = nullptr;
     std::vector<std::shared_ptr<Ant>> selected;
-    std::weak_ptr<Unit> targetUnit; //used to keep track of an ant group's main target
+    UnitPtr targetUnit; //used to keep track of an ant group's main target
     glm::vec2 targetPoint;
     void change(std::shared_ptr<Unit> newUnit, glm::vec2& newPoint); //sets the member variables and notifies the ants
 public:
@@ -57,6 +59,10 @@ public:
     {
         clear();
     }
+    std::vector<std::shared_ptr<Ant>>& getAnts()
+    {
+        return selected;
+    }
     void addAnt(std::shared_ptr<Ant>& ant)
     {
         selected.push_back(ant);
@@ -66,6 +72,7 @@ public:
     void clear()
     {
         selected.clear();
+        targetUnit.reset();
     }
     const Unit* getTargetUnit()
     {
@@ -81,6 +88,7 @@ class Manager
     std::map<Unit*, std::shared_ptr<Unit>> entities;
     std::map<Ant*, std::shared_ptr<Ant>> ants;
     std::unique_ptr<RawQuadTree> tree;
+    std::vector<UnitPtr> selectedUnits; //all the selected units
     void spawnCreatures(); //spawn a creature at a random position
     AntManager antManager;
 public:
@@ -96,11 +104,28 @@ public:
     {
         return ants[address];
     }
+    std::shared_ptr<Unit>& getUnit(Unit* address)
+    {
+        return entities[address];
+    }
+    std::vector<std::weak_ptr<Unit>>& getSelectedUnits()
+    {
+        return selectedUnits;
+    }
+    AntManager& getAntManager()
+    {
+        return antManager;
+    }
     void init(const glm::vec4& region);
     void update();
     std::shared_ptr<Unit> addEntity(Unit& entity);//this method returns the shared_ptr in case any other class wants to share ownership.
     std::shared_ptr<Ant> addAnt(Ant& ant);
     void remove(Unit& unit);
+    void clear()
+    {
+        entities.clear();
+        ants.clear();
+    }
 };
 
 class GameWindow;
@@ -132,7 +157,7 @@ class GameWindow : public Window //the gamewindow is mostly static because most 
     static Map level;
     static Manager manager;
     static Window* gameOver;
-    std::weak_ptr<Unit> anthill; //pointer to the anthill. Keeps track of whether or not the player has lost
+    UnitPtr anthill; //pointer to the anthill. Keeps track of whether or not the player has lost
     bool updateSelect(); //updates the selection window and returns whether or not the player is selecting
     struct QuitButton : public Button
     {
@@ -165,6 +190,7 @@ public:
     static void requestRect(const glm::vec4& rect, const glm::vec4& color, bool filled, double angle, float z);
     GameWindow();
     void update(int x, int y, bool clicked);
+    void renderSelectedUnits();
 };
 
 #endif // GAME_H_INCLUDED

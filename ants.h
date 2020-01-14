@@ -40,6 +40,7 @@ public:
     public:
         AntRenderComponent(const glm::vec4& color, Entity& entity);
         void update();
+        void render(const SpriteParameter& param);
     };
 
     class AntClickable : public ClickableComponent, public ComponentContainer<AntClickable>

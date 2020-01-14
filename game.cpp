@@ -93,13 +93,18 @@ void AntManager::update()
                 std::min(spacing, (int)((targetRect->a - clumpDimen.y*Ant::dimen)/clumpDimen.y))};
         health = unitPtr->getComponent<HealthComponent>();
         resource = unitPtr->getComponent<ResourceComponent>();
-        if (health && health->getHealth() > 0)
+
+        if (resource )
+        {
+            currentTask = COLLECT;
+        }
+        else if (health && health->getHealth() > 0)
         {
             currentTask = ATTACK;
         }
         else
         {
-            currentTask = COLLECT;
+            currentTask = MOVE;
         }
     }
     else if (currentTask != MOVE && currentTask != COLLECT && justClicked != SDL_BUTTON_RIGHT) //if the current task is move or collect, we set it to IDLE after processing all ants.
@@ -131,13 +136,18 @@ void AntManager::update()
                 }
                 else if (clumpDimen.x != 0)
                 {
-                    glm::vec2 moveTo = {target.x + i%((int)clumpDimen.x)*(Ant::dimen + space.x), target.y + (i/((int)clumpDimen.y))%((int)clumpDimen.y)*(Ant::dimen+space.y)};
+                    glm::vec2 moveTo = {target.x + i%((int)clumpDimen.x)*(Ant::dimen + space.x), i/((int)(clumpDimen.x))};
                     if (unitPtr)
                     {
+                        moveTo.y = fmod(moveTo.y,clumpDimen.y);
+                        moveTo.y *= (Ant::dimen + space.y);
+                        moveTo.y += target.y;
                         selected[i]->setTarget(moveTo, &manager->entities[unitPtr]);
                     }
                     else
                     {
+                        moveTo.y *= (Ant::dimen + space.y);
+                        moveTo.y += target.y;
                         selected[i]->setTarget(moveTo,nullptr);
                     }
                 }
@@ -250,6 +260,7 @@ void Manager::update()
     if (released == SDL_BUTTON_LEFT)
     {
         antManager.clear();
+        selectedUnits.clear();
     }
 
     int index = 0;
@@ -279,6 +290,7 @@ void Manager::update()
             if (released == SDL_BUTTON_LEFT && i->second->clicked())
             {
                 antManager.addAnt(i->second);
+                selectedUnits.emplace_back(ants[i->first]);
             }
         }
         else
@@ -289,31 +301,25 @@ void Manager::update()
     }
     antManager.update();
     auto it2 = entities.begin();
-    for (auto i = entities.begin(); i !=  entities.end(); i = it2)
+    auto end = entities.end(); //we do this in case we added an object while looping. This ensures we still iterate as if the object wasn't added.
+    for (auto i = entities.begin(); i !=  end; i = it2)
     {
         ++it2;
         Unit* current = i->first;
         RectPositional* rectPos = &(current->getRect());
         RawQuadTree* oldTree = tree->find(*rectPos);
-        if (current->getComponent<HealthComponent>()->getHealth() > 0)
+        if (current->getComponent<HealthComponent>()->getHealth() > 0 && !current->getDead())
         {
             current->update();
+            tree->update(*rectPos,*oldTree);
+            if (released == SDL_BUTTON_LEFT && current->clicked())
+            {
+                selectedUnits.emplace_back(entities[current]);
+            }
         }
         else
         {
-            CorpseComponent* corpse = current->getComponent<CorpseComponent>();
-            if (corpse)
-            {
-                corpse->update();
-            }
-            else
-            {
-                current->setDead(true);
-            }
-        }
-        tree->update(*rectPos,*oldTree);
-        if (current->getDead())
-        {
+            current->onDeath();
             remove(*(current));
         }
     }
@@ -395,18 +401,21 @@ GameWindow::GameWindow() : Window({0,0},nullptr,{0,0,0,0})
 {
     level.init({-1000,-1000,2000,2000});
     glm::vec2 screenDimen = RenderProgram::getScreenDimen();
+    rect.z = screenDimen.x;
+    rect.a = screenDimen.y;
     camera.init(screenDimen.x,screenDimen.y);
     gameOver = new Window({screenDimen.x/10, screenDimen.y/10},nullptr, {1,0,0,1});
     gameOver->addButton(*(new QuitButton(*this)));
     manager.init(level.getRect());
     Anthill* hill = (new Anthill({320,320}));
     anthill = (manager.addEntity(*hill));
-    //manager.addEntity(*(new Resource({160,160,100})));
-    for (int i = 0; i < 100; i ++)
+    //manager.addEntity(*(new Bug(160,160)));
+    for (int i = 0; i < 10; i ++)
     {
         hill->createAnt();
     }
     hill->getComponent<ResourceComponent>()->setResource(1000);
+   // manager.clear();
 }
 
 bool GameWindow::updateSelect()
@@ -451,6 +460,24 @@ void GameWindow::update(int x, int y, bool clicked)
         manager.update();
         camera.update();
         level.render();
+        renderSelectedUnits();
+    }
+}
+
+void GameWindow::renderSelectedUnits()
+{
+    double height = .1*rect.a;//height of the selection part;
+    PolyRender::requestRect({0,rect.a - height,rect.z, height},{0,1,0,1},true,0,.1);
+    std::vector<std::shared_ptr<Ant>>* selectedUnits = &(manager.getAntManager().getAnts());
+    int size = selectedUnits->size();
+    for (int i = 0; i < size; ++i)
+    {
+        Ant* current = selectedUnits->at(i).get();
+        glm::vec4 outlineRect = {.1*rect.z + i%10*(.06*rect.z),rect.a - height + .2*height + i/10*.06*height,.03*rect.z,.03*rect.z};
+        HealthComponent* health = current->getComponent<HealthComponent>();
+        double healthRatio = health->getHealth()/health->getMaxHealth();//how much health this ant currently has;
+        current->getComponent<RenderComponent>()->render({{outlineRect.x + 2, outlineRect.y + 2, outlineRect.z - 4, outlineRect.a - 4},0,NONE,{1-healthRatio,0,0,1},&RenderProgram::basicProgram,.2});
+        PolyRender::requestRect(outlineRect,{1,0,1,1},false,0,.2);
     }
 }
 
