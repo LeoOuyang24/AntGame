@@ -93,6 +93,7 @@ int main(int args, char* argsc[])
         }
         if (eventsEmpty)
         {
+            e.type = 0;
             KeyManager::getKeys(e);
             MouseManager::update(e);
         }
@@ -110,7 +111,7 @@ int main(int args, char* argsc[])
             PolyRender::requestRect({i*32,i*32 + 100,64,64},{1,0,0,.5},false,0,0);
         }*/
        // squares = SDL_GetTicks()/500;
-       //PolyRender::requestNGon(4,{320,320},20,{0,0,0,1},90,false,0);
+       //PolyRender::requestNGon(8,{320,320},50,{0,0,0,1},90,false,2);
         //PolyRender::requestRect({32,32,64,64},{1,0,0,.5},false,0,-.1);
         //PolyRender::requestRect({64,64,64,64},{1,0,0,.5},false,0,-.1);
        //PolyRender::requestLine({0,0,100,100},{1,1,1,1},0);

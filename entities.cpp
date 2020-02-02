@@ -5,6 +5,14 @@
 #include "game.h"
 #include "ants.h"
 
+void renderMeter(const glm::vec3& xyWidth, const glm::vec4& color, double current, double maximum, float z)
+{
+    const int height = 10;
+    glm::vec4 renderRect = {xyWidth.x,xyWidth.y,xyWidth.z*current/maximum,height};
+    PolyRender::requestRect(renderRect,color,true, 0, z);
+    PolyRender::requestRect(renderRect,{0,0,0,1},false,0,z);
+}
+
 const glm::vec2 ClickableComponent::spacing = {10,5};
 
 void ClickableComponent::click(bool val)
@@ -39,17 +47,21 @@ void ClickableComponent::update()
                 stillClicked = true;
                 if (MouseManager::getJustClicked() == SDL_BUTTON_LEFT)
                 {
-                        buttons[i]->press();
+                    buttons[i]->press();
                 }
                 break;
             }
             offset += rect->a + spacing.y;
         }
         glm::vec2 dimen = {unitRect->z, unitRect->a};
-        GameWindow::requestRect({unitRect->x + unitRect->z/2 -dimen.x/2,unitRect->y + unitRect->a/2 -dimen.y/2,dimen.x,dimen.y},GameWindow::selectColor,true,0,1);
+        GameWindow::requestRect({unitRect->x + unitRect->z/2 -dimen.x/2,unitRect->y + unitRect->a/2 -dimen.y/2,dimen.x,dimen.y},GameWindow::selectColor,true,0,0.01);
     }
-    bool becomeClicked = (MouseManager::isPressed(SDL_BUTTON_LEFT) && vecIntersect(GameWindow::getSelection(),*unitRect));
-        stillClicked = stillClicked || (!MouseManager::isPressed(SDL_BUTTON_LEFT) && clicked)  ||  becomeClicked;
+    /*bool becomeClicked = (MouseManager::isPressed(SDL_BUTTON_LEFT) && vecIntersect(GameWindow::getSelection(),*unitRect));
+        if (entity->getComponent<Ant::AntMoveComponent>())
+        {
+           // std::cout << stillClicked << " " << (MouseManager::getJustReleased() != SDL_BUTTON_LEFT && clicked) << std::endl;
+        }*/
+        //stillClicked = stillClicked ;//|| (MouseManager::getJustClicked() != SDL_BUTTON_LEFT && clicked);//  ||  becomeClicked;*/
         click(stillClicked);
 }
 void ClickableComponent::display(const glm::vec4& rect)
@@ -95,8 +107,15 @@ void HealthComponent::update()
     if (rectComp && visible)
     {
         const glm::vec4* rect = &(rectComp->getRect());
-        GameWindow::requestRect({rect->x ,rect->y - displacement, health/maxHealth*rect->z, height},{1,0,0,1},true,0,0);
+        //GameWindow::requestRect({rect->x ,rect->y - displacement, rect->z, 0},{1,0,0,1},true,0,0);
+        render(glm::vec3(GameWindow::getCamera().toScreen({rect->x,rect->y - displacement}), rect->z), 0);
     }
+}
+
+void HealthComponent::render(const glm::vec3& rect, float z)
+{
+    //PolyRender::requestRect({rect.x,rect.y,health/maxHealth*rect.z,height},{1,0,0,1},true,0,rect.a);
+    renderMeter({rect.x,rect.y,rect.z},{1,0,0,1},health,maxHealth,z);
 }
 
 Unit::Unit(ClickableComponent& click, RectComponent& rect, RenderComponent& render, HealthComponent& health) : clickable(&click), rect(&rect), render(&render), health(&health)
@@ -110,22 +129,6 @@ Unit::Unit(ClickableComponent& click, RectComponent& rect, RenderComponent& rend
 void Unit::setManager(Manager& manager)
 {
     this->manager = &manager;
-}
-
-
-RectComponent& Unit::getRect()
-{
-    return *rect;
-}
-
-ClickableComponent& Unit::getClickable()
-{
-    return *clickable;
-}
-
-RenderComponent& Unit::getRender()
-{
-    return *render;
 }
 
 bool Unit::clicked()
@@ -148,7 +151,6 @@ Manager& Unit::getManager()
     return *manager;
 }
 
-
 void AttackComponent::attack(HealthComponent* health)
 {
     if (health && (attackTimer.framesPassed(endLag) || !attackTimer.isSet()))
@@ -161,6 +163,11 @@ void AttackComponent::attack(HealthComponent* health)
 ResourceComponent::ResourceComponent(int amount, Entity& entity) : Component(entity), ComponentContainer<ResourceComponent>(entity), resource(amount), maxResource(amount)
 {
 
+}
+
+void ResourceComponent::render(const glm::vec3& rect, float z)
+{
+    renderMeter(rect,{0,1,0,1},resource,maxResource,z);
 }
 
 void ResourceComponent::collect(Unit& other)
@@ -195,6 +202,7 @@ void CorpseComponent::onDeath()
 ResourceUnit::ResourceUnit(int resources, const glm::vec4& rect) : Unit(*(new ClickableComponent("Resource", *this)), *(new RectComponent(rect, *this)), *(new RectRenderComponent({1,1,1,1},*this)), *(new HealthComponent(*this,1,false)))
 {
     addComponent(*(new ResourceComponent(resources,*this)));
+    health->setVisible(false);
 }
 
 void WanderMove::update()

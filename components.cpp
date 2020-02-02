@@ -45,7 +45,15 @@ void MoveComponent::update()
 
 bool MoveComponent::atTarget()
 {
-    return pointDistance({rect.x + rect.z/2, rect.y + rect.a/2},target) <= .0001;
+    return pointDistance(getCenter(),target) <= .0001;
+}
+
+void MoveComponent::teleport(const glm::vec2& point)
+{
+    rect.x = point.x - rect.z/2; //rect.x += point.x - (rect.x + rect.z/2) -> rect.x = point.x - rect.z/2
+    rect.y = point.y - rect.a/2;
+    setTarget(point);
+
 }
 
 RenderComponent::RenderComponent(Entity& entity) : Component(entity), ComponentContainer<RenderComponent>(entity)
@@ -71,7 +79,6 @@ void Entity::collide(Entity& entity)
 
 void Entity::onDeath()
 {
-    std::cout << this << std::endl;
     for (int i = components.size() - 1; i >= 0; --i)
     {
         components[i]->onDeath();

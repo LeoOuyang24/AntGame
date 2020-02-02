@@ -33,7 +33,7 @@ void Map::render()
 
 const int AntManager::spacing = 2;
 
-void AntManager::update()
+void AntManager::getInput()
 {
     int justClicked = MouseManager::getJustClicked();
     std::pair<int,int> mousePos = MouseManager::getMousePos();
@@ -43,9 +43,6 @@ void AntManager::update()
     //tree.getNearest(nearest,post);
     manager->tree->getNearest(nearest,mouseClick);
     int chosen = selected.size();
-    glm::vec2 clumpDimen = {0,0}; //how many ants horizontally and vertically
-    glm::vec2 space; //space between ants horizontally and vertically
-    glm::vec2 target;
     std::shared_ptr<Unit>* newTarget = nullptr;
     if (justClicked == SDL_BUTTON_RIGHT)
     {
@@ -74,19 +71,36 @@ void AntManager::update()
         {
              clumpDimen = {sqrt(chosen),sqrt(chosen)};
              space = {spacing,spacing};
-            target = {mouseClick.x - clumpDimen.x*(Ant::dimen + space.x)/2 + Ant::dimen/2, mouseClick.y - clumpDimen.y*(Ant::dimen + space.y)/2 + Ant::dimen/2};
-            targetPoint = target;
+            targetPoint = {mouseClick.x - clumpDimen.x*(Ant::dimen + space.x)/2 + Ant::dimen/2, mouseClick.y - clumpDimen.y*(Ant::dimen + space.y)/2 + Ant::dimen/2};
             currentTask = MOVE;
         }
     }
+    for (int i = 0; i < chosen; ++i)
+    {
+        Ant* current = selected[i].lock().get();
+        if (current)
+        {
+            current->getComponent<ClickableComponent>()->click(true);
+        }
+        else
+        {
+            selected.erase(selected.begin() + i);
+            i--;
+        }
+    }
+}
+
+void AntManager::updateAnts()
+{
     Unit* unitPtr = targetUnit.lock().get(); //if we have a target
     const glm::vec4* targetRect  = nullptr;
     HealthComponent* health = nullptr;
     ResourceComponent* resource = nullptr;
+    int chosen = selected.size();
     if (unitPtr) //if we clicked on a unit
     {
         targetRect = &(unitPtr->getRect().getRect());
-        target = {targetRect->x + Ant::dimen/2, targetRect->y + Ant::dimen/2};
+        targetPoint = {targetRect->x + Ant::dimen/2, targetRect->y + Ant::dimen/2}; //the starting point at which we can place an ant
         clumpDimen.y = sqrt(chosen/(targetRect->z/targetRect->a)); //#of ants per dimension
         clumpDimen.x = chosen/clumpDimen.y;
         space = {std::min(spacing, (int)((targetRect->z - clumpDimen.x*Ant::dimen)/clumpDimen.x)),
@@ -107,7 +121,7 @@ void AntManager::update()
             currentTask = MOVE;
         }
     }
-    else if (currentTask != MOVE && currentTask != COLLECT && justClicked != SDL_BUTTON_RIGHT) //if the current task is move or collect, we set it to IDLE after processing all ants.
+    else if (currentTask != MOVE && currentTask != COLLECT && MouseManager::getJustClicked() != SDL_BUTTON_RIGHT) //if the current task is move or collect, we set it to IDLE after processing all ants.
     {
         currentTask = IDLE;
     }
@@ -115,67 +129,112 @@ void AntManager::update()
     bool collected = true; //used if the current Task is COLLECT. Used to keep track of whether or not there are still units collecting.
     if (currentTask != IDLE)
     {
+            antsCenter = {0,0};
+
         for (int i = 0; i < chosen; ++ i)
         {
-            if (selected[i]->getCarrying() == 0)
+            Ant* current = selected[i].lock().get();
+
+            if (!current)
             {
-                if (targetRect && vecIntersect(selected[i]->getRect().getRect(),*targetRect))
-                {
-                    if (currentTask == ATTACK)
-                    {
-                        selected[i]->getComponent<AttackComponent>()->attack(health);
-                    }
-                    else if (currentTask == COLLECT)
-                    {
-                        if (resource)
-                        {
-                            resource->collect(*selected[i]);
-                             collected = false;
-                        }
-                    }
-                }
-                else if (clumpDimen.x != 0)
-                {
-                    glm::vec2 moveTo = {target.x + i%((int)clumpDimen.x)*(Ant::dimen + space.x), i/((int)(clumpDimen.x))};
-                    if (unitPtr)
-                    {
-                        moveTo.y = fmod(moveTo.y,clumpDimen.y);
-                        moveTo.y *= (Ant::dimen + space.y);
-                        moveTo.y += target.y;
-                        selected[i]->setTarget(moveTo, &manager->entities[unitPtr]);
-                    }
-                    else
-                    {
-                        moveTo.y *= (Ant::dimen + space.y);
-                        moveTo.y += target.y;
-                        selected[i]->setTarget(moveTo,nullptr);
-                    }
-                }
-                if (currentTask == MOVE && atTarget && !selected[i]->getComponent<MoveComponent>()->atTarget())
-                {
-                    atTarget = false;
-                }
+                selected.erase(selected.begin() + i);
+                i--;
+                chosen--;
             }
             else
             {
-                selected[i]->setTarget(manager->entities[(selected[i]->getComponent<Ant::AntMoveComponent>()->getHome())]);
+                glm::vec4 currentRect = current->getRect().getRect();
+                antsCenter.x += currentRect.x;
+                antsCenter.y += currentRect.y;
+                if (current->getCarrying() == 0)
+                {
+                    if (targetRect && vecIntersect(currentRect,*targetRect))
+                    {
+                        if (currentTask == ATTACK)
+                        {
+                            current->getComponent<AttackComponent>()->attack(health);
+                        }
+                        else if (currentTask == COLLECT)
+                        {
+                            if (resource)
+                            {
+                                resource->collect(*current);
+                                 collected = false;
+                            }
+                        }
+                    }
+                    else if (clumpDimen.x != 0)
+                    {
+                       /* glm::vec2 moveTo = {targetPoint.x + i%((int)clumpDimen.x)*(Ant::dimen + space.x), i/((int)(clumpDimen.x))};
+                        if (unitPtr)
+                        {
+                            //std::cout << currentTask << std::endl;
+                            moveTo.y = fmod(moveTo.y,clumpDimen.y);
+                            moveTo.y *= (Ant::dimen + space.y);
+                            moveTo.y += targetPoint.y;
+                            current->setTarget(moveTo, &manager->entities[unitPtr]);
+                        }
+                        else
+                        {
+                            moveTo.y *= (Ant::dimen + space.y);
+                            moveTo.y += targetPoint.y;
+                            current->setTarget(moveTo,nullptr);
+                            std::cout << moveTo << std::endl;
+                        }*/
+                        glm::vec2 moveTo = {targetPoint.x + i%((int)clumpDimen.x)*(Ant::dimen + space.x), i/((int)(clumpDimen.x))};
+                        if (unitPtr)
+                        {
+                            //std::cout << currentTask << std::endl;
+                            moveTo.y = fmod(moveTo.y,clumpDimen.y);
+                        }
+                        moveTo.y *= (Ant::dimen + space.y);
+                        moveTo.y += targetPoint.y;
+                        if (current->getCenter() != moveTo)
+                        {
+                            //atTarget = false;
+                            if (unitPtr)
+                            {
+                                current->setTarget(moveTo, &manager->entities[unitPtr]);
+                            }
+                            else
+                            {
+                                current->setTarget(moveTo,nullptr);
+                            }
+                        }
+                    }
+                    if (currentTask == MOVE && atTarget && !current->getComponent<MoveComponent>()->atTarget())
+                    {
+                        atTarget = false;
+                    }
+                }
+                else
+                {
+                    current->setTarget(manager->entities[(current->getComponent<Ant::AntMoveComponent>()->getHome())]);
+                    collected = false;
+                }
             }
         }
         if (currentTask == MOVE && atTarget)
         {
             currentTask = IDLE;
         }
-        else if (currentTask == COLLECT && collected)
+        if (currentTask == COLLECT && collected && !unitPtr)
         {
             currentTask = IDLE;
         }
+        antsCenter/=chosen;
     }
+}
 
-
-    if (justClicked == SDL_BUTTON_LEFT && !unitPtr)
+void AntManager::addAnt(std::shared_ptr<Ant>& ant)
+{
+    AntManager* oldTask = ant->getCurrentTask();
+    if (oldTask)
     {
-        selected.clear();
+        oldTask->remove(*(ant.get()));
     }
+    selected.emplace_back(ant);
+    ant->setCurrentTask(*this);
 
 }
 
@@ -184,25 +243,33 @@ void AntManager::remove(Unit& unit)
     if (targetUnit.lock().get() == &unit)
     {
         targetUnit.reset();
+        return;
     }
-    if (unit.getComponent<Ant::AntMoveComponent>() != nullptr) //if the unit is an ant and is clicked
+    if (unit.getComponent<Ant::AntMoveComponent>() != nullptr) //if the unit is an ant
     {
         int size = selected.size();
         for (int i = 0; i < size; ++i)
         {
-            if (selected[i].get() == &unit)
+            if (selected[i].lock().get() == &unit)
             {
                 selected.erase(selected.begin() + i);
+                break;
             }
         }
     }
-
 }
 
+void AntManager::render(const glm::vec4& rect, int i)
+{
+    glm::vec4 taskColor = {currentTask == ATTACK || currentTask == IDLE,std::max((double)(currentTask == MOVE || currentTask == IDLE),.5*(currentTask == COLLECT)),currentTask == COLLECT || currentTask == IDLE,1};
+    PolyRender::requestRect(rect,taskColor,true,0,.3);
+    Font::alef.write(Font::wordProgram,{convert(i),rect,0,{0,0,0},.3});
+}
 
 void Manager::init(const glm::vec4& region)
 {
     tree.reset(new RawQuadTree(region));
+    tasks.reserve(maxTasks);
 }
 
 std::shared_ptr<Unit> Manager::addEntity(Unit& entity)
@@ -225,18 +292,21 @@ std::shared_ptr<Ant> Manager::addAnt(Ant& ant)
 
 void Manager::spawnCreatures()
 {
-    int random = rand()%3;
+    int random = rand()%5;
     Unit* toSpawn = nullptr;
     switch(random)
     {
     case 0:
-        toSpawn = new Mushroom(0,0);
+        toSpawn = new Bug(0,0);
         break;
     case 1:
-        toSpawn = new Mushroom(0,0);
+        toSpawn = new Beetle(0,0);
         break;
     case 2:
+    case 3:
+    case 4:
         toSpawn = new Mushroom(0,0);
+        break;
     default:
         toSpawn = new Bug(0,0);
     }
@@ -254,19 +324,58 @@ void Manager::spawnCreatures()
 
 }
 
-void Manager::update()
+
+void Manager::updateAntManagers()
 {
-    //std::vector<Unit*> selected;
-    int size = ants.size();
-    int released = MouseManager::getJustReleased();
-    if (released == SDL_BUTTON_LEFT)
+    int size = tasks.size();
+    for (int i = size - 1; i >= 0; --i)
     {
-        antManager.clear();
-        selectedUnits.clear();
+        if (tasks[i]->getAnts().size() != 0)
+        {
+            tasks[i]->updateAnts();
+            tasks[i]->render({10,i*25,30,20},i+1);
+        }
+        else
+        {
+            if (currentTask == tasks[i].get())
+            {
+                currentTask = nullptr;
+            }
+            tasks.erase(tasks.begin() + i);
+        }
+    }
+    int pressed = KeyManager::getJustPressed();
+    if (pressed != -1)
+    {
+        int index = (pressed - SDLK_1) - floor((pressed-SDLK_1)/static_cast<float>(maxTasks))*maxTasks; //this is is the same as (pressed-SDLK1%maxTasks) except it always returns a positive number
+        if (index < tasks.size() && index >= 0) //we have to use .size() rather than the size variable here because size mostl
+        {
+            currentTask = tasks[index].get();
+            Camera* cam = &(GameWindow::getCamera());
+            glm::vec2 center = currentTask->getCenter();
+            if (!pointInVec(cam->getRect(),center.x,center.y,0))
+            {
+                cam->center(center);
+            }
+        }
     }
 
+
+}
+
+void Manager::updateAnts()
+{
+    int released = MouseManager::getJustReleased();
+    if (MouseManager::getJustClicked() == SDL_BUTTON_LEFT)
+    {
+       // antManager.clear();
+       currentTask = nullptr;
+        //selectedUnit = nullptr;
+    }
     int index = 0;
     auto it = ants.begin();
+    AntManager* newTask = nullptr; //if we select any ants, this pointer will point to the new task
+    const glm::vec4* selectRect = &(GameWindow::getSelection());
     for (auto i = ants.begin(); i != ants.end(); i = it)
     {
         ++it;
@@ -282,28 +391,43 @@ void Manager::update()
             for (int j = vec.size() - 1; j >= 0; j --)
             {
                 Entity* ptr = &(((RectComponent*)vec[j])->getEntity());
-                if (ptr == i->second->getComponent<ApproachComponent>()->getTargetUnit() && vec[j]->collides(*rect))
+                if ( ptr != i->first && vec[j]->collides(*rect))
                 {
-                    //std::cout << "ASDF" << std::endl;
                     i->second->collide(*ptr);
                     ptr->collide(*(i->second.get()));
                 }
             }
-            if (released == SDL_BUTTON_LEFT && i->second->clicked())
+            if (released == SDL_BUTTON_LEFT && i->second->getRect().collides(*selectRect))
             {
-                antManager.addAnt(i->second);
-                selectedUnits.emplace_back(ants[i->first]);
+                if (!newTask)
+                {
+                    newTask = new AntManager(*this);
+                    tasks.emplace_back(newTask);
+                    currentTask = newTask;
+                }
+                newTask->addAnt(i->second);
+                //selectedUnits.emplace_back(ants[i->first]);
             }
         }
         else
         {
+            i->second->onDeath();
             remove(static_cast<Unit&>(*((i)->first)));
         }
         index ++;
     }
-    antManager.update();
+}
+
+void Manager::updateEntities()
+{
     auto it2 = entities.begin();
     auto end = entities.end(); //we do this in case we added an object while looping. This ensures we still iterate as if the object wasn't added.
+   // const glm::vec4* selectRect = &(GameWindow::getSelection());
+    bool clicked = MouseManager::getJustClicked() == SDL_BUTTON_LEFT;
+    std::pair<int,int> pos = MouseManager::getMousePos();
+    glm::vec2 mousePos = GameWindow::getCamera().toWorld({pos.first,pos.second});
+    Unit* newSelected = nullptr;
+    int index = 0;
     for (auto i = entities.begin(); i !=  end; i = it2)
     {
         ++it2;
@@ -314,17 +438,55 @@ void Manager::update()
         {
             current->update();
             tree->update(*rectPos,*oldTree);
-            if (released == SDL_BUTTON_LEFT && current->clicked())
-            {
-                selectedUnits.emplace_back(entities[current]);
-            }
+            if (clicked && pointInVec(current->getRect().getRect(),mousePos.x,mousePos.y,0))
+               {
+                   //current->getClickable().click(true);
+                   //selectedUnits.emplace_back(entities[current]);
+                   newSelected = current;
+               }
         }
         else
         {
             current->onDeath();
             remove(*(current));
         }
+        index ++;
     }
+    if (clicked)
+    {
+        if (!newSelected)
+        {
+            selectedUnit.reset();
+        }
+        else
+        {
+            selectedUnit = entities[newSelected];
+        }
+    }
+}
+
+void Manager::update()
+{
+    //std::vector<Unit*> selected;
+    int size = ants.size();
+
+    //std::cout << released << std::endl;
+
+
+    updateAnts();
+
+    updateEntities();
+
+    updateAntManagers();
+
+    if (currentTask)
+    {
+        currentTask->getInput();
+    }
+   /* else if (selectedUnit)
+    {
+        selectedUnit->getClickable().click(true);
+    }*/
     size = entities.size();
     if (size < 10)
     {
@@ -338,7 +500,6 @@ class AntClickable;
 void Manager::remove(Unit& unit)
 {
     tree->remove(unit.getRect());
-    antManager.remove(unit);
     if (unit.getComponent<Ant::AntMoveComponent>())
     {
         ants.erase(static_cast<Ant*>(&unit));
@@ -391,6 +552,12 @@ glm::vec2 Camera::toWorld(const glm::vec2& point) const
     return {point.x + rect.x, point.y + rect.y};
 }
 
+void Camera::center(const glm::vec2& point)
+{
+    rect.x = point.x - rect.z/2;
+    rect.y = point.y - rect.a/2;
+}
+
 glm::vec2 GameWindow::origin = {0,0};
 glm::vec4 GameWindow::selection = {0,0,0,0};
 const glm::vec4 GameWindow::selectColor = {0,1,0,.5};
@@ -412,7 +579,7 @@ GameWindow::GameWindow() : Window({0,0},nullptr,{0,0,0,0})
     Anthill* hill = (new Anthill({320,320}));
     anthill = (manager.addEntity(*hill));
     //manager.addEntity(*(new Bug(160,160)));
-    for (int i = 0; i < 10; i ++)
+    for (int i = 0; i < 2; i ++)
     {
         hill->createAnt();
     }
@@ -446,7 +613,7 @@ bool GameWindow::updateSelect()
 void GameWindow::update(int x, int y, bool clicked)
 {
     Anthill* hill = static_cast<Anthill*>(anthill.lock().get());
-    if (!hill || manager.ants.size() <= 0)
+    if (!hill && manager.ants.size() <= 0)
     {
         gameOver->update(x,y,clicked);
         level.render();
@@ -469,17 +636,44 @@ void GameWindow::update(int x, int y, bool clicked)
 void GameWindow::renderSelectedUnits()
 {
     double height = .1*rect.a;//height of the selection part;
-    PolyRender::requestRect({0,rect.a - height,rect.z, height},{0,1,0,1},true,0,.1);
-    std::vector<std::shared_ptr<Ant>>* selectedUnits = &(manager.getAntManager().getAnts());
-    int size = selectedUnits->size();
-    for (int i = 0; i < size; ++i)
+    glm::vec4 wholeRect = {0,rect.a - height,rect.z, height};
+    glm::vec4 selectedAntsRect = {0,wholeRect.y, .7*wholeRect.z, wholeRect.a};
+    glm::vec4 selectedUnitRect = {selectedAntsRect.x + selectedAntsRect.z, wholeRect.y, wholeRect.z - selectedAntsRect.z, wholeRect.a};
+    glm::vec2 margin = {.05*wholeRect.z,.2*height}; //the horizontal and vertical margins to render the selected ants and selected unit
+    int antsPerRow = 10;
+    float antRectWidth = .03*rect.z; //width and height of each of the outlineRects. This is a bit of a magic number and was chosen just because it looks good
+    glm::vec2 spacing = {(selectedAntsRect.z - margin.x*2 - antsPerRow*antRectWidth)/antsPerRow,.3*height }; //horizontal and vertical spacing between ants and unit and health bar
+    PolyRender::requestRect(wholeRect,{0,1,0,1},true,0,.2);
+    PolyRender::requestLine({selectedUnitRect.x,selectedUnitRect.y, selectedUnitRect.x, selectedUnitRect.y + selectedUnitRect.a},{0,0,0,1},.2);
+
+    AntManager* antManager = manager.getCurrentTask();
+
+    if (antManager)
     {
-        Ant* current = selectedUnits->at(i).get();
-        glm::vec4 outlineRect = {.1*rect.z + i%10*(.06*rect.z),rect.a - height + .2*height + i/10*.3*height,.03*rect.z,.03*rect.z};
-        HealthComponent* health = current->getComponent<HealthComponent>();
-        double healthRatio = health->getHealth()/health->getMaxHealth();//how much health this ant currently has;
-        current->getComponent<RenderComponent>()->render({{outlineRect.x + 2, outlineRect.y + 2, outlineRect.z - 4, outlineRect.a - 4},0,NONE,{1-healthRatio,0,0,1},&RenderProgram::basicProgram,.2});
-        PolyRender::requestRect(outlineRect,{1,0,1,1},false,0,.2);
+        std::vector<std::weak_ptr<Ant>>* selectedUnits = &(antManager->getAnts());
+        int size = selectedUnits->size();
+        for (int i = 0; i < size; ++i)
+        {
+            Ant* current = selectedUnits->at(i).lock().get();
+            glm::vec4 outlineRect = { selectedAntsRect.x + margin.x + i%antsPerRow*(spacing.x + antRectWidth),selectedAntsRect.y + margin.y + i/antsPerRow*spacing.y,antRectWidth,antRectWidth};
+            HealthComponent* health = current->getComponent<HealthComponent>();
+            double healthRatio = health->getHealth()/health->getMaxHealth();//how much health this ant currently has;
+            current->getComponent<RenderComponent>()->render({{outlineRect.x + 2, outlineRect.y + 2, outlineRect.z - 4, outlineRect.a - 4},0,NONE,{1-healthRatio,0,0,1},&RenderProgram::basicProgram,.3});
+            PolyRender::requestRect(outlineRect,{1,0,1,1},false,0,.2);
+        }
+    }
+    Unit* selectedUnit = manager.getSelectedUnit().lock().get();
+    if (selectedUnit)
+    {
+        glm::vec4 selectedRect = {selectedUnitRect.x + margin.x, selectedUnitRect.y + margin.y ,selectedUnitRect.a - margin.y*2, selectedUnitRect.a - margin.y*2};
+        selectedUnit->getRender().render({selectedRect,0,NONE,{1,1,1,1},&RenderProgram::basicProgram,.3});
+        selectedUnit->getHealth().render({selectedRect.x + selectedRect.z + spacing.x, selectedRect.y , selectedRect.z}, .3);
+        ResourceComponent* resource = selectedUnit->getComponent<ResourceComponent>();
+        if (resource)
+        {
+            resource->render({selectedRect.x + selectedRect.z + spacing.x, selectedRect.y + spacing.y, selectedRect.z},.3);
+        }
+        selectedUnit->getClickable().click(true);
     }
 }
 

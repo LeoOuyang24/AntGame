@@ -1,4 +1,10 @@
 This document keeps track of all changes as well as considered changes made to the resources as well as why they were made. Consider this a "learning from the past" kind of document. 
+	
+1/28/2020:
+	currentTask was kept as a rawpointer to an ant manager rather than a weak_ptr because it's very easy to keep track of whether or not it is null in the updateAntManagers functions. Keeping it as a raw pointer should be faster since we don't have to call .lock() everytime to access the currentTask.
+
+1/14/2020:
+	Today I considered removing the idea that AntManager being a task for a group of ants and instead having the player manually reselect groups of ants. This new approach is probably a bit more intuitive but I'm going to stick with the idea of having a list of AntManager, each controlling one task to make controlling a dedicated group of units easier. Starcraft 2 has this feature in the form of control groups.
 
 1/8/2020:
 	ApproachComponent has been changed to no longer be a MoveComponent but rather a vanilla component that requires the user to already have a MoveComponent. Essentially, ApproachComponent "guides" the MoveComponent. While the user hasn't collided with the target yet, ApproachComponent will constantly set the target to be the target unit. If the user has collided, ApproachComponent will set the target to the entity's current center so it stops moving. If there is no targetUnit, ApproachComponent does nothing, allowing the MoveComponent to take over. This was done because of the problem of needing ApproachComponents that operated differently when there is no target. Ants do nothing while there is no target and have a MoveComponent that does nothing. Beetles wander around and uses WanderMove as its MoveComponent. In order to maximize flexibility, ApproachComponent influences an entity's MoveComponent. 

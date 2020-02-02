@@ -13,12 +13,28 @@ Ant::AntMoveComponent::AntMoveComponent(Anthill* hill, double speed, const glm::
 
 }
 
-void Ant::AntMoveComponent::collide(Entity& entity)
+void Ant::AntMoveComponent::collide(Entity& other)
 {
-    if (&entity == home && carrying > 0)
+    if (&other == home && carrying > 0)
     {
         home->getComponent<ResourceComponent>()->setResource(carrying);
         carrying = 0;
+    }
+    else if (other.getComponent<Ant::AntMoveComponent>() && atTarget())
+    {
+        glm::vec2 otherPos = other.getComponent<RectComponent>()->getPos();
+        glm::vec2 center = getCenter();
+        if (rect.x == otherPos.x && rect.y == otherPos.y)
+        {
+            otherPos.x += rand()%3 - 1;
+            otherPos.y += rand()%3 - 1;
+        }
+
+        glm::vec2 targetPoint = {center.x + convertTo1(rect.x-otherPos.x)*.05, center.y + convertTo1(rect.y-otherPos.y)*.05};
+        //std::cout << targetPoint.x << " " << targetPoint.y << std::endl;
+        //std::cout << "ASDF" << std::endl;
+       teleport(targetPoint);
+        //setTarget(targetPoint);//, rect.z, rect.a});
     }
 }
 
@@ -129,14 +145,19 @@ AntHillRender::AntHillRender(Entity& entity) : RenderComponent(entity), Componen
 void AntHillRender::update()
 {
     glm::vec4 rect = entity->getComponent<RectComponent>()->getRect();
-    GameWindow::requestNGon(10,{rect.x + rect.z/2, rect.y + rect.a/2},20,{.5,.5,.5,1},0,true,-.1);
-
+   // GameWindow::requestNGon(10,{rect.x + rect.z/2, rect.y + rect.a/2},20,{.5,.5,.5,1},0,true,0);
+    render({GameWindow::getCamera().toScreen(rect)});
     ResourceComponent* counter = entity->getComponent<ResourceComponent>();
     int width = counter->getResource()/((float)(counter->getMaxResource()))*rect.z, height = 10;
-    GameWindow::requestRect({rect.x, rect.y + rect.a + 10, width, height},{0,1,0,1},true,0,0);
-    GameWindow::requestRect({rect.x + width, rect.y + rect.a + 10, rect.z - width, height}, {1,0,0,1}, true, 0, 0);
+    counter->render(glm::vec3(GameWindow::getCamera().toScreen({rect.x,rect.y + rect.a+ 10}),rect.z),0);
+   // GameWindow::requestRect({rect.x, rect.y + rect.a + 10, width, height},{0,1,0,1},true,0,0);
+    //GameWindow::requestRect({rect.x + width, rect.y + rect.a + 10, rect.z - width, height}, {1,0,0,1}, true, 0, 0);
 }
 
+void AntHillRender::render(const SpriteParameter& param)
+{
+    PolyRender::requestNGon(10,{param.rect.x + param.rect.z/2, param.rect.y + param.rect.a/2},20,{.5,.5,.5,1},param.radians,true,param.z);
+}
 
 Anthill::CreateAnt::CreateAnt(Anthill& hill) : Button({0,0,64, 16},nullptr,nullptr,{"Create Ant"},&Font::alef,{0,1,0,1}), hill(&hill)
 {
@@ -168,7 +189,7 @@ void Anthill::createAnt()
         /*std::shared_ptr<Ant> ptr = ;
         std::cout << ptr.use_count() << std::endl;
         std::weak_ptr<Ant> weak = ptr;*/
-        ants.emplace_back(manager->addAnt( *(new Ant({center.x - 5,center.y - 5,10,10},*this))));
+        ants.emplace_back(manager->addAnt( *(new Ant({center.x +5*cos(rand()%360/180.0*M_PI),center.y +5*sin(rand()%360/180.0*M_PI),10,10},*this))));
         //std::cout << ants.size() << std::endl;
     }
 }

@@ -46,10 +46,15 @@ class AntManager //handles ant movement and targeting
     Task currentTask = IDLE;
     const static int spacing; //spacing between ants when they move
     Manager* manager = nullptr;
-    std::vector<std::shared_ptr<Ant>> selected;
+   // std::vector<std::shared_ptr<Ant>> selected;
     UnitPtr targetUnit; //used to keep track of an ant group's main target
-    glm::vec2 targetPoint;
+    glm::vec2 clumpDimen = {0,0}; //how many ants horizontally and vertically
+    glm::vec2 space = {0,0}; //space between ants horizontally and vertically
+    glm::vec2 targetPoint = {0,0}; //point to move ants to
+    glm::vec2 antsCenter = {0,0}; //the center of all the ants
+    std::vector<std::weak_ptr<Ant>> selected;
     void change(std::shared_ptr<Unit> newUnit, glm::vec2& newPoint); //sets the member variables and notifies the ants
+
 public:
     AntManager(Manager& newManager) : manager(&newManager)
     {
@@ -59,16 +64,14 @@ public:
     {
         clear();
     }
-    std::vector<std::shared_ptr<Ant>>& getAnts()
+    const glm::vec2& getCenter()
+    {
+        return antsCenter;
+    }
+    std::vector<std::weak_ptr<Ant>>& getAnts()
     {
         return selected;
     }
-    void addAnt(std::shared_ptr<Ant>& ant)
-    {
-        selected.push_back(ant);
-    }
-    void update();
-    void remove(Unit& unit);
     void clear()
     {
         selected.clear();
@@ -78,21 +81,32 @@ public:
     {
         return targetUnit.lock().get();
     }
+    void getInput(); //handles input, such as clicks
+    void updateAnts(); //updates ants. The key distinction between this and getInput is that this runs regardless of whether this is the current AntManager
+    void remove(Unit& unit);
+    void addAnt(std::shared_ptr<Ant>& ant);
+    void render(const glm::vec4& rect, int i); //renders the AntManager on the left side of the screen. i is the index of the antManager in Manager
 };
 
 class Manager
 {
+    constexpr static int maxTasks = 10;
     friend class AntManager;
     friend class GameWindow;
     glm::vec2 target;
     std::map<Unit*, std::shared_ptr<Unit>> entities;
     std::map<Ant*, std::shared_ptr<Ant>> ants;
     std::unique_ptr<RawQuadTree> tree;
-    std::vector<UnitPtr> selectedUnits; //all the selected units
+    std::vector<std::shared_ptr<AntManager>> tasks;
+    std::vector<UnitPtr> selectedUnits;
+    UnitPtr selectedUnit;
     void spawnCreatures(); //spawn a creature at a random position
-    AntManager antManager;
+    AntManager* currentTask = nullptr; //the current antmanager
+    void updateAntManagers();
+    void updateAnts();
+    void updateEntities();
 public:
-    Manager() : antManager(*this)
+    Manager()
     {
 
     }
@@ -108,13 +122,13 @@ public:
     {
         return entities[address];
     }
-    std::vector<std::weak_ptr<Unit>>& getSelectedUnits()
+    UnitPtr getSelectedUnit()
     {
-        return selectedUnits;
+        return selectedUnit;
     }
-    AntManager& getAntManager()
+    AntManager* getCurrentTask()
     {
-        return antManager;
+        return currentTask;
     }
     void init(const glm::vec4& region);
     void update();
@@ -147,6 +161,7 @@ public:
     glm::vec2 toScreen(const glm::vec2& point) const;
     glm::vec4 toWorld(const glm::vec4& rect) const;  //converts a rect from the screen coordinate to the world coordinate
     glm::vec2 toWorld(const glm::vec2& point) const;
+    void center(const glm::vec2& point); //centers the camera around point
 };
 
 class GameWindow : public Window //the gamewindow is mostly static because most of its functions/members are used everywhere in the program. These members can't be manipulated without first creating a GameWindow
@@ -178,7 +193,7 @@ public:
     {
         return selection;
     }
-    static const Camera& getCamera()
+    static Camera& getCamera()
     {
         return camera;
     }

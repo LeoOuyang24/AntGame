@@ -6,8 +6,10 @@
 
 
 class Anthill;
+class AntManager;
 class Ant : public Unit
 {
+    AntManager* currentTask = nullptr;
 public:
     const static short dimen;
     class AntMoveComponent : public MoveComponent, public ComponentContainer<AntMoveComponent> //controls ant behavior based on the ant's home and what they are carrying
@@ -49,10 +51,6 @@ public:
         AntClickable(std::string name, Unit& entity);
         void clicked();
     };
-    enum Modes
-    {
-
-    };
     Ant(const glm::vec4& rect, Anthill& home);
     void setTarget(const glm::vec2& target, std::shared_ptr<Unit>* unit);
     void setTarget(const glm::vec2& target);
@@ -60,6 +58,14 @@ public:
     void setCarrying(int amount);
     void goHome();
     int getCarrying();
+    AntManager* getCurrentTask()
+    {
+        return currentTask;
+    }
+    void setCurrentTask(AntManager& newTask)
+    {
+        currentTask = &newTask;
+    }
 };
 
 class AntHillRender : public RenderComponent, public ComponentContainer<AntHillRender>
@@ -68,6 +74,7 @@ class AntHillRender : public RenderComponent, public ComponentContainer<AntHillR
 public:
     AntHillRender(Entity& entity);
     void update();
+    void render(const SpriteParameter& param);
 };
 
 

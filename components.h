@@ -75,6 +75,9 @@ protected:
     glm::vec2 target; //point to move towards
 public:
     MoveComponent(double speed, const glm::vec4& rect, Entity& entity);
+    void teleport(const glm::vec2& point); //centers the entity at the point and sets it as the new target
+    virtual void update();
+    bool atTarget(); //returns whether or not we have arrived at the target
     void setTarget(const glm::vec2& point)
     {
         target = point;
@@ -83,8 +86,7 @@ public:
     {
         return target;
     }
-    virtual void update();
-    bool atTarget(); //returns whether or not we have arrived at the target
+
 };
 
 class RenderComponent : public Component, public ComponentContainer<RenderComponent>
@@ -95,6 +97,7 @@ public:
     {
 
     }
+
 };
 
 class Entity

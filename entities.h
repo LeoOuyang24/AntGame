@@ -6,6 +6,7 @@
 
 #include "components.h"
 
+void renderMeter(const glm::vec3& xyWidth, const glm::vec4& color, double current, double maximum, float z);
 
 class Unit;
 class ClickableComponent : public Component, public ComponentContainer<ClickableComponent> //clickable component handles user inputs, like when the user selects the unit or presses a button
@@ -38,17 +39,15 @@ public:
     virtual void render(const SpriteParameter& param);
 };
 
-
 class HealthComponent : public Component, public ComponentContainer<HealthComponent>
 {
     double health = 0;
     double maxHealth = 0;
-    int height = 0; //height of the health bar
     int displacement = 0; //height above the entity
     bool visible = true;
     DeltaTime invincible; //keeps track of how many frames of invincibility
 public:
-    HealthComponent(Entity& entity, double health_, int height_ = 10, int displacement_ = 20) : Component(entity), ComponentContainer<HealthComponent>(entity), health(health_), maxHealth(health_), height(height_), displacement(displacement_)//height defaults to 10 and displacement defaults to 20
+    HealthComponent(Entity& entity, double health_,  int displacement_ = 20) : Component(entity), ComponentContainer<HealthComponent>(entity), health(health_), maxHealth(health_), displacement(displacement_)//height defaults to 10 and displacement defaults to 20
     {
 
     }
@@ -62,6 +61,7 @@ public:
         return maxHealth;
     }
     void update(); //render health bar and reset invincibility frames
+    void render(const glm::vec3& rect, float z); //renders the healthbar at the given location with the given width. The height will always be height so rect.a is the z value to render at.
     void inline setVisible(bool value)
     {
         visible = value;
@@ -81,9 +81,22 @@ protected:
     Manager* manager = nullptr;
 public:
     Unit(ClickableComponent& click, RectComponent& rect, RenderComponent& render, HealthComponent& health);
-    RectComponent& getRect();
-    ClickableComponent& getClickable();
-    RenderComponent& getRender();
+    RectComponent& getRect()
+    {
+        return *rect;
+    }
+    ClickableComponent& getClickable()
+    {
+        return *clickable;
+    }
+    RenderComponent& getRender()
+    {
+        return *render;
+    }
+    HealthComponent& getHealth()
+    {
+        return *health;
+    }
     bool clicked();
     virtual void interact(Ant& ant);
     glm::vec2 getCenter();
@@ -134,6 +147,7 @@ public:
         resource = std::max(std::min(resource + amount, (double)maxResource),0.0);
     }
     void collect(Unit& other);
+    void render(const glm::vec3& rect, float z);
 };
 
 class CorpseComponent : public Component, public ComponentContainer<CorpseComponent> //the corpse component spawns a corpse object after the entity dies
