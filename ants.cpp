@@ -4,6 +4,7 @@
 #include "render.h"
 #include "vanilla.h"
 
+#include "world.h"
 #include "game.h"
 #include "ants.h"
 
@@ -104,7 +105,7 @@ void Ant::AntClickable::clicked()
     }
 }
 
-Ant::Ant(const glm::vec4& rect, Anthill& home) : Unit(*(new ClickableComponent("Ant",*this)), *(new AntMoveComponent(&home,.5,rect,*this)),*(new AntRenderComponent({0,0,0,1},*this)),
+Ant::Ant(const glm::vec4& rect, Anthill& home) : Unit(*(new ClickableComponent("Ant",*this)), *(new AntMoveComponent(&home,.1,rect,*this)),*(new AntRenderComponent({0,0,0,1},*this)),
                                                       *(new HealthComponent(*this, 10)))
 {
     health->setVisible(false);
@@ -148,7 +149,7 @@ void AntHillRender::update()
    // GameWindow::requestNGon(10,{rect.x + rect.z/2, rect.y + rect.a/2},20,{.5,.5,.5,1},0,true,0);
     render({GameWindow::getCamera().toScreen(rect)});
     ResourceComponent* counter = entity->getComponent<ResourceComponent>();
-    int width = counter->getResource()/((float)(counter->getMaxResource()))*rect.z, height = 10;
+    //int width = counter->getResource()/((float)(counter->getMaxResource()))*rect.z, height = 10;
     counter->render(glm::vec3(GameWindow::getCamera().toScreen({rect.x,rect.y + rect.a+ 10}),rect.z),0);
    // GameWindow::requestRect({rect.x, rect.y + rect.a + 10, width, height},{0,1,0,1},true,0,0);
     //GameWindow::requestRect({rect.x + width, rect.y + rect.a + 10, rect.z - width, height}, {1,0,0,1}, true, 0, 0);
@@ -183,13 +184,12 @@ void Anthill::createAnt()
     ResourceComponent* counter = getComponent<ResourceComponent>();
     if (counter->getResource() >= 10)
     {
-        Manager* manager = &(getManager());
         glm::vec2 center = getCenter();
         counter->setResource(-10);
         /*std::shared_ptr<Ant> ptr = ;
         std::cout << ptr.use_count() << std::endl;
         std::weak_ptr<Ant> weak = ptr;*/
-        ants.emplace_back(manager->addAnt( *(new Ant({center.x +5*cos(rand()%360/180.0*M_PI),center.y +5*sin(rand()%360/180.0*M_PI),10,10},*this))));
+        ants.emplace_back(GameWindow::getLevel().addAnt( *(new Ant({center.x +5*cos(rand()%360/180.0*M_PI),center.y +5*sin(rand()%360/180.0*M_PI),10,10},*this))));
         //std::cout << ants.size() << std::endl;
     }
 }

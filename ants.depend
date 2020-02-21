@@ -547,7 +547,7 @@
 1525706584 c:\users\leoou\onedrive\desktop\glm\glm\gtc\type_ptr.inl
 	<cstring>
 
-1579554653 c:\users\leoou\onedrive\desktop\resources\render.h
+1581001494 c:\users\leoou\onedrive\desktop\resources\render.h
 	<iostream>
 	<vector>
 	<map>
@@ -558,7 +558,7 @@
 
 1538461672 source:c:\users\leoou\onedrive\desktop\resources\glewhelper.cpp
 
-1578106782 source:c:\users\leoou\onedrive\desktop\resources\glgame.cpp
+1581797106 source:c:\users\leoou\onedrive\desktop\resources\glgame.cpp
 	"glGame.h"
 	"render.h"
 
@@ -919,7 +919,7 @@
 	"FreeTypeHelper.h"
 	"render.h"
 
-1578890265 source:c:\users\leoou\onedrive\desktop\resources\render.cpp
+1581010338 source:c:\users\leoou\onedrive\desktop\resources\render.cpp
 	<sstream>
 	<fstream>
 	"stb_image.h"
@@ -998,10 +998,11 @@
 	<map>
 	"glGame.h"
 
-1580674014 source:c:\users\leoou\onedrive\desktop\projects\ants\ants.cpp
+1582310306 source:c:\users\leoou\onedrive\desktop\projects\ants\ants.cpp
 	<cmath>
 	"render.h"
 	"vanilla.h"
+	"world.h"
 	"game.h"
 	"ants.h"
 
@@ -1009,28 +1010,35 @@
 	"components.h"
 	"entities.h"
 
-1580450183 source:c:\users\leoou\onedrive\desktop\projects\ants\game.cpp
+1581797796 source:c:\users\leoou\onedrive\desktop\projects\ants\game.cpp
 	"SDLHelper.h"
 	"vanilla.h"
 	"game.h"
 	"ants.h"
 
-1580357858 c:\users\leoou\onedrive\desktop\projects\ants\game.h
+1582307719 c:\users\leoou\onedrive\desktop\projects\ants\game.h
 	"glInterface.h"
 	"glGame.h"
 	"components.h"
 	"entities.h"
 	"ants.h"
 
-1580227361 c:\users\leoou\onedrive\desktop\projects\ants\entities.h
-	"glInterface.h"
-	"SDLhelper.h"
+1582310585 c:\users\leoou\onedrive\desktop\projects\ants\entities.h
 	"components.h"
+	"world.h"
 
-1580230199 source:c:\users\leoou\onedrive\desktop\projects\ants\entities.cpp
+1582309234 source:c:\users\leoou\onedrive\desktop\projects\ants\entities.cpp
 	"SDLHelper.h"
 	"render.h"
 	"entities.h"
 	"game.h"
 	"ants.h"
+
+1582309662 c:\users\leoou\onedrive\desktop\projects\ants\world.h
+	"glInterface.h"
+	"SDLhelper.h"
+	"components.h"
+
+1582309639 source:c:\users\leoou\onedrive\desktop\projects\ants\world.cpp
+	"world.h"
 

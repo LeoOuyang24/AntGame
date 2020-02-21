@@ -1,43 +1,13 @@
 #ifndef ENTITIES_H_INCLUDED
 #define ENTITIES_H_INCLUDED
 
-#include "glInterface.h"
-#include "SDLhelper.h"
-
 #include "components.h"
+#include "world.h"
 
 void renderMeter(const glm::vec3& xyWidth, const glm::vec4& color, double current, double maximum, float z);
 
 class Unit;
-class ClickableComponent : public Component, public ComponentContainer<ClickableComponent> //clickable component handles user inputs, like when the user selects the unit or presses a button
-{
-    static const glm::vec2 spacing; //spacing between the buttons and the unit
-    std::string name = "";
-    bool clicked = false;
-    std::vector<std::unique_ptr<Button>> buttons;
-public:
-    ClickableComponent(std::string name, Entity& entity) : Component(entity), ComponentContainer<ClickableComponent>(entity), name(name)
-    {
 
-    }
-    virtual void update();
-    void click(bool val);
-    bool getClicked();
-    void addButton(Button& button);
-    virtual void display(const glm::vec4& rect);
-};
-
-class RectRenderComponent : public RenderComponent, public ComponentContainer<RectRenderComponent>
-{
-    glm::vec4 color;
-public:
-    RectRenderComponent(const glm::vec4& color, Entity& unit) : RenderComponent(unit), ComponentContainer<RectRenderComponent>(unit), color(color)
-    {
-
-    }
-    void update();
-    virtual void render(const SpriteParameter& param);
-};
 
 class HealthComponent : public Component, public ComponentContainer<HealthComponent>
 {
@@ -70,46 +40,22 @@ public:
 
 class Ant;
 class Manager;
-class Unit : public Entity //Units can be clicked on and seen
+class Unit : public Object //Units can be clicked on and seen and have health
 {
 protected:
-    bool dead = false;
-    ClickableComponent* clickable = nullptr;
-    RectComponent* rect = nullptr;
-    RenderComponent* render = nullptr;
     HealthComponent* health = nullptr;
     Manager* manager = nullptr;
 public:
     Unit(ClickableComponent& click, RectComponent& rect, RenderComponent& render, HealthComponent& health);
-    RectComponent& getRect()
-    {
-        return *rect;
-    }
-    ClickableComponent& getClickable()
-    {
-        return *clickable;
-    }
-    RenderComponent& getRender()
-    {
-        return *render;
-    }
+
     HealthComponent& getHealth()
     {
         return *health;
     }
     bool clicked();
     virtual void interact(Ant& ant);
-    glm::vec2 getCenter();
     Manager& getManager();
     void setManager(Manager& manager);
-    bool inline getDead()
-    {
-        return dead;
-    }
-    void inline setDead(bool isDead)
-    {
-        dead = isDead;
-    }
 
 };
 

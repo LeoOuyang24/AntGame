@@ -11,21 +11,67 @@
 
 extern SpriteWrapper frame;
 
+typedef  std::map<Unit*, std::shared_ptr<Unit>> unitStorage;
+typedef  std::map<Ant*, std::shared_ptr<Ant>> antStorage;
+
 class Map
 {
+    constexpr static int levels = 11;
+    constexpr static int chunkDimen = 2000;
     friend class GameWindow;
-    glm::vec4 rect = {0,0,0,0};
-    std::vector<glm::vec4> chunks;
+  //  glm::vec4 rect = {0,0,0,0};
+    struct Chunk
+    {
+        //friend class Map;
+        glm::vec4 rect = {0,0,0,0};
+        std::map<Unit*, std::shared_ptr<Unit>> entities;
+        std::map<Ant*, std::shared_ptr<Ant>> ants;
+        std::shared_ptr<RawQuadTree> tree;
+        Chunk(const glm::vec4& rect_);
+        void clear()
+        {
+            entities.clear();
+            ants.clear();
+        }
+    };
+    std::shared_ptr<Chunk> chunks[levels][levels];
+    Chunk* currentChunk = nullptr;
 public:
+
     Map()
     {
 
     }
     void init(const glm::vec4& region);
-    void render();
-    const glm::vec4& getRect() const
+    std::shared_ptr<Unit> addUnit(Unit& entity);//this method returns the shared_ptr in case any other class wants to share ownership.
+    std::shared_ptr<Ant> addAnt(Ant& ant);
+    std::shared_ptr<Ant>& getAnt(Ant* ant);
+    std::shared_ptr<Unit>& getUnit(Unit* unit);
+    Chunk& getChunk(int x, int y); //assumes 0,0 = [5][5]
+    Chunk& getChunk(Unit& unit);
+    void setCurrentChunk(Chunk& chunk);
+    std::map<Ant*, std::shared_ptr<Ant>>& getAnts(Chunk& chunk)
     {
-        return rect;
+        return chunk.ants;
+    }
+    std::map<Unit*, std::shared_ptr<Unit>>& getEntities(Chunk& chunk)
+    {
+        return chunk.entities;
+    }
+    void remove(Unit& unit);
+    void render();
+   const glm::vec4& getRect(Chunk& chunk) //returns rect of the current Chunk
+   {
+       return chunk.rect;
+   }
+    Chunk& getCurrentChunk();
+    RawQuadTree* getTree(Chunk& chunk)
+    {
+        return chunk.tree.get();
+    }
+    RawQuadTree* getTreeOf(Unit& unit)
+    {
+        return getChunk(unit).tree.get();
     }
 
 };
@@ -93,12 +139,10 @@ class Manager
     constexpr static int maxTasks = 10;
     friend class AntManager;
     friend class GameWindow;
+
     glm::vec2 target;
-    std::map<Unit*, std::shared_ptr<Unit>> entities;
-    std::map<Ant*, std::shared_ptr<Ant>> ants;
-    std::unique_ptr<RawQuadTree> tree;
     std::vector<std::shared_ptr<AntManager>> tasks;
-    std::vector<UnitPtr> selectedUnits;
+  //  std::vector<UnitPtr> selectedUnits;
     UnitPtr selectedUnit;
     void spawnCreatures(); //spawn a creature at a random position
     AntManager* currentTask = nullptr; //the current antmanager
@@ -110,18 +154,6 @@ public:
     {
 
     }
-    RawQuadTree* getQuadTree() //returns a pointer in case tree is null
-    {
-        return tree.get();
-    }
-    std::shared_ptr<Ant>& getAnt(Ant* address)
-    {
-        return ants[address];
-    }
-    std::shared_ptr<Unit>& getUnit(Unit* address)
-    {
-        return entities[address];
-    }
     UnitPtr getSelectedUnit()
     {
         return selectedUnit;
@@ -132,19 +164,12 @@ public:
     }
     void init(const glm::vec4& region);
     void update();
-    std::shared_ptr<Unit> addEntity(Unit& entity);//this method returns the shared_ptr in case any other class wants to share ownership.
-    std::shared_ptr<Ant> addAnt(Ant& ant);
-    void remove(Unit& unit);
-    void clear()
-    {
-        entities.clear();
-        ants.clear();
-    }
 };
 
 class GameWindow;
 class Camera
 {
+    const glm::vec4* bounds = nullptr;
     glm::vec4 rect = {0,0,0,0};
 public:
     Camera()
@@ -156,6 +181,10 @@ public:
     const glm::vec4& getRect() const
     {
         return rect;
+    }
+    void setBounds(const glm::vec4* newBounds)
+    {
+        bounds = newBounds;
     }
     glm::vec4 toScreen(const glm::vec4& rect) const;//converts a rect from the world coordinate to the screen coordinate
     glm::vec2 toScreen(const glm::vec2& point) const;
@@ -197,7 +226,7 @@ public:
     {
         return camera;
     }
-    static const Map& getLevel()
+    static Map& getLevel()
     {
         return level;
     }

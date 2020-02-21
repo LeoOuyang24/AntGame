@@ -1,5 +1,15 @@
 This document keeps track of all changes as well as considered changes made to the resources as well as why they were made. Consider this a "learning from the past" kind of document. 
-	
+
+2/14/2020:
+	Rather than give Chunk a bunch of utility functions, like getUnit(), or addUnit(), Map is now in full control of Chunk. It has all the utility functions, Chunk is now a child class of Map, and, since Chunk is only accessible by Map, Chunk's members are all public now. This decision was made because before, Map would have its own version of Chunk's functions that were exactly idential except that Map would first find the correct chunk. Chunk really doesn't do anything fancy and Map already had direct control over it  so there's no reason to encapsulate it. Just let Map do all the work and Chunk will just be data storage.
+	The decision has been made to have Map be the class in charge of removing and adding entities rather than Manager. While it makes sense for Manager to be in charge of everything entity, Map is essentially the entity storage unit; in the same way it makes sense for a vector to be able to erase its own elements, it makes sense for Map to erase its own units.
+	Current roles of each class in game.h:
+	Manager: entity interactions, entity updating, entity rendering. Also currently manages user input. Basically makes the game run.
+	Map: storage class for the chunks. Manages chunks and retrieves them for other classes. Adds and removes entities.
+	GameWindow: Master class. Ties everything together by facilitating communication between classes. Renders display.
+	Chunk: Stores the entities in each chunk.
+	AntManager: Manages player assigned tasks
+
 1/28/2020:
 	currentTask was kept as a rawpointer to an ant manager rather than a weak_ptr because it's very easy to keep track of whether or not it is null in the updateAntManagers functions. Keeping it as a raw pointer should be faster since we don't have to call .lock() everytime to access the currentTask.
 

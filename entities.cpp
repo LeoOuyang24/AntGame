@@ -118,11 +118,8 @@ void HealthComponent::render(const glm::vec3& rect, float z)
     renderMeter({rect.x,rect.y,rect.z},{1,0,0,1},health,maxHealth,z);
 }
 
-Unit::Unit(ClickableComponent& click, RectComponent& rect, RenderComponent& render, HealthComponent& health) : clickable(&click), rect(&rect), render(&render), health(&health)
+Unit::Unit(ClickableComponent& click, RectComponent& rect, RenderComponent& render, HealthComponent& health) : Object(click,rect,render), health(&health)
 {
-    addComponent(rect);
-    addComponent(click);
-    addComponent(render);
     addComponent(health);
 }
 
@@ -131,15 +128,6 @@ void Unit::setManager(Manager& manager)
     this->manager = &manager;
 }
 
-bool Unit::clicked()
-{
-    return clickable->getClicked();
-}
-
-glm::vec2 Unit::getCenter()
-{
-    return rect->getCenter();
-}
 
 void Unit::interact(Ant& ant)
 {
@@ -193,9 +181,8 @@ void CorpseComponent::onDeath()
 {
     if (entity)
     {
-        Manager* manager = &(((Unit*)entity)->getManager());
         ResourceUnit* resource = new ResourceUnit(amount,entity->getComponent<RectComponent>()->getRect());
-        manager->addEntity(*(resource));
+        GameWindow::getLevel().addUnit(*(resource));
     }
 }
 
@@ -213,7 +200,8 @@ void WanderMove::update()
         int maxDimen = std::max(rect.z,rect.a);
         double radius = rand()%(100 - 10) + maxDimen + 10;
         glm::vec2 point = {rect.x + rect.z/2 + cos(angle)*radius, rect.y + rect.a/2 + sin(angle)*radius};
-        const glm::vec4* levelRect = &(GameWindow::getLevel().getRect());
+        Map* level = &(GameWindow::getLevel());
+        const glm::vec4* levelRect = &(level->getRect(level->getChunk(*(Unit*)entity)));
         point.x = std::max(levelRect->x, std::min(point.x, levelRect->x + levelRect->z - rect.z));
         point.y = std::max(levelRect->y, std::min(point.y, levelRect->y + levelRect->a - rect.a));
         setTarget(point);
@@ -235,7 +223,7 @@ Unit* ApproachComponent::findNearestUnit(double radius)
         Manager* manager = &(owner->getManager());
         if (manager)
         {
-            RawQuadTree* tree = manager->getQuadTree();
+            RawQuadTree* tree = GameWindow::getLevel().getTreeOf(*owner);
             if (tree)
             {
                 glm::vec2 center = owner->getRect().getCenter();
@@ -333,7 +321,7 @@ void Beetle::BeetleMove::update()
             Unit* nearest = findNearestUnit<Ant::AntMoveComponent>(100);
             if (nearest)
             {
-                setTarget(manager->getAnt(static_cast<Ant*>(nearest)));
+                setTarget(GameWindow::getLevel().getAnt((static_cast<Ant*>(nearest))));
             }
         }
         if (targetPtr)
@@ -366,7 +354,7 @@ void ResourceEatComponent::update()
                 Unit* nearest = findNearestUnit<ResourceComponent>(500);
                 if (nearest)
                 {
-                    setTarget((manager->getUnit(static_cast<Unit*>(nearest))));
+                    setTarget((GameWindow::getLevel().getUnit((static_cast<Unit*>(nearest)))));
                 }
             }
         }
