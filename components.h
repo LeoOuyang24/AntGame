@@ -2,36 +2,87 @@
 #define COMPONENTS_H_INCLUDED
 
 #include <memory.h>
-#include <map>
+#include <unordered_map>
+#include <typeinfo>
+
 
 #include "glGame.h"
 
 class Entity;
 class Component;
-
+class ResourceComponent;
+class HealthComponent;
+class ClickableComponent;
+class RenderComponent;
 template<class C>
-struct ComponentContainer
+class ComponentContainer
 {
-    static std::map<Entity*,Component*> components;
-    static std::map<ComponentContainer*, Entity*> entities;
-    ComponentContainer(Entity& entity)
+private:
+    static std::unordered_map<Entity*,Component*> components;
+    static std::unordered_map<ComponentContainer*, Entity*> entities;
+    void insert(Entity* entity)
     {
-        components[&entity] = static_cast<C*>(this);
-        entities[this] = &entity;
+            //std::cout <<  typeid(C).name() << " Inserting: " <<components.size() << " " << entities.size() << std::endl;
+        if (entity)
+        {
+           // std::cout <<"Health: " << entity << " " <<   ComponentContainer<HealthComponent>::entities.size() << " " << ComponentContainer<HealthComponent>::components.size() << std::endl;
+          //  std::cout <<"Clickable: " << entity << " " <<   ComponentContainer<ClickableComponent>::entities.size() << " " << ComponentContainer<ClickableComponent>::components.size() << std::endl;
+            C* ptr = static_cast<C*>(this);
+            //components.insert(std::pair<Entity*,Component*>(entity,ptr));
+            components[entity] = ptr;
+            entities[this] = entity;
+           // entities.insert(std::pair<ComponentContainer*,Entity*>(this,entity));
+        }
+          //  std::cout <<  typeid(C).name() << " Inserting2: " << components.size() << " " << entities.size() << std::endl;
+
+    }
+    void remove()
+    {
+
+        if (entities.count(this) > 0)
+       {
+            components.erase(components.find(entities[this]));
+            entities.erase(entities.find(this));
+       }
+
+    }
+
+public:
+    ComponentContainer<C>(Entity* entity)
+    {
+        insert(entity);
+    }
+    ComponentContainer<C>(Entity& entity)
+    {
+        insert(&entity);
     }
     virtual ~ComponentContainer()
     {
-    //components.erase(components.find(entities[this]));
-      // entities.erase(entities.find(this));
+        //std::cout << (components.find(entities[this]) == components.end()) << std::endl;
+              //  std::cout << typeid(this).name() << " Deleting: " <<components.size() << " " << entities.size()<< std::endl;
+        remove();
+                   // std::cout << typeid(this).name() << " Deleting2: " <<components.size()  << " " << entities.size()<< std::endl;
+
+    }
+    static Component* getComponent(Entity* e)
+    {
+        if (components.count(e) > 0)
+        {
+            return components[e];
+        }
+        else
+        {
+            return nullptr;
+        }
     }
 
 };
 
 template<class C>
-std::map<Entity*,Component*> ComponentContainer<C>::components;
+std::unordered_map<Entity*,Component*> ComponentContainer<C>::components;
 
 template<class C>
-std::map<ComponentContainer<C>*, Entity*> ComponentContainer<C>::entities;
+std::unordered_map<ComponentContainer<C>*, Entity*> ComponentContainer<C>::entities;
 
 
 class Component : public ComponentContainer<Component>
@@ -41,19 +92,11 @@ protected:
 
 public:
     Component(Entity& entity);
-    virtual void update()
-    {
-
-    }
-    virtual void collide(Entity& other)
-    {
-
-    }
-    virtual void onDeath()
-    {
-
-    }
+    virtual void update();
+    virtual void collide(Entity& other);
+    virtual void onDeath();
     Entity& getEntity();
+    ~Component();
 };
 
 class RectComponent : public Component, public ComponentContainer<RectComponent>, public RectPositional
@@ -61,10 +104,8 @@ class RectComponent : public Component, public ComponentContainer<RectComponent>
 public:
     RectComponent(const glm::vec4& rect, Entity& entity);
     void setRect(const glm::vec4& rect);
-    glm::vec2 getCenter()
-    {
-        return {rect.x + rect.z/2, rect.y + rect.a/2};
-    }
+    void setPos(const glm::vec2& pos);
+    glm::vec2 getCenter();
 };
 
 class MoveComponent : public RectComponent, public ComponentContainer<MoveComponent>
@@ -78,14 +119,8 @@ public:
     void teleport(const glm::vec2& point); //centers the entity at the point and sets it as the new target
     virtual void update();
     bool atTarget(); //returns whether or not we have arrived at the target
-    void setTarget(const glm::vec2& point)
-    {
-        target = point;
-    }
-    const glm::vec2& getTarget()
-    {
-        return target;
-    }
+    void setTarget(const glm::vec2& point);
+    const glm::vec2& getTarget();
 
 };
 
@@ -93,35 +128,26 @@ class RenderComponent : public Component, public ComponentContainer<RenderCompon
 {
 public:
     RenderComponent(Entity& entity);
-    virtual void render(const SpriteParameter& param) //every rendercomponent can take in a SpriteParameter and render it accordingly
-    {
-
-    }
-
+    virtual void render(const SpriteParameter& param);
+    virtual ~RenderComponent();
 };
 
 class Entity
 {
-public:
-
+protected:
     std::vector<std::shared_ptr<Component>> components;
 public:
-    Entity()
-    {
-
-    }
+     Entity();
     void update();
     void collide(Entity& entity);
     template<typename T>
     T* getComponent()
     {
-        return (static_cast<T*>(ComponentContainer<T>::components[this]));
+        return (static_cast<T*>(ComponentContainer<T>::getComponent(this)));
     }
-    void addComponent(Component& comp)
-    {
-        components.emplace_back(&comp);
-    }
+    void addComponent(Component& comp);
     void onDeath();
+    virtual ~Entity();
 
 };
 

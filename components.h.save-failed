@@ -2,7 +2,7 @@
 #define COMPONENTS_H_INCLUDED
 
 #include <memory.h>
-#include <map>
+#include <unordered_map>
 
 #include "glGame.h"
 
@@ -12,30 +12,30 @@ class Component;
 template<class C>
 struct ComponentContainer
 {
-    static std::map<Entity*,Component*> components;
-    static std::map<ComponentContainer*, Entity*> entities;
+    static std::unordered_map<Entity*,Component*> components;
+    static std::unordered_map<ComponentContainer*, Entity*> entities;
     ComponentContainer(Entity& entity)
     {
-        components[&entity] = static_cast<C*>(this);
+        components.insert(std::pair<Entity*,Component*>(&entity,static_cast<C*>(this)));
         entities[this] = &entity;
     }
     virtual ~ComponentContainer()
     {
-        std::cout << (entities.find(this) == entities.end()) << std::endl;
-    //components.erase(components.find(entities[this]));
-      // entities.erase(entities.find(this));
+        std::cout << (components.find(entities[this]) == components.end()) << std::endl;
+        components.erase(components.find(entities[this]));
+        entities.erase(entities.find(this));
     }
 
 };
 
 template<class C>
-std::map<Entity*,Component*> ComponentContainer<C>::components;
+std::unordered_map<Entity*,Component*> ComponentContainer<C>::components;
 
 template<class C>
-std::map<ComponentContainer<C>*, Entity*> ComponentContainer<C>::entities;
+std::unordered_map<ComponentContainer<C>*, Entity*> ComponentContainer<C>::entities;
 
 
-class Component : public ComponentContainer<Component>
+class Component
 {
 protected:
     Entity* entity;
@@ -76,6 +76,9 @@ protected:
     glm::vec2 target; //point to move towards
 public:
     MoveComponent(double speed, const glm::vec4& rect, Entity& entity);
+    void teleport(const glm::vec2& point); //centers the entity at the point and sets it as the new target
+    virtual void update();
+    bool atTarget(); //returns whether or not we have arrived at the target
     void setTarget(const glm::vec2& point)
     {
         target = point;
@@ -84,20 +87,23 @@ public:
     {
         return target;
     }
-    virtual void update();
-    bool atTarget(); //returns whether or not we have arrived at the target
+
 };
 
 class RenderComponent : public Component, public ComponentContainer<RenderComponent>
 {
 public:
     RenderComponent(Entity& entity);
+    virtual void render(const SpriteParameter& param) //every rendercomponent can take in a SpriteParameter and render it accordingly
+    {
+
+    }
+
 };
 
 class Entity
 {
-public:
-
+protected:
     std::vector<std::shared_ptr<Component>> components;
 public:
     Entity()
@@ -115,7 +121,7 @@ public:
     {
         components.emplace_back(&comp);
     }
-    ~Entity();
+    void onDeath();
 
 };
 

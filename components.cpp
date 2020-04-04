@@ -6,7 +6,9 @@
 
 #include "components.h"
 
-Component::Component(Entity& entity) : ComponentContainer<Component>(entity)
+
+
+Component::Component(Entity& entity) : ComponentContainer<Component>(nullptr)
 {
     this->entity = &entity;
 }
@@ -16,7 +18,24 @@ Entity& Component::getEntity()
     return *entity;
 }
 
-RectComponent::RectComponent(const glm::vec4& rect, Entity& entity) : Component(entity), ComponentContainer<RectComponent>(entity), RectPositional(rect)
+void Component::update()
+{
+
+}
+void Component::collide(Entity& other)
+{
+
+}
+void Component::onDeath()
+{
+
+}
+Component::~Component()
+{
+   // std::cout << "Deleted!" << std::endl;
+}
+
+RectComponent::RectComponent(const glm::vec4& rect, Entity& entity) : Component(entity), ComponentContainer<RectComponent>(&entity), RectPositional(rect)
 {
 
 }
@@ -26,7 +45,18 @@ void RectComponent::setRect(const glm::vec4& rect)
     this->rect = rect;
 }
 
-MoveComponent::MoveComponent(double speed, const glm::vec4& rect, Entity& entity) : RectComponent(rect, entity), ComponentContainer<MoveComponent>(entity), speed(speed)
+void RectComponent::setPos(const glm::vec2& pos)
+{
+    this->rect.x = pos.x;
+    this->rect.y = pos.y;
+}
+
+glm::vec2 RectComponent::getCenter()
+{
+    return {rect.x + rect.z/2, rect.y + rect.a/2};
+}
+
+MoveComponent::MoveComponent(double speed, const glm::vec4& rect, Entity& entity) : RectComponent(rect, entity), ComponentContainer<MoveComponent>(&entity), speed(speed)
 {
     target = {rect.x + rect.z/2, rect.y + rect.a/2};
 }
@@ -56,9 +86,39 @@ void MoveComponent::teleport(const glm::vec2& point)
 
 }
 
-RenderComponent::RenderComponent(Entity& entity) : Component(entity), ComponentContainer<RenderComponent>(entity)
+const glm::vec2& MoveComponent::getTarget()
+{
+    return target;
+}
+void MoveComponent::setTarget(const glm::vec2& point)
+{
+    target = point;
+}
+
+RenderComponent::RenderComponent(Entity& entity) : Component(entity), ComponentContainer<RenderComponent>(&entity)
 {
 
+}
+
+void RenderComponent::render(const SpriteParameter& param) //every rendercomponent can take in a SpriteParameter and render it accordingly
+{
+
+}
+
+RenderComponent::~RenderComponent()
+{
+
+}
+
+Entity::Entity()
+{
+
+}
+
+
+void Entity::addComponent(Component& comp)
+{
+    components.emplace_back(&comp);
 }
 
 void Entity::update()
@@ -77,10 +137,17 @@ void Entity::collide(Entity& entity)
     }
 }
 
+
+
 void Entity::onDeath()
 {
     for (int i = components.size() - 1; i >= 0; --i)
     {
         components[i]->onDeath();
     }
+}
+
+Entity::~Entity()
+{
+    components.clear();
 }

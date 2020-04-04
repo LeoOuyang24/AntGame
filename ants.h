@@ -32,6 +32,10 @@ public:
         {
             return home;
         }
+        ~AntMoveComponent()
+        {
+
+        }
     };
 
     class AntRenderComponent : public RenderComponent, public ComponentContainer<AntRenderComponent>
@@ -43,6 +47,10 @@ public:
         AntRenderComponent(const glm::vec4& color, Entity& entity);
         void update();
         void render(const SpriteParameter& param);
+        ~AntRenderComponent()
+        {
+
+        }
     };
 
     class AntClickable : public ClickableComponent, public ComponentContainer<AntClickable>
@@ -50,11 +58,15 @@ public:
     public:
         AntClickable(std::string name, Unit& entity);
         void clicked();
+        ~AntClickable()
+        {
+
+        }
     };
     Ant(const glm::vec4& rect, Anthill& home);
-    void setTarget(const glm::vec2& target, std::shared_ptr<Unit>* unit);
+    void setTarget(const glm::vec2& target, std::shared_ptr<Object>* unit);
     void setTarget(const glm::vec2& target);
-    void setTarget(std::shared_ptr<Unit>& unit); //calls the other target function but the target is the center of unit
+    void setTarget(std::shared_ptr<Object>& unit); //calls the other target function but the target is the center of unit
     void setCarrying(int amount);
     void goHome();
     int getCarrying();
@@ -75,6 +87,7 @@ public:
     AntHillRender(Entity& entity);
     void update();
     void render(const SpriteParameter& param);
+    virtual ~AntHillRender();
 };
 
 
@@ -96,6 +109,7 @@ public:
     {
         return ants;
     }
+    virtual ~Anthill();
 
 };
 

@@ -4,9 +4,9 @@
 #include "render.h"
 #include "vanilla.h"
 
+#include "ants.h"
 #include "world.h"
 #include "game.h"
-#include "ants.h"
 
 const short Ant::dimen = 10;
 Ant::AntMoveComponent::AntMoveComponent(Anthill* hill, double speed, const glm::vec4& rect, Entity& entity) : MoveComponent(speed,rect,entity), ComponentContainer<Ant::AntMoveComponent>(entity), home(hill)
@@ -88,7 +88,7 @@ void Ant::AntRenderComponent::update()
 
 void Ant::AntRenderComponent::render(const SpriteParameter& param)
 {
-    PolyRender::requestRect(param.rect,param.tint,true,param.radians,param.z);
+    GameWindow::requestRect(param.rect,param.tint,true,param.radians,param.z,true);
 }
 
 Ant::AntClickable::AntClickable(std::string name, Unit& entity) : ClickableComponent(name, entity), ComponentContainer<AntClickable>(entity)
@@ -113,7 +113,7 @@ Ant::Ant(const glm::vec4& rect, Anthill& home) : Unit(*(new ClickableComponent("
     addComponent(*(new ApproachComponent(*this)));
 }
 
-void Ant::setTarget(const glm::vec2& target, std::shared_ptr<Unit>* unit)
+void Ant::setTarget(const glm::vec2& target, std::shared_ptr<Object>* unit)
 {
     getComponent<ApproachComponent>()->setTarget(target, unit);
 }
@@ -123,7 +123,7 @@ void Ant::setTarget(const glm::vec2& target)
     setTarget(target,nullptr);
 }
 
-void Ant::setTarget(std::shared_ptr<Unit>& unit)
+void Ant::setTarget(std::shared_ptr<Object>& unit)
 {
     setTarget(unit->getCenter(), &unit);
 }
@@ -160,6 +160,11 @@ void AntHillRender::render(const SpriteParameter& param)
     PolyRender::requestNGon(10,{param.rect.x + param.rect.z/2, param.rect.y + param.rect.a/2},20,{.5,.5,.5,1},param.radians,true,param.z);
 }
 
+AntHillRender::~AntHillRender()
+{
+
+}
+
 Anthill::CreateAnt::CreateAnt(Anthill& hill) : Button({0,0,64, 16},nullptr,nullptr,{"Create Ant"},&Font::alef,{0,1,0,1}), hill(&hill)
 {
 
@@ -182,10 +187,10 @@ Anthill::Anthill(const glm::vec2& pos) : Unit(*(new ClickableComponent("Anthill"
 void Anthill::createAnt()
 {
     ResourceComponent* counter = getComponent<ResourceComponent>();
-    if (counter->getResource() >= 10)
+    if (counter->getResource() >= 1)
     {
         glm::vec2 center = getCenter();
-        counter->setResource(-10);
+        counter->setResource(-1);
         /*std::shared_ptr<Ant> ptr = ;
         std::cout << ptr.use_count() << std::endl;
         std::weak_ptr<Ant> weak = ptr;*/
@@ -194,4 +199,8 @@ void Anthill::createAnt()
     }
 }
 
+Anthill::~Anthill()
+{
+    std::cout << "Anthill deletion" << std::endl;
+}
 

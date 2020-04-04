@@ -1,10 +1,68 @@
 #ifndef ENTITIES_H_INCLUDED
 #define ENTITIES_H_INCLUDED
 
+#include "glInterface.h"
+#include "SDLhelper.h"
+
 #include "components.h"
-#include "world.h"
+
 
 void renderMeter(const glm::vec3& xyWidth, const glm::vec4& color, double current, double maximum, float z);
+
+
+class ClickableComponent : public Component, public ComponentContainer<ClickableComponent> //clickable component handles user inputs, like when the user selects the unit or presses a button
+{
+    static const glm::vec2 spacing; //spacing between the buttons and the unit
+    std::string name = "";
+    bool clicked = false;
+    std::vector<std::unique_ptr<Button>> buttons;
+public:
+    ClickableComponent(std::string name, Entity& entity);
+    virtual void update();
+    void click(bool val);
+    bool getClicked();
+    void addButton(Button& button);
+    virtual void display(const glm::vec4& rect);
+    ~ClickableComponent();
+};
+
+
+class RectRenderComponent : public RenderComponent, public ComponentContainer<RectRenderComponent>
+{
+    glm::vec4 color;
+public:
+    RectRenderComponent(const glm::vec4& color, Entity& unit);
+    void update();
+    virtual void render(const SpriteParameter& param);
+    ~RectRenderComponent();
+};
+
+class Object : public Entity//environment objects. Can be seen, have a hitbox, and can be clicked on
+{
+protected:
+    bool dead = false;
+    ClickableComponent* clickable = nullptr;
+    RectComponent* rect = nullptr;
+    RenderComponent* render = nullptr;
+public:
+    Object(ClickableComponent& click, RectComponent& rect, RenderComponent& render);
+    RectComponent& getRect();
+    glm::vec2 getCenter();
+    ClickableComponent& getClickable();
+    RenderComponent& getRender();
+    bool clicked();
+    bool getDead();
+    void setDead(bool isDead);
+    virtual ~Object();
+};
+
+class InteractionComponent : public Component, public ComponentContainer<InteractionComponent> //objects that can be interacted with
+{
+public:
+    InteractionComponent(Object& unit);
+    virtual void interact(Object& actor);
+    ~InteractionComponent();
+};
 
 class Unit;
 
@@ -17,25 +75,14 @@ class HealthComponent : public Component, public ComponentContainer<HealthCompon
     bool visible = true;
     DeltaTime invincible; //keeps track of how many frames of invincibility
 public:
-    HealthComponent(Entity& entity, double health_,  int displacement_ = 20) : Component(entity), ComponentContainer<HealthComponent>(entity), health(health_), maxHealth(health_), displacement(displacement_)//height defaults to 10 and displacement defaults to 20
-    {
-
-    }
+    HealthComponent(Entity& entity, double health_,  int displacement_ = 20);
     void addHealth(int amount); //increases health by amount. Health cannot exceed maxHealth nor go below 0
-    double getHealth()
-    {
-        return health;
-    }
-    double getMaxHealth()
-    {
-        return maxHealth;
-    }
+    double getHealth();
+    double getMaxHealth();
     void update(); //render health bar and reset invincibility frames
     void render(const glm::vec3& rect, float z); //renders the healthbar at the given location with the given width. The height will always be height so rect.a is the z value to render at.
-    void inline setVisible(bool value)
-    {
-        visible = value;
-    }
+    void setVisible(bool value);
+    ~HealthComponent();
 };
 
 class Ant;
@@ -48,10 +95,7 @@ protected:
 public:
     Unit(ClickableComponent& click, RectComponent& rect, RenderComponent& render, HealthComponent& health);
 
-    HealthComponent& getHealth()
-    {
-        return *health;
-    }
+    HealthComponent& getHealth();
     bool clicked();
     virtual void interact(Ant& ant);
     Manager& getManager();
@@ -66,11 +110,9 @@ class AttackComponent : public Component, public ComponentContainer<AttackCompon
     int endLag = 0; //how much time must pass before the attack can be reused.
     DeltaTime attackTimer;
 public:
-    AttackComponent(float damage_, int endLag_, Unit& unit) : Component(unit), ComponentContainer<AttackComponent>(unit),  damage(damage_), endLag(endLag_)
-    {
-
-    }
+    AttackComponent(float damage_, int endLag_, Unit& unit);
     void attack(HealthComponent* health); //this is a pointer so you can legally pass in a null pointer. This function will make sure it's not null
+    ~AttackComponent();
 };
 
 class ResourceComponent : public Component, public ComponentContainer<ResourceComponent> //represents the amount of resources this object has
@@ -80,20 +122,12 @@ protected:
     int maxResource;
 public:
     ResourceComponent(int amount, Entity& entity);
-    int getResource()
-    {
-        return resource;
-    }
-    int getMaxResource()
-    {
-        return maxResource;
-    }
-    void setResource(double amount)
-    {
-        resource = std::max(std::min(resource + amount, (double)maxResource),0.0);
-    }
-    void collect(Unit& other);
+    int getResource();
+    int getMaxResource();
+    void setResource(double amount);
+    void collect(Object& other);
     void render(const glm::vec3& rect, float z);
+    ~ResourceComponent();
 };
 
 class CorpseComponent : public Component, public ComponentContainer<CorpseComponent> //the corpse component spawns a corpse object after the entity dies
@@ -101,27 +135,24 @@ class CorpseComponent : public Component, public ComponentContainer<CorpseCompon
     int amount = 0;
     RenderComponent* render = nullptr;
 public:
-    CorpseComponent(Unit& unit, int amount_) : Component(unit), ComponentContainer<CorpseComponent>(unit), amount(amount_), render(unit.getComponent<RenderComponent>())
-    {
-
-    }
+    CorpseComponent(Unit& unit, int amount_);
     void onDeath();
+    virtual ~CorpseComponent();
 };
 
 class ResourceUnit : public Unit
 {
 public:
     ResourceUnit(int resources, const glm::vec4& rect);
+    virtual ~ResourceUnit();
 };
 
 class WanderMove : public MoveComponent, public ComponentContainer<WanderMove>
 {
 public:
-    WanderMove(double speed, const glm::vec4& rect, Entity& unit) : MoveComponent(speed, rect, unit), ComponentContainer<WanderMove>(unit)
-    {
-
-    }
+    WanderMove(double speed, const glm::vec4& rect, Entity& unit);
     void update();
+    ~WanderMove();
 };
 
 
@@ -130,26 +161,18 @@ class ApproachComponent : public Component, public ComponentContainer<ApproachCo
 {
 protected:
     glm::vec2 displacement = {0,0};
-    std::weak_ptr<Unit> targetUnit;
+    std::weak_ptr<Object> targetUnit;
     MoveComponent* move = nullptr;
     template<typename T>
-    Unit* findNearestUnit(double radius); //finds the nearest unit that has a component T in radius radius. Returns null if none found
+    Object* findNearestUnit(double radius); //finds the nearest unit that has a component T in radius radius. Returns null if none found
 public:
-    ApproachComponent(Unit& entity) : Component(entity), ComponentContainer<ApproachComponent>(entity), move(entity.getComponent<MoveComponent>())
-    {
-
-    }
-    virtual void setTarget(const glm::vec2& target, const std::shared_ptr<Unit>* unit);
-    virtual void setTarget(const std::shared_ptr<Unit>& unit);
+    ApproachComponent(Unit& entity);
+    virtual void setTarget(const glm::vec2& target, const std::shared_ptr<Object>* unit);
+    virtual void setTarget(const std::shared_ptr<Object>& unit);
     virtual void update();
-    void setMove(MoveComponent& move_)
-    {
-        move = &move_;
-    }
-    Unit* getTargetUnit()
-    {
-        return targetUnit.lock().get();
-    }
+    void setMove(MoveComponent& move_);
+    Object* getTargetUnit();
+    ~ApproachComponent();
 };
 
 class Mushroom : public Unit
@@ -162,6 +185,7 @@ class Bug : public Unit
 {
 public:
     Bug(int x, int y);
+    ~Bug();
 };
 
 class Beetle : public Unit
@@ -169,24 +193,21 @@ class Beetle : public Unit
     class BeetleMove : public ApproachComponent, public ComponentContainer<BeetleMove> // finds and attacks the nearest ant
     {
     public:
-        BeetleMove(Unit& unit) : ApproachComponent(unit), ComponentContainer<BeetleMove>(unit)
-        {
-
-        }
+        BeetleMove(Unit& unit);
         void update();
+        ~BeetleMove();
     };
 public:
     Beetle(int x, int y);
+    ~Beetle();
 };
 
 class ResourceEatComponent : public ApproachComponent, public ComponentContainer<ResourceEatComponent> //finds and eats the nearest ResourceCountComponent, including anthills
 {
 public:
-    ResourceEatComponent(Unit& unit) : ApproachComponent(unit), ComponentContainer<ResourceEatComponent>(unit)
-    {
-
-    }
+    ResourceEatComponent(Unit& unit);
     void update();
+    virtual ~ResourceEatComponent();
 };
 
 #endif // ENTITIES_H_INCLUDED

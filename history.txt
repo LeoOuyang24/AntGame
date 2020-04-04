@@ -1,5 +1,17 @@
 This document keeps track of all changes as well as considered changes made to the resources as well as why they were made. Consider this a "learning from the past" kind of document. 
 
+3/6/2020:
+	All non-templated functions have now been moved to .cpp files for consistency. 
+
+2/28/2020:
+	ComponentContainer was almost removed in favor of having Component<T> handle components and their entities. While this implementation can work, every child class of Component will inherit every member of Component, which may create some very large classes. 
+2/25/2020:
+	There is in fact a use for Component inheriting from ComponentContainer; this ensures that deleting a Component* will call both ~Component and ~ComponentContainer. Not having Component inherit from ComponentContainer will only call ~Component. However, we don't want multiple <Entity,Component> pairs in ComponentContainer<Component> so we allow the ComponentContainer to be passed a pointer. If this pointer is null, we don't add Component to ComponentContainer. Unlike all other components, Component always passes null to ComponentContainer<Component>() ensuring that we don't store anything in ComponentContainer<Component>::components while still inheriting form ComponentContainer<Component>.
+
+2/24/2020:
+	ComponentContainer now has unordered maps for better performance.
+	Component no longer inherits from ComponentContainer. Component inheriting from ComponentContainer had no benefit and instead caused a bug where removing a component from an entity more than once would cause a crash as an entity can have multiple Components. Removing an entity from ComponentContainer could remove the wrong instance since the ComponentContainer<Component> will have multiple entries for a certain entity if that entity has multiple components. Our component system has the flaw of not allowing entities to have multiple components of the same descendancy and allowing Component to inherit from ComponentContainer is a way of exploiting this flaw since every component inherits from Component. 
+
 2/14/2020:
 	Rather than give Chunk a bunch of utility functions, like getUnit(), or addUnit(), Map is now in full control of Chunk. It has all the utility functions, Chunk is now a child class of Map, and, since Chunk is only accessible by Map, Chunk's members are all public now. This decision was made because before, Map would have its own version of Chunk's functions that were exactly idential except that Map would first find the correct chunk. Chunk really doesn't do anything fancy and Map already had direct control over it  so there's no reason to encapsulate it. Just let Map do all the work and Chunk will just be data storage.
 	The decision has been made to have Map be the class in charge of removing and adding entities rather than Manager. While it makes sense for Manager to be in charge of everything entity, Map is essentially the entity storage unit; in the same way it makes sense for a vector to be able to erase its own elements, it makes sense for Map to erase its own units.

@@ -4,83 +4,85 @@
 #include "glInterface.h"
 #include "SDLhelper.h"
 #include "components.h"
+#include "entities.h"
 
-class ClickableComponent : public Component, public ComponentContainer<ClickableComponent> //clickable component handles user inputs, like when the user selects the unit or presses a button
+
+class Object;
+class Ant;
+
+typedef  std::map<Object*, std::shared_ptr<Object>> ObjectStorage;
+typedef  std::map<Ant*, std::shared_ptr<Ant>> AntStorage;
+
+class Map
 {
-    static const glm::vec2 spacing; //spacing between the buttons and the unit
-    std::string name = "";
-    bool clicked = false;
-    std::vector<std::unique_ptr<Button>> buttons;
-public:
-    ClickableComponent(std::string name, Entity& entity) : Component(entity), ComponentContainer<ClickableComponent>(entity), name(name)
+    constexpr static int levels = 11;
+    constexpr static int chunkDimen = 2000;
+    friend class GameWindow;
+  //  glm::vec4 rect = {0,0,0,0};
+    struct Chunk
     {
+        //friend class Map;
+        glm::vec4 rect = {0,0,0,0};
+        std::map<Object*, std::shared_ptr<Object>> entities;
+        std::map<Ant*, std::shared_ptr<Ant>> ants;
+        std::shared_ptr<RawQuadTree> tree;
+        void clear();
+        Chunk(const glm::vec4& rect_);
+        ~Chunk();
+    };
+    std::shared_ptr<Chunk> chunks[levels][levels];
+    Chunk* currentChunk = nullptr;
+    void addGatePair(int x1, int y1, int x2, int y2);
+public:
+    Map();
+    void init(const glm::vec4& region);
+    std::shared_ptr<Object> addUnit(Object& entity);//this method returns the shared_ptr in case any other class wants to share ownership.
+    std::shared_ptr<Ant> addAnt(Ant& ant);
+    std::shared_ptr<Ant>& getAnt(Ant* ant);
+    std::shared_ptr<Object>& getUnit(Object* unit);
+    void moveObject(Object& obj, double x, double y); //can move either ants or objects
+    Chunk& getChunk(int x, int y); //assumes 0,0 = [5][5]
+    Chunk& getChunk(Object& unit);
+    void setCurrentChunk(Chunk& chunk);
+    AntStorage& getAnts(Chunk& chunk);
+    ObjectStorage& getEntities(Chunk& chunk);
+    void remove(Object& unit);
+    Chunk& getCurrentChunk();
+    void render();
+    const glm::vec4& getRect(Chunk& chunk);
+    RawQuadTree* getTreeOf(Object& unit);
+    RawQuadTree* getTree(Chunk&chunk);
+    void reset();
+    ~Map();
 
-    }
-    virtual void update();
-    void click(bool val);
-    bool getClicked();
-    void addButton(Button& button);
-    virtual void display(const glm::vec4& rect);
+    class Gate : public Object
+    {
+        class NextAreaComponent : public InteractionComponent, public ComponentContainer<NextAreaComponent>
+        {
+            std::weak_ptr<Gate> dest;
+        public:
+            NextAreaComponent(Object& unit);
+            void setDest(const std::shared_ptr<Gate>& other);
+            void interact(Object& actor);
+            Gate* getDest();
+            ~NextAreaComponent();
+        };
+        class NextAreaButton : public Button
+        {
+            Gate* gate = nullptr;
+        public:
+            NextAreaButton(Gate& unit);
+            void press();
+            ~NextAreaButton();
+        };
+    NextAreaComponent* nextArea = nullptr;
+    public:
+        Gate(int x, int y);
+        void setDest(const std::shared_ptr<Gate>& other);
+        ~Gate();
+    };
 };
 
-class RectRenderComponent : public RenderComponent, public ComponentContainer<RectRenderComponent>
-{
-    glm::vec4 color;
-public:
-    RectRenderComponent(const glm::vec4& color, Entity& unit) : RenderComponent(unit), ComponentContainer<RectRenderComponent>(unit), color(color)
-    {
 
-    }
-    void update();
-    virtual void render(const SpriteParameter& param);
-};
-
-class Object : public Entity//environment objects. Can be seen, have a hitbox, and can be clicked on
-{
-protected:
-    bool dead = false;
-    ClickableComponent* clickable = nullptr;
-    RectComponent* rect = nullptr;
-    RenderComponent* render = nullptr;
-public:
-    Object(ClickableComponent& click, RectComponent& rect, RenderComponent& render);
-    RectComponent& getRect()
-    {
-        return *rect;
-    }
-    glm::vec2 getCenter()
-    {
-        return rect->getCenter();
-    }
-    ClickableComponent& getClickable()
-    {
-        return *clickable;
-    }
-    RenderComponent& getRender()
-    {
-        return *render;
-    }
-    bool clicked()
-    {
-        return clickable->getClicked();
-    }
-    bool inline getDead()
-    {
-        return dead;
-    }
-    void inline setDead(bool isDead)
-    {
-        dead = isDead;
-    }
-};
-
-class Gate : public Object
-{
-public:
-    Gate(int x, int y) : Object(*(new ClickableComponent("Gate",*this)),*(new RectComponent({x,y,64,64},*this)), *(new RenderComponent(*this)))
-    {
-
-    }
-};
 
 #endif // WORLD_H_INCLUDED

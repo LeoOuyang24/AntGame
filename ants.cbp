@@ -7,7 +7,7 @@
 		<Option compiler="mingw64" />
 		<Build>
 			<Target title="Debug">
-				<Option output="bin/Debug/test" prefix_auto="1" extension_auto="1" />
+				<Option output="bin/Debug/ants" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="mingw64" />
@@ -16,7 +16,7 @@
 				</Compiler>
 			</Target>
 			<Target title="Release">
-				<Option output="bin/Release/test" prefix_auto="1" extension_auto="1" />
+				<Option output="bin/Release/ants" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/Release/" />
 				<Option type="1" />
 				<Option compiler="mingw64" />
@@ -55,15 +55,33 @@
 		<Unit filename="../../resources/glInterface.h" />
 		<Unit filename="../../resources/render.cpp" />
 		<Unit filename="../../resources/render.h" />
-		<Unit filename="../../resources/shaders/fragment/fragmentShader.h" />
-		<Unit filename="../../resources/shaders/fragment/outlineShader.h" />
-		<Unit filename="../../resources/shaders/fragment/paintShader.h" />
-		<Unit filename="../../resources/shaders/fragment/simpleFragment.h" />
-		<Unit filename="../../resources/shaders/fragment/wordFragment.h" />
-		<Unit filename="../../resources/shaders/vertex/polygonVertex.h" />
-		<Unit filename="../../resources/shaders/vertex/simpleVertex.h" />
-		<Unit filename="../../resources/shaders/vertex/vertexShader.h" />
-		<Unit filename="../../resources/shaders/vertex/wordVertex.h" />
+		<Unit filename="../../resources/shaders/fragment/fragmentShader.h">
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="../../resources/shaders/fragment/outlineShader.h">
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="../../resources/shaders/fragment/paintShader.h">
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="../../resources/shaders/fragment/simpleFragment.h">
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="../../resources/shaders/fragment/wordFragment.h">
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="../../resources/shaders/vertex/polygonVertex.h">
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="../../resources/shaders/vertex/simpleVertex.h">
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="../../resources/shaders/vertex/vertexShader.h">
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="../../resources/shaders/vertex/wordVertex.h">
+			<Option target="Release" />
+		</Unit>
 		<Unit filename="../../resources/stb_image.h" />
 		<Unit filename="../../resources/vanilla.cpp" />
 		<Unit filename="../../resources/vanilla.h" />
@@ -77,8 +95,14 @@
 		<Unit filename="game.cpp" />
 		<Unit filename="game.h" />
 		<Unit filename="main.cpp" />
-		<Unit filename="sprites.cpp" />
-		<Unit filename="sprites.h" />
+		<Unit filename="sprites.cpp">
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="sprites.h">
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="world.cpp" />
+		<Unit filename="world.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />

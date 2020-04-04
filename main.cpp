@@ -28,9 +28,10 @@ struct A
 template <typename T>
 struct B
 {
+    int y = 0;
     B()
     {
-
+        std::cout << "B CREATED\n";
     }
     ~B()
     {
@@ -38,21 +39,30 @@ struct B
     }
 };
 
+struct B1 : public B<B1>
+{
+    int x = 1;
+} ;
+
+struct B2 : public B1, public B<B2>
+{
+    B2()
+    {
+        std::cout << B1::y << x << std::endl;
+    }
+};
+
+
 struct C : public A, public B<C>
 {
 
 };
 
+
 int main(int args, char* argsc[])
 {
-
-    Entity* unit = new Entity();
-    unit->addComponent(*(new RectComponent({0,0,10,10},*unit)));
-    delete unit;
-
     const int screenWidth = 960;
     const int screenHeight = 960;
-
     SDL_Init(SDL_INIT_VIDEO);
 
     srand(time(NULL));
@@ -78,7 +88,9 @@ int main(int args, char* argsc[])
 
     SpriteManager::addSprite(spr);*/
 
-
+bool set960 = false;
+DeltaTime alarm;
+alarm.set();
     while (!quit)
     {
         while (SDL_PollEvent(&e))
@@ -111,7 +123,20 @@ int main(int args, char* argsc[])
             PolyRender::requestRect({i*32,i*32 + 100,64,64},{1,0,0,.5},false,0,0);
         }*/
        // squares = SDL_GetTicks()/500;
-       //PolyRender::requestNGon(8,{320,320},50,{0,0,0,1},90,false,2);
+     /*  GameWindow::requestNGon(8,{320,320},50,{0,0,0,1},90,true,2);
+       if (alarm.framesPassed(1000))
+       {
+           if (set960)
+           {
+                RenderProgram::setXRange(0,960);
+           }
+            else
+            {
+                                RenderProgram::setXRange(0,400);
+            }
+            set960 = !set960;
+            alarm.set();
+       }*/
         //PolyRender::requestRect({32,32,64,64},{1,0,0,.5},false,0,-.1);
         //PolyRender::requestRect({64,64,64,64},{1,0,0,.5},false,0,-.1);
        //PolyRender::requestLine({0,0,100,100},{1,1,1,1},0);
@@ -130,5 +155,6 @@ int main(int args, char* argsc[])
         eventsEmpty = true;
         //std::cout << DeltaTime::deltaTime << std::endl;
     }
+    game.getLevel().reset();
     return 0;
 }
