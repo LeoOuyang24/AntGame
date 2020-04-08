@@ -1,10 +1,29 @@
 This document keeps track of all changes as well as considered changes made to the resources as well as why they were made. Consider this a "learning from the past" kind of document. 
 
+4/7/2020:
+	Because the UI needs to render selected entities onto a set point of the screen but the entities also need to be rendered onto their correct spot on the world, many functions that render objects had to take in a parameter to determine whether to render in an absolute position or to a world position. This is cluncky because we'd have to rewrite every render function with an additional boolean parameter. The truth is, every render function follows a pattern: if it's called when rendering world stuff, it's rendered to the world position and if it's called when rendering UI stuff, it's rendered in an absolute position. If that's the case, we can just create a static boolean variable that determines whether or not something is rendered to the world or to the absolute based on what we are currently rendering. We already have the GameWindow::update function divided into such functions so adding this boolean variable is simple. We'll call it  GameWindow::renderAbsolute. All we have to do now is ensure that every render call is a GameWindow render call, such as GameWindow::requestNGon. As of now, GameWindow::requestNGon and GameWindow::requestRect still allow entities to choose to render absolute if they so choose. This bool will override a false GameWindow::renderAbsolute. You can think of it as:
+	if (bool || renderAbsolute) 
+	{
+		renderAbsolute();
+	}
+
+4/6/2020:
+	The new Label instances can now be turned on/off via the new Trigger class. The Trigger base class consists of a constructor and a single member function that returns false. Children of the Trigger class will return true/false based on their own functionality; the LambTrigger, for example, will return according to a lambda. The motivation behind the Trigger class, rather than just having Label take in two lambdas, is to be able to combine two different types of triggers. If we just had two lambdas, we'd have to specify the type of the lambdas; if they required parameters, we'd have to specify them at compile time. Trigger encapsulates the lambdas and allows us to mix and match triggers for each label. 
+	Why not:
+		Use templated lambdas to pass in different types of lambdas?
+		Problem with this is that sometimes we also need to catch local variables and templates don't allow us to do that. 
+		
+		Use std::function?
+		Std::function would probably solve a lot of issues but it's apparently heavy-weight. We probably don't need that kind of functionality. 
+
+		Combine LamdaTrigger and ObjectTrigger into one class since an Object Trigger can do everything a LambdaTrigger can but more?
+		It's really just to make things more clear to readers of the code. If a label has an ObjectTrigger, you can bet that it relies on an object change rather than something in global scope.
 3/6/2020:
 	All non-templated functions have now been moved to .cpp files for consistency. 
 
 2/28/2020:
 	ComponentContainer was almost removed in favor of having Component<T> handle components and their entities. While this implementation can work, every child class of Component will inherit every member of Component, which may create some very large classes. 
+
 2/25/2020:
 	There is in fact a use for Component inheriting from ComponentContainer; this ensures that deleting a Component* will call both ~Component and ~ComponentContainer. Not having Component inherit from ComponentContainer will only call ~Component. However, we don't want multiple <Entity,Component> pairs in ComponentContainer<Component> so we allow the ComponentContainer to be passed a pointer. If this pointer is null, we don't add Component to ComponentContainer. Unlike all other components, Component always passes null to ComponentContainer<Component>() ensuring that we don't store anything in ComponentContainer<Component>::components while still inheriting form ComponentContainer<Component>.
 

@@ -9,8 +9,8 @@ void renderMeter(const glm::vec3& xyWidth, const glm::vec4& color, double curren
 {
     const int height = 10;
     glm::vec4 renderRect = {xyWidth.x,xyWidth.y,xyWidth.z*current/maximum,height};
-    PolyRender::requestRect(renderRect,color,true, 0, z);
-    PolyRender::requestRect(renderRect,{0,0,0,1},false,0,z);
+    GameWindow::requestRect(renderRect,color,true, 0, z);
+    GameWindow::requestRect(renderRect,{0,0,0,1},false,0,z);
 }
 
 ClickableComponent::ClickableComponent(std::string name, Entity& entity) : Component(entity), ComponentContainer<ClickableComponent>(&entity), name(name)
@@ -64,17 +64,16 @@ void ClickableComponent::update()
             //GameWindow::requestRect(buttonRect,{0,1,0,1},true,0,0);
             if (pointInVec(buttonRect,mousePos.x,mousePos.y,0))
             {
-                stillClicked = true;
                 if (MouseManager::getJustClicked() == SDL_BUTTON_LEFT)
                 {
+                    stillClicked = true;
                     buttons[i]->press();
                 }
                 break;
             }
             offset += rect->a + spacing.y;
         }
-        glm::vec2 dimen = {unitRect->z, unitRect->a};
-        GameWindow::requestRect({unitRect->x + unitRect->z/2 -dimen.x/2,unitRect->y + unitRect->a/2 -dimen.y/2,dimen.x,dimen.y},GameWindow::selectColor,true,0,0.01);
+        GameWindow::requestRect(*unitRect,GameWindow::selectColor,true,0,0.01);
     }
     /*bool becomeClicked = (MouseManager::isPressed(SDL_BUTTON_LEFT) && vecIntersect(GameWindow::getSelection(),*unitRect));
         if (entity->getComponent<Ant::AntMoveComponent>())
@@ -82,7 +81,7 @@ void ClickableComponent::update()
            // std::cout << stillClicked << " " << (MouseManager::getJustReleased() != SDL_BUTTON_LEFT && clicked) << std::endl;
         }*/
         //stillClicked = stillClicked ;//|| (MouseManager::getJustClicked() != SDL_BUTTON_LEFT && clicked);//  ||  becomeClicked;*/
-        click(stillClicked);
+        clicked = stillClicked || (MouseManager::getJustClicked() == SDL_BUTTON_LEFT && pointInVec(*unitRect,mousePos.x,mousePos.y));
 }
 void ClickableComponent::display(const glm::vec4& rect)
 {
@@ -208,7 +207,7 @@ void HealthComponent::update()
     {
         const glm::vec4* rect = &(rectComp->getRect());
         //GameWindow::requestRect({rect->x ,rect->y - displacement, rect->z, 0},{1,0,0,1},true,0,0);
-        render(glm::vec3(GameWindow::getCamera().toScreen({rect->x,rect->y - displacement}), rect->z), 0);
+        render({rect->x,rect->y - displacement, rect->z}, 0);
     }
 }
 

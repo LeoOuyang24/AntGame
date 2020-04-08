@@ -18,7 +18,7 @@ class ClickableComponent : public Component, public ComponentContainer<Clickable
     std::vector<std::unique_ptr<Button>> buttons;
 public:
     ClickableComponent(std::string name, Entity& entity);
-    virtual void update();
+    void update(); //essentially this class's version of update. It's useful
     void click(bool val);
     bool getClicked();
     void addButton(Button& button);

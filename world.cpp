@@ -211,6 +211,7 @@ void Map::render()
         for (int j = 0; j < rect.a/width; j ++)
         {
             GameWindow::requestRect({rect.x + i*width,rect.y + j*width,width,width},{i/(rect.z/width),j/(rect.a/width),1,1},true,0,-.1);
+           // drawRectangle(RenderProgram::basicProgram,{i/(rect.z/width),j/(rect.a/width),1},{rect.x + i*width,rect.y + j*width,width,width},0);
         }
     }
 }

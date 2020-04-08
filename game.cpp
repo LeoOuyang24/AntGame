@@ -3,6 +3,7 @@
 
 #include "game.h"
 #include "ants.h"
+#include "sequence.h"
 
 SpriteWrapper frame;
 
@@ -263,8 +264,8 @@ void AntManager::remove(Unit& unit)
 void AntManager::render(const glm::vec4& rect, int i)
 {
     glm::vec4 taskColor = {currentTask == ATTACK || currentTask == IDLE,std::max((double)(currentTask == MOVE || currentTask == IDLE),.5*(currentTask == COLLECT)),currentTask == COLLECT || currentTask == IDLE,1};
-    PolyRender::requestRect(rect,taskColor,true,0,.3);
-    Font::alef.write(Font::wordProgram,{convert(i),rect,0,{0,0,0},.3});
+    GameWindow::requestRect(rect,taskColor,true,0,GameWindow::interfaceZ, true);
+    Font::alef.write(Font::wordProgram,{convert(i),GameWindow::getCamera().toAbsolute(rect),0,{0,0,0},GameWindow::interfaceZ});
 }
 
 Manager::Manager()
@@ -428,8 +429,6 @@ void Manager::updateEntities()
     auto end = entities->end(); //we do this in case we added an object while looping. This ensures we still iterate as if the object wasn't added.
    // const glm::vec4* selectRect = &(GameWindow::getSelection());
     bool clicked = MouseManager::getJustClicked() == SDL_BUTTON_LEFT;
-    std::pair<int,int> pos = MouseManager::getMousePos();
-    glm::vec2 mousePos = GameWindow::getCamera().toWorld({pos.first,pos.second});
    // std::cout << mousePos.x << " " << mousePos.y << std::endl;
     Object* newSelected = nullptr;
     int index = 0;
@@ -445,7 +444,7 @@ void Manager::updateEntities()
         {
             current->update();
             tree->update(*rectPos,*oldTree);
-            if (clicked && pointInVec(current->getRect().getRect(),mousePos.x,mousePos.y,0))
+            if (current->clicked())
                {
                    //current->getClickable().click(true);
                    //selectedUnits.emplace_back(entities[current]);
@@ -505,7 +504,7 @@ void Manager::update()
 class AntClickable;
 
 
-float Camera::minZoom = .1, Camera::maxZoom = 2;
+double Camera::minZoom = .1, Camera::maxZoom = 2;
 Camera::Camera()
 {
 
@@ -515,40 +514,60 @@ void Camera::init(int w, int h)
 {
     baseDimen = {w,h};
     rect = {0,0,w,h};
+
+    move = new MoveComponent(.1,rect,*this);
+    addComponent(*(move));
 }
 
 void Camera::update()
 {
-    std::pair<int,int> mousePos = MouseManager::getMousePos();
-    glm::vec2 screenDimen = RenderProgram::getScreenDimen();
-    if (mousePos.first >= screenDimen.x - 1 || mousePos.first <= 0)
+    if (!move->atTarget() || (zoomAmount != zoomGoal && zoomGoal != -1))
     {
-        rect.x += absMin((mousePos.first - 1), (mousePos.first - screenDimen.x +2 ));
+        if (!move->atTarget())
+        {
+            move->update();
+            rect = move->getRect();
+        }
+        if (zoomAmount != zoomGoal)
+        {
+            zoom(absMin(zoomGoal - zoomAmount,convertTo1(zoomGoal - zoomAmount)*zoomSpeed*DeltaTime::deltaTime));
+        }
     }
-    if (mousePos.second >= screenDimen.y - 1 || mousePos.second <= 0)
+    else
     {
-        rect.y +=  absMin((mousePos.second - 1), (mousePos.second - screenDimen.y + 2 ));
-    }
-    if (bounds)
-    {
-        rect.x = std::max(bounds->x,std::min(bounds->x + bounds->z - rect.z,rect.x));
-        rect.y = std::max(bounds->y, std::min(bounds->y + bounds->a + GameWindow::getMenuHeight() - rect.a , rect.y));
-    }
-    auto mouseWheel = MouseManager::getMouseWheel();
-    if (mouseWheel.second > 0)
-    {
+        zoomGoal = -1;
+        std::pair<int,int> mousePos = MouseManager::getMousePos();
+        glm::vec2 screenDimen = RenderProgram::getScreenDimen();
+        if (mousePos.first >= screenDimen.x - 1 || mousePos.first <= 0)
+        {
+            rect.x += absMin((mousePos.first - 1), (mousePos.first - screenDimen.x +2 ));
+        }
+        if (mousePos.second >= screenDimen.y - 1 || mousePos.second <= 0)
+        {
+            rect.y +=  absMin((mousePos.second - 1), (mousePos.second - screenDimen.y + 2 ));
+        }
+        if (bounds)
+        {
+            rect.x = std::max(bounds->x,std::min(bounds->x + bounds->z - rect.z,rect.x));
+            rect.y = std::max(bounds->y, std::min(bounds->y + bounds->a + GameWindow::getMenuHeight() - rect.a , rect.y));
+        }
+        auto mouseWheel = MouseManager::getMouseWheel();
+        if (mouseWheel.second > 0)
+        {
 
-        zoom(-.1,toWorld({mousePos.first, mousePos.second}));
-    }
-    if (mouseWheel.second < 0)
-    {
-        zoom(.1,toWorld({mousePos.first, mousePos.second}));
-    }
-    if (KeyManager::getJustPressed() == SDLK_SPACE)
-    {
-        resetZoom();
-    }
+            zoom(-.1);//,toWorld({mousePos.first, mousePos.second}));
+        }
+        if (mouseWheel.second < 0)
+        {
+            zoom(.1);//,toWorld({mousePos.first, mousePos.second}));
+        }
+        if (KeyManager::getJustPressed() == SDLK_SPACE)
+        {
+            resetZoom();
+        }
+        //    GameWindow::requestRect({screenDimen.x/2 - 5, screenDimen.y/2 - 5,10,10},{0,0,0,1},true,0,0,true);
 
+    }
       //  GameWindow::requestNGon(4,{screenDimen.x/2, screenDimen.y/2},10,{0,0,0,1},0,true,0,true ); //renders a small square at the camera's center
 
 }
@@ -570,7 +589,6 @@ glm::vec4 Camera::toScreen(const glm::vec4& change) const
 
 glm::vec2 Camera::toScreen(const glm::vec2& point) const
 {
-    glm::vec2 screenDimen = RenderProgram::getScreenDimen();
 
     return {(point.x - rect.x), (point.y - rect.y)};
 }
@@ -608,7 +626,7 @@ void Camera::center(const glm::vec2& point)
 
 void Camera::zoom(float amount)
 {
-    zoomAmount = std::max(minZoom,std::min(maxZoom,zoomAmount + amount));
+    zoomAmount = std::max(minZoom,std::min(maxZoom,zoomAmount+ amount));
     glm::vec2 rectCenter = {rect.x + rect.z/2, rect.y + rect.a/2};
     rect.z = zoomAmount*baseDimen.x;
     rect.a = zoomAmount*baseDimen.y;
@@ -619,13 +637,29 @@ void Camera::zoom(float amount)
 
 void Camera::zoom(float amount, const glm::vec2& point)
 {
-    //center(point);
+    center(point);
     zoom(amount);
+}
+
+void Camera::setZoomTarget(double goal)
+{
+    zoomGoal = (goal);
+}
+
+void Camera::setZoomTarget(double goal, double speed )
+{
+    setZoomTarget(goal);
+    zoomSpeed = speed;
 }
 
 void Camera::resetZoom()
 {
     zoom(1- zoomAmount);
+}
+
+bool Camera::isZooming()
+{
+    return zoomGoal != -1;
 }
 
 float GameWindow::menuHeight = 1;
@@ -636,6 +670,8 @@ Camera GameWindow::camera;
 Manager GameWindow::manager;
 Map GameWindow::level;
 Window* GameWindow::gameOver = nullptr;
+float GameWindow::interfaceZ = .3;
+bool GameWindow::renderAbsolute = false;
 
 GameWindow::GameWindow() : Window({0,0},nullptr,{0,0,0,0})
 {
@@ -652,12 +688,16 @@ GameWindow::GameWindow() : Window({0,0},nullptr,{0,0,0,0})
     anthill = level.addUnit(*hill);
     //level.remove(*hill);
    // level.addUnit(*(new Beetle(320,320)));
-    for (int i = 0; i < 1; i ++)
-    {
-        hill->createAnt();
-    }
+    level.addAnt(*(new Ant({400,400,10,10},*hill)));
     hill->getComponent<ResourceComponent>()->setResource(-1000);
-    level.addUnit(*(new Mushroom(480,480)));
+    auto mushPtr = level.addUnit(*(new Mushroom(480,480)));
+    labels.emplace_back(new Label({400,400,256,32},"Click on the mushroom",{1,1,1,1},{480,480},
+                                  *(new LambdaTrigger([](){return !GameWindow::getCamera().isZooming();})),
+                                  *(new ObjectTrigger([](Object* obj){
+                                return obj && obj->clicked();},mushPtr)),1));
+    //camera.getComponent<MoveComponent>()->setTarget({-100,-100});
+    camera.center({480,480});
+    camera.setZoomTarget(.5);
    // manager.clear();
 }
 
@@ -667,6 +707,7 @@ bool GameWindow::updateSelect()
     {
         std::pair<int,int> mouse_Pos = MouseManager::getMousePos();
         glm::vec2 mousePos = camera.toWorld({mouse_Pos.first, mouse_Pos.second});
+      //  std::cout << mousePos.x << " " << mousePos.y << std::endl;
         if (MouseManager::getJustClicked() != SDL_BUTTON_LEFT)
         {
 
@@ -686,7 +727,7 @@ bool GameWindow::updateSelect()
 
 void GameWindow::update(int x, int y, bool clicked)
 {
-
+   // PolyRender::requestPolygon({{0,0,0},{0,400,0},{100,100,0},{100,400,0}},{0,0,0,1});
     Anthill* hill = static_cast<Anthill*>(anthill.lock().get());
     if (!hill)
     {
@@ -695,19 +736,31 @@ void GameWindow::update(int x, int y, bool clicked)
     }
     else
     {
+        renderAbsolute = false;
+
         bool select = updateSelect();
         if (select)
         {
             requestRect(selection,selectColor,true,0,-.1);
         }
 
-   //     requestRect({0,0,64,64},{1,0,1,1},true,0,0);
-      //  requestRect(camera.getRect(),{1,0,1,1},false,0,0);
         camera.update();
         manager.update();
         level.render();
+
+        int size = labels.size();
+        for (int i = 0; i < size; ++i)
+        {
+            if (!labels[i]->isDead())
+            {
+                labels[i]->update();
+            }
+        }
+        renderAbsolute = true;
     // std::cout << camera.getRect().x << " " << camera.getRect().x + camera.getRect().z << std::endl;
         renderSelectedUnits();
+
+
     }
     //std::cout << ComponentContainer<RenderComponent>::components.size() << std::endl;
 }
@@ -724,9 +777,8 @@ void GameWindow::renderSelectedUnits()
     float antRectWidth = .03*rect.z; //width and height of each of the outlineRects. This is a bit of a magic number and was chosen just because it looks good
     glm::vec2 spacing = {(selectedAntsRect.z - margin.x*2 - antsPerRow*antRectWidth)/antsPerRow,.3*menuHeight}; //horizontal and vertical spacing between ants and unit and health bar
 
-    GameWindow::requestRect(wholeRect,{0,1,0,1},true,0,.2,true);
     PolyRender::requestLine({selectedUnitRect.x*cameraRect->z/screenDimen.x,selectedUnitRect.y*cameraRect->a/screenDimen.y, selectedUnitRect.x*cameraRect->z/screenDimen.x,
-                             (selectedUnitRect.y + selectedUnitRect.a)*cameraRect->a/screenDimen.y},{0,0,0,1},.2);
+                             (selectedUnitRect.y + selectedUnitRect.a)*cameraRect->a/screenDimen.y},{0,0,0,1},interfaceZ);
 
     AntManager* antManager = manager.getCurrentTask();
     if (antManager)
@@ -739,27 +791,29 @@ void GameWindow::renderSelectedUnits()
             glm::vec4 outlineRect = { selectedAntsRect.x + margin.x + i%antsPerRow*(spacing.x + antRectWidth),selectedAntsRect.y + margin.y + i/antsPerRow*spacing.y,antRectWidth,antRectWidth};
             HealthComponent* health = current->getComponent<HealthComponent>();
             double healthRatio = health->getHealth()/health->getMaxHealth();//how much health this ant currently has;
-            current->getComponent<RenderComponent>()->render({{outlineRect.x + 2, outlineRect.y + 2, outlineRect.z - 4, outlineRect.a - 4},0,NONE,{1-healthRatio,0,0,1},&RenderProgram::basicProgram,.3});
-            GameWindow::requestRect(outlineRect,{1,0,1,1},false,0,.2,true);
+            current->getComponent<RenderComponent>()->render({{outlineRect.x + 2, outlineRect.y + 2, outlineRect.z - 4, outlineRect.a - 4}
+                                                             ,0,NONE,{1-healthRatio,0,0,1},&RenderProgram::basicProgram,interfaceZ});
+            GameWindow::requestRect(outlineRect,{1,0,1,1},false,0,interfaceZ,true);
         }
     }
     Object* selectedUnit = manager.getSelectedUnit().lock().get();
     if (selectedUnit)
     {
         glm::vec4 selectedRect = {selectedUnitRect.x + margin.x, selectedUnitRect.y + margin.y ,selectedUnitRect.a - margin.y*2, selectedUnitRect.a - margin.y*2};
-        selectedUnit->getRender().render({selectedRect,0,NONE,{1,1,1,1},&RenderProgram::basicProgram,.3});
+        selectedUnit->getRender().render({selectedRect,0,NONE,{1,1,1,1},&RenderProgram::basicProgram,interfaceZ});
         HealthComponent* health = selectedUnit->getComponent<HealthComponent>();
         if (health)
         {
-            health->render({selectedRect.x + selectedRect.z + spacing.x, selectedRect.y , selectedRect.z}, .3);
+            health->render({selectedRect.x + selectedRect.z + spacing.x, selectedRect.y , selectedRect.z}, interfaceZ);
         }
         ResourceComponent* resource = selectedUnit->getComponent<ResourceComponent>();
         if (resource)
         {
-            resource->render({selectedRect.x + selectedRect.z + spacing.x, selectedRect.y + spacing.y, selectedRect.z},.3);
+            resource->render({selectedRect.x + selectedRect.z + spacing.x, selectedRect.y + spacing.y, selectedRect.z},interfaceZ);
         }
         selectedUnit->getClickable().click(true);
     }
+        GameWindow::requestRect(wholeRect,{0,1,0,1},true,0,interfaceZ,true);
 }
 
 float GameWindow::getMenuHeight()
@@ -782,22 +836,29 @@ Map& GameWindow::getLevel()
 
 void GameWindow::requestNGon(int n, const glm::vec2& center, double side, const glm::vec4& color, double angle, bool filled, float z, bool absolute)
 {
+    bool oldAbs = renderAbsolute;
+    renderAbsolute = renderAbsolute || absolute;
     glm::vec2 c = camera.toScreen(center);
     const glm::vec4* cameraRect = &(camera.getRect());
     glm::vec2 screenDimen = RenderProgram::getScreenDimen();
-    if (absolute)
+    if (renderAbsolute)
     {
         c = {(center.x )/screenDimen.x*cameraRect->z, (center.y)/screenDimen.y*cameraRect->a};
         side = side/screenDimen.x*cameraRect->z;
     }
     PolyRender::requestNGon(n,c ,side,color,angle,filled,z);
+    if (absolute)
+    {
+        renderAbsolute = oldAbs;
+    }
 }
 
 void GameWindow::requestRect(const glm::vec4& rect, const glm::vec4& color, bool filled, double angle, float z, bool absolute)
 {
-
+    bool oldAbs = renderAbsolute;
+    renderAbsolute = renderAbsolute || absolute;
     glm::vec4 renderRect = rect;
-    if (absolute)
+    if (renderAbsolute)
     {
 
         renderRect = camera.toAbsolute(renderRect);
@@ -807,6 +868,10 @@ void GameWindow::requestRect(const glm::vec4& rect, const glm::vec4& color, bool
         renderRect = camera.toScreen(rect);
     }
     PolyRender::requestRect(renderRect,color,filled,angle,z);
+    if (absolute)
+    {
+        renderAbsolute = oldAbs;
+    }
 }
 
 GameWindow::QuitButton::QuitButton(GameWindow& window_) : Button({10,50,32,32},nullptr,nullptr, {"Quit"},&Font::alef,{0,1,0,1}), window(&window_)

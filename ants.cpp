@@ -88,7 +88,7 @@ void Ant::AntRenderComponent::update()
 
 void Ant::AntRenderComponent::render(const SpriteParameter& param)
 {
-    GameWindow::requestRect(param.rect,param.tint,true,param.radians,param.z,true);
+    GameWindow::requestRect(param.rect,param.tint,true,param.radians,param.z);
 }
 
 Ant::AntClickable::AntClickable(std::string name, Unit& entity) : ClickableComponent(name, entity), ComponentContainer<AntClickable>(entity)
@@ -147,17 +147,17 @@ void AntHillRender::update()
 {
     glm::vec4 rect = entity->getComponent<RectComponent>()->getRect();
    // GameWindow::requestNGon(10,{rect.x + rect.z/2, rect.y + rect.a/2},20,{.5,.5,.5,1},0,true,0);
-    render({GameWindow::getCamera().toScreen(rect)});
+    render({rect});
     ResourceComponent* counter = entity->getComponent<ResourceComponent>();
     //int width = counter->getResource()/((float)(counter->getMaxResource()))*rect.z, height = 10;
-    counter->render(glm::vec3(GameWindow::getCamera().toScreen({rect.x,rect.y + rect.a+ 10}),rect.z),0);
+    counter->render({rect.x,rect.y + rect.a+ 10,rect.z},0);
    // GameWindow::requestRect({rect.x, rect.y + rect.a + 10, width, height},{0,1,0,1},true,0,0);
     //GameWindow::requestRect({rect.x + width, rect.y + rect.a + 10, rect.z - width, height}, {1,0,0,1}, true, 0, 0);
 }
 
 void AntHillRender::render(const SpriteParameter& param)
 {
-    PolyRender::requestNGon(10,{param.rect.x + param.rect.z/2, param.rect.y + param.rect.a/2},20,{.5,.5,.5,1},param.radians,true,param.z);
+    GameWindow::requestNGon(10,{param.rect.x + param.rect.z/2, param.rect.y + param.rect.a/2},20,{.5,.5,.5,1},param.radians,true,param.z);
 }
 
 AntHillRender::~AntHillRender()

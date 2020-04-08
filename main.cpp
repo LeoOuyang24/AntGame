@@ -87,10 +87,6 @@ int main(int args, char* argsc[])
     spr.init("image.png",true);
 
     SpriteManager::addSprite(spr);*/
-
-bool set960 = false;
-DeltaTime alarm;
-alarm.set();
     while (!quit)
     {
         while (SDL_PollEvent(&e))

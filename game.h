@@ -3,6 +3,7 @@
 
 #include "glInterface.h"
 #include "glGame.h"
+#include "vanilla.h"
 
 #include "components.h"
 #include "entities.h"
@@ -79,13 +80,16 @@ public:
 };
 
 class GameWindow;
-class Camera
+class Camera : public Entity
 {
     glm::vec2 baseDimen = {0,0};
     const glm::vec4* bounds = nullptr;
     glm::vec4 rect = {0,0,0,0};
-    float zoomAmount = 1; //percentage of the base width and height of the camera
-    static float minZoom, maxZoom;
+    double zoomAmount = 1; //percentage of the base width and height of the camera
+    double zoomGoal = -1;
+    double zoomSpeed = .0001;
+    static double minZoom, maxZoom;
+    MoveComponent* move;
 public:
     Camera();
     void init(int w, int h);
@@ -101,10 +105,13 @@ public:
     void center(const glm::vec2& point); //centers the camera around point
     void zoom(float amount, const glm::vec2& point); //zooms the camera in and out. Multiples both height and width by amount
     void zoom(float amount);
+    void setZoomTarget(double goal); //sets a target for the camera to zoom down to
+    void setZoomTarget(double goal,double speed); //sets a target for the camera to zoom down to
     void resetZoom();
+    bool isZooming(); //if the camera is zooming towards a target
 };
 
-
+class Label;
 class GameWindow : public Window //the gamewindow is mostly static because most of its functions/members are used everywhere in the program. These members can't be manipulated without first creating a GameWindow
 {
     static float menuHeight;
@@ -114,8 +121,11 @@ class GameWindow : public Window //the gamewindow is mostly static because most 
     static Map level;
     static Manager manager;
     static Window* gameOver;
+    static bool renderAbsolute; //whether or not to renderAbsolute
+
     ObjPtr anthill; //pointer to the anthill. Keeps track of whether or not the player has lost
     bool updateSelect(); //updates the selection window and returns whether or not the player is selecting
+    std::vector<std::shared_ptr<Label>> labels;
     struct QuitButton : public Button
     {
         GameWindow* window = nullptr;
@@ -123,6 +133,7 @@ class GameWindow : public Window //the gamewindow is mostly static because most 
         void press();
     };
 public:
+    static float interfaceZ;
     bool quit = false;
     const static glm::vec4 selectColor;
     const static glm::vec4& getSelection();
