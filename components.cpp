@@ -56,6 +56,11 @@ glm::vec2 RectComponent::getCenter()
     return {rect.x + rect.z/2, rect.y + rect.a/2};
 }
 
+RectComponent::~RectComponent()
+{
+
+}
+
 MoveComponent::MoveComponent(double speed, const glm::vec4& rect, Entity& entity) : RectComponent(rect, entity), ComponentContainer<MoveComponent>(&entity), speed(speed)
 {
     target = {rect.x + rect.z/2, rect.y + rect.a/2};
@@ -75,7 +80,7 @@ void MoveComponent::update()
 
 bool MoveComponent::atTarget()
 {
-    return pointDistance(getCenter(),target) <= .0001;
+    return pointDistance(getCenter(),target) == 0;
 }
 
 void MoveComponent::teleport(const glm::vec2& point)
@@ -93,6 +98,16 @@ const glm::vec2& MoveComponent::getTarget()
 void MoveComponent::setTarget(const glm::vec2& point)
 {
     target = point;
+}
+
+void MoveComponent::setSpeed(double newspeed)
+{
+    speed = newspeed;
+}
+
+MoveComponent::~MoveComponent()
+{
+
 }
 
 RenderComponent::RenderComponent(Entity& entity) : Component(entity), ComponentContainer<RenderComponent>(&entity)
@@ -136,8 +151,6 @@ void Entity::collide(Entity& entity)
         components[i]->collide(entity);
     }
 }
-
-
 
 void Entity::onDeath()
 {

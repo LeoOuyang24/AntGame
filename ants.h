@@ -20,22 +20,11 @@ public:
     public:
         AntMoveComponent(Anthill* hill, double speed, const glm::vec4& rect, Entity& entity);
         void collide(Entity& entity);
-        void setCarrying(int amount)
-        {
-            carrying = amount;
-        }
-        int getCarrying()
-        {
-            return carrying;
-        }
-        Anthill* getHome()
-        {
-            return home;
-        }
-        ~AntMoveComponent()
-        {
-
-        }
+        void setCarrying(int amount);
+        int getCarrying();
+        Anthill* getHome();
+        void update();
+        ~AntMoveComponent();
     };
 
     class AntRenderComponent : public RenderComponent, public ComponentContainer<AntRenderComponent>
@@ -47,10 +36,7 @@ public:
         AntRenderComponent(const glm::vec4& color, Entity& entity);
         void update();
         void render(const SpriteParameter& param);
-        ~AntRenderComponent()
-        {
-
-        }
+        ~AntRenderComponent();
     };
 
     class AntClickable : public ClickableComponent, public ComponentContainer<AntClickable>
@@ -58,10 +44,7 @@ public:
     public:
         AntClickable(std::string name, Unit& entity);
         void clicked();
-        ~AntClickable()
-        {
-
-        }
+        ~AntClickable();
     };
     Ant(const glm::vec4& rect, Anthill& home);
     void setTarget(const glm::vec2& target, std::shared_ptr<Object>* unit);
@@ -70,14 +53,8 @@ public:
     void setCarrying(int amount);
     void goHome();
     int getCarrying();
-    AntManager* getCurrentTask()
-    {
-        return currentTask;
-    }
-    void setCurrentTask(AntManager& newTask)
-    {
-        currentTask = &newTask;
-    }
+    AntManager* getCurrentTask();
+    void setCurrentTask(AntManager& newTask);
 };
 
 class AntHillRender : public RenderComponent, public ComponentContainer<AntHillRender>

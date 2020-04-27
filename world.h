@@ -25,6 +25,7 @@ class Map
         glm::vec4 rect = {0,0,0,0};
         std::map<Object*, std::shared_ptr<Object>> entities;
         std::map<Ant*, std::shared_ptr<Ant>> ants;
+      //  std::vector<std::shared_ptr<Label>> labels;
         std::shared_ptr<RawQuadTree> tree;
         void clear();
         Chunk(const glm::vec4& rect_);

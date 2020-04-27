@@ -22,7 +22,7 @@ private:
     static std::unordered_map<ComponentContainer*, Entity*> entities;
     void insert(Entity* entity)
     {
-            //std::cout <<  typeid(C).name() << " Inserting: " <<components.size() << " " << entities.size() << std::endl;
+  //          std::cout <<  typeid(C).name() << " Inserting: " <<components.size() << " " << entities.size() << std::endl;
         if (entity)
         {
            // std::cout <<"Health: " << entity << " " <<   ComponentContainer<HealthComponent>::entities.size() << " " << ComponentContainer<HealthComponent>::components.size() << std::endl;
@@ -38,7 +38,7 @@ private:
     }
     void remove()
     {
-
+        //std::cout << typeid(C).name() << " Deleting: " << components.size() << " " << entities.size()   << std::endl;
         if (entities.count(this) > 0)
        {
             components.erase(components.find(entities[this]));
@@ -96,7 +96,7 @@ public:
     virtual void collide(Entity& other);
     virtual void onDeath();
     Entity& getEntity();
-    ~Component();
+    virtual ~Component();
 };
 
 class RectComponent : public Component, public ComponentContainer<RectComponent>, public RectPositional
@@ -106,6 +106,7 @@ public:
     void setRect(const glm::vec4& rect);
     void setPos(const glm::vec2& pos);
     glm::vec2 getCenter();
+    virtual ~RectComponent();
 };
 
 class MoveComponent : public RectComponent, public ComponentContainer<MoveComponent>
@@ -121,6 +122,8 @@ public:
     bool atTarget(); //returns whether or not we have arrived at the target
     void setTarget(const glm::vec2& point);
     const glm::vec2& getTarget();
+    void setSpeed(double newSpeed);
+    virtual ~MoveComponent();
 
 };
 
@@ -146,6 +149,23 @@ public:
         return (static_cast<T*>(ComponentContainer<T>::getComponent(this)));
     }
     void addComponent(Component& comp);
+    template<typename T>
+    void removeComponent()
+    {
+        T* ptr = getComponent<T>();
+        if (ptr)
+        {
+            int size = components.size();
+            for (int i = 0; i < size; ++i)
+            {
+                if (components[i].get() == ptr)
+                {
+                    components.erase(components.begin() + i);
+                    break;
+                }
+            }
+        }
+    }
     void onDeath();
     virtual ~Entity();
 

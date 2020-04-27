@@ -9,7 +9,7 @@
 #include "entities.h"
 #include "world.h"
 #include "ants.h"
-
+#include "antManager.h"
 
 extern SpriteWrapper frame;
 
@@ -18,43 +18,8 @@ extern SpriteWrapper frame;
 
 class Ant;
 
-typedef std::weak_ptr<Object> ObjPtr;
 
-class AntManager //handles ant movement and targeting
-{
-    enum Task
-    {
-        IDLE, //not doing anything.
-        ATTACK, //moving to destroy a unit
-        MOVE, //moving to a point on the map rather than a unit
-        COLLECT, //in the process of collecting, even if all the ants are moving towards the target
-        INTERACT
-    };
-    Task currentTask = IDLE;
-    const static int spacing; //spacing between ants when they move
-    Manager* manager = nullptr;
-   // std::vector<std::shared_ptr<Ant>> selected;
-    ObjPtr targetUnit; //used to keep track of an ant group's main target
-    glm::vec2 clumpDimen = {0,0}; //how many ants horizontally and vertically
-    glm::vec2 space = {0,0}; //space between ants horizontally and vertically
-    glm::vec2 targetPoint = {0,0}; //point to move ants to
-    glm::vec2 antsCenter = {0,0}; //the center of all the ants
-    std::vector<std::weak_ptr<Ant>> selected;
-    void change(std::shared_ptr<Unit> newUnit, glm::vec2& newPoint); //sets the member variables and notifies the ants
 
-public:
-    AntManager(Manager& newManager);
-    ~AntManager();
-    const glm::vec2& getCenter();
-    std::vector<std::weak_ptr<Ant>>& getAnts();
-    void clear();
-    const Object* getTargetUnit();
-    void getInput(); //handles input, such as clicks
-    void updateAnts(); //updates ants. The key distinction between this and getInput is that this runs regardless of whether this is the current AntManager
-    void remove(Unit& unit);
-    void addAnt(std::shared_ptr<Ant>& ant);
-    void render(const glm::vec4& rect, int i); //renders the AntManager on the left side of the screen. i is the index of the antManager in Manager
-};
 
 class Manager
 {
@@ -73,8 +38,8 @@ class Manager
     void updateEntities();
 public:
     Manager();
-    ObjPtr getSelectedUnit();
-    AntManager* getCurrentTask();
+    const ObjPtr getSelectedUnit() const;
+    const AntManager* getCurrentTask() const;
     void init(const glm::vec4& region);
     void update();
 };
@@ -109,9 +74,11 @@ public:
     void setZoomTarget(double goal,double speed); //sets a target for the camera to zoom down to
     void resetZoom();
     bool isZooming(); //if the camera is zooming towards a target
+    void close();
+    ~Camera();
 };
 
-class Label;
+class SequenceUnit;
 class GameWindow : public Window //the gamewindow is mostly static because most of its functions/members are used everywhere in the program. These members can't be manipulated without first creating a GameWindow
 {
     static float menuHeight;
@@ -125,7 +92,7 @@ class GameWindow : public Window //the gamewindow is mostly static because most 
 
     ObjPtr anthill; //pointer to the anthill. Keeps track of whether or not the player has lost
     bool updateSelect(); //updates the selection window and returns whether or not the player is selecting
-    std::vector<std::shared_ptr<Label>> labels;
+    std::vector<std::shared_ptr<SequenceUnit>> labels;
     struct QuitButton : public Button
     {
         GameWindow* window = nullptr;
@@ -138,6 +105,7 @@ public:
     const static glm::vec4 selectColor;
     const static glm::vec4& getSelection();
     static Camera& getCamera();
+    static const Manager& getManager();
     static Map& getLevel();
     static void requestNGon(int n, const glm::vec2& center, double side, const glm::vec4& color, double angle, bool filled, float z, bool absolute = false); //easier way to render polygons without having to call getCamera();
     static void requestRect(const glm::vec4& rect, const glm::vec4& color, bool filled, double angle, float z, bool absolute = false); //if absolute is true, the coordinates are taken as screen coordinates
@@ -145,6 +113,7 @@ public:
     void update(int x, int y, bool clicked);
     void renderSelectedUnits();
     static float getMenuHeight();
+    static void close();
 };
 
 #endif // GAME_H_INCLUDED

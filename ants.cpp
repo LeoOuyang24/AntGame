@@ -16,14 +16,15 @@ Ant::AntMoveComponent::AntMoveComponent(Anthill* hill, double speed, const glm::
 
 void Ant::AntMoveComponent::collide(Entity& other)
 {
+    auto move = other.getComponent<Ant::AntMoveComponent>();
     if (&other == home && carrying > 0)
     {
         home->getComponent<ResourceComponent>()->setResource(carrying);
         carrying = 0;
     }
-    else if (other.getComponent<Ant::AntMoveComponent>() && atTarget())
+    else if (move && move->atTarget() && atTarget())
     {
-        glm::vec2 otherPos = other.getComponent<RectComponent>()->getPos();
+        glm::vec2 otherPos = move->getPos();
         glm::vec2 center = getCenter();
         if (rect.x == otherPos.x && rect.y == otherPos.y)
         {
@@ -39,7 +40,7 @@ void Ant::AntMoveComponent::collide(Entity& other)
     }
 }
 
-/*void Ant::AntMoveComponent::setCarrying(int amount)
+void Ant::AntMoveComponent::setCarrying(int amount)
 {
     carrying = amount;
 }
@@ -52,7 +53,51 @@ int Ant::AntMoveComponent::getCarrying()
 Anthill* Ant::AntMoveComponent::getHome()
 {
     return home;
-}*/
+}
+
+void Ant::AntMoveComponent::update()
+{
+    if (!atTarget())
+    {
+        /*Object* owner = static_cast<Object*>(entity);
+        RawQuadTree* tree = GameWindow::getLevel().getTreeOf(*owner);
+        auto nearby = tree->getNearest(getCenter(), 100);
+        int size = nearby.size();
+        glm::vec2 modified = {0,0};
+        glm::vec2 avgTarg = {0,0};
+        int ants = 0;
+        glm::vec2 ownerCenter = owner->getCenter();
+        for (int i = 0; i < size; ++i)
+        {
+            Unit* current = static_cast<Unit*>(&((static_cast<RectComponent*>(nearby[i]))->getEntity()));
+            AntMoveComponent* move = current->getComponent<AntMoveComponent>();
+            if (move)
+            {
+                ants ++;
+                glm::vec2 center =  current->getCenter();
+                double distance = glm::distance(center,ownerCenter);
+                bool repulse =  false;
+                modified.x += center.x - ownerCenter.x + repulse*(-.1*distance);
+                modified.y += center.y - ownerCenter.y + repulse*(-.1*distance);
+                avgTarg.x += move->getTarget().x;
+                avgTarg.y += move->getTarget().y;
+            }
+        }
+        modified.x /= ants;
+        modified.y /= ants;
+      //  target.x = (avgTarg.x + target.x)/(ants+1);
+     //   target.y = (avgTarg.y + target.y)/(ants+1);
+        target.x += .1*modified.x;
+        target.y += .1*modified.y;*/
+        MoveComponent::update();
+    }
+
+}
+
+Ant::AntMoveComponent::~AntMoveComponent()
+{
+
+}
 
 Ant::AntRenderComponent::AntRenderComponent(const glm::vec4& color, Entity& entity) : RenderComponent(entity), ComponentContainer<AntRenderComponent>(entity), color(color)
 {
@@ -61,7 +106,7 @@ Ant::AntRenderComponent::AntRenderComponent(const glm::vec4& color, Entity& enti
 
 void Ant::AntRenderComponent::update()
 {
-    if (angle == goalAngle)
+    /*if (angle == goalAngle)
     {
         if (rand()%1000 == 0)
         {
@@ -77,7 +122,7 @@ void Ant::AntRenderComponent::update()
         }
         angle += absMin((goalAngle-angle),speed);
         //std::cout << angle << " " << goalAngle << std::endl;
-    }
+    }*/
     const glm::vec4* rect = &(entity->getComponent<RectComponent>()->getRect());
     GameWindow::requestNGon(4,{rect->x+rect->z/2,rect->y+rect->a/2},rect->z,{0,0,0,1},angle,true,0);
     if (((Ant*)(entity))->getCarrying() > 0)
@@ -89,6 +134,11 @@ void Ant::AntRenderComponent::update()
 void Ant::AntRenderComponent::render(const SpriteParameter& param)
 {
     GameWindow::requestRect(param.rect,param.tint,true,param.radians,param.z);
+}
+
+Ant::AntRenderComponent::~AntRenderComponent()
+{
+
 }
 
 Ant::AntClickable::AntClickable(std::string name, Unit& entity) : ClickableComponent(name, entity), ComponentContainer<AntClickable>(entity)
@@ -103,6 +153,11 @@ void Ant::AntClickable::clicked()
     {
 
     }
+}
+
+Ant::AntClickable::~AntClickable()
+{
+
 }
 
 Ant::Ant(const glm::vec4& rect, Anthill& home) : Unit(*(new ClickableComponent("Ant",*this)), *(new AntMoveComponent(&home,.1,rect,*this)),*(new AntRenderComponent({0,0,0,1},*this)),
@@ -136,6 +191,15 @@ void Ant::setCarrying(int amount)
 int Ant::getCarrying()
 {
     return ((AntMoveComponent*)rect)->getCarrying();
+}
+
+AntManager* Ant::getCurrentTask()
+{
+    return currentTask;
+}
+void Ant::setCurrentTask(AntManager& newTask)
+{
+    currentTask = &newTask;
 }
 
 AntHillRender::AntHillRender(Entity& entity) : RenderComponent(entity), ComponentContainer<AntHillRender>(entity),color({0,0,0,1})
