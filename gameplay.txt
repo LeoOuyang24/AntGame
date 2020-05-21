@@ -1,0 +1,8 @@
+Story: The ants are actually processes in a computer. Narrator is task manager, who is surprised to see the ants.
+
+Gameplay: Build anthills, which after one in-game day, conquer an area, preventing more entities from spawning. Safety radius from anthill increases until one day.
+
+Make the game seem like a tower defense and the world is smaller than it actually is when in reality, it's much bigger. 
+
+Maybe have an evolution tree and pheromones that buff ants.
+

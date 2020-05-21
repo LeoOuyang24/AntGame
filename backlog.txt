@@ -1,0 +1,1 @@
+Make it so that tasks show what button need to be pressed to select them (5/4/2020 -)

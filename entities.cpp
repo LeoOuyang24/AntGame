@@ -493,7 +493,7 @@ Bug::~Bug()
 
 Beetle::Beetle(int x, int y) : Unit(*(new ClickableComponent("Beetle", *this)), *(new WanderMove(.02,{x,y,64,64},*this)), *(new RectRenderComponent({1,.5,0,1},*this)),*(new HealthComponent(*this, 100)))
 {
-    addComponent(*(new AttackComponent(1,10,*this)));
+    addComponent(*(new AttackComponent(1,50,*this)));
     addComponent(*(new BeetleMove(*this)));
     addComponent(*(new CorpseComponent(*this,200)));
 }

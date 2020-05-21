@@ -7,9 +7,35 @@
 
 SpriteWrapper frame;
 
+Manager::TaskNode::TaskNode(Manager& t) : task(t, GameWindow::selectColor)
+{
 
+}
 
+Manager::TaskNode::TaskNode(AntManager&& t) : task(std::move(t))
+{
 
+}
+
+bool Manager::TaskNode::hasChildren()
+{
+    for (int i = 0; i < AntManager::maxChildren; ++i)
+    {
+        if (child[i].get())
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+Manager::TaskNode::~TaskNode()
+{
+    for (int i = 0; i < AntManager::maxChildren; ++i)
+    {
+        child[i].reset();
+    }
+}
 
 Manager::Manager()
 {
@@ -21,7 +47,12 @@ const ObjPtr Manager::getSelectedUnit() const
 }
 const AntManager* Manager::getCurrentTask() const
 {
-    return currentTask;
+    auto task = currentTask.lock().get();
+    if (task)
+    {
+        return &(task->task);
+    }
+    return nullptr;
 }
 
 void Manager::init(const glm::vec4& region)
@@ -65,74 +96,135 @@ void Manager::spawnCreatures()
 
 }
 
+int Manager::processAntManagers(std::shared_ptr<TaskNode>& node,int index, int y, int x)
+{
+    TaskNode* nodePtr = node.get();
+    if (nodePtr)
+    {
+        y++;
+        std::string key = "";
+        TaskNode* parent = parentTask.lock().get();
+        node->task.updateAnts();
+        if (nodePtr == parent)
+        {
+            key = "~";
+        }
+        else if(index > -1)
+        {
+            key = convert(index + 1);
+        }
+        else
+        {
+            if ( parent != nullptr)
+            {
+                if (nodePtr == parent->child[0].get())
+                {
+                    key = "a";
+                }
+                else if (nodePtr == parent->child[1].get())
+                {
+                    key = "s";
+                }
+                else if (nodePtr == parent->child[2].get())
+                {
+                    key = "d";
+                }
+                else if (nodePtr == parent->child[3].get())
+                {
+                    key = "f";
+                }
+            }
+        }
+        node->task.render({10*x + 1,y*25,30,20},key);
+        if (nodePtr->task.getAnts().size() > 0)
+        {
+            for (int i = 0; i < AntManager::maxChildren; ++i)
+            {
+               y = processAntManagers(node->child[i],-1,y , x + 1);
+            }
+        }
+    }
+    return y;
+}
 
 void Manager::updateAntManagers()
 {
     int size = tasks.size();
-    for (int i = size - 1; i >= 0; --i)
+    int previous = 0;
+    for (int i = 0; i < size; ++i)
     {
-        if (tasks[i]->getAnts().size() != 0)
-        {
-            tasks[i]->updateAnts();
-            tasks[i]->render({10,i*25,30,20},convert(i+1));
-        }
-        else
-        {
-            if (currentTask == tasks[i].get())
-            {
-                currentTask = nullptr;
-            }
-            tasks.erase(tasks.begin() + i);
-        }
+        previous = processAntManagers(tasks[i],i,previous,0);
     }
     int pressed = KeyManager::getJustPressed();
+    auto taskNode = currentTask.lock().get();
     if (pressed != -1)
     {
         int index = (pressed - SDLK_1); //this is is the same as (pressed-SDLK1%maxTasks) except it always returns a positive number
         if (index < (int)tasks.size() && index >= 0) //we have to use .size() rather than the size variable here because size might change
         {
-            currentTask = tasks[index].get();
+            currentTask = tasks[index];
+            if (tasks[index]->hasChildren())
+            {
+                parentTask = currentTask;
+            }
+            else
+            {
+                parentTask.reset();
+            }
             Camera* cam = &(GameWindow::getCamera());
-            glm::vec2 center = currentTask->getCenter();
+            glm::vec2 center = currentTask.lock().get()->task.getCenter();
             if (!pointInVec(cam->getRect(),center.x,center.y,0))
             {
                 cam->center(center);
             }
         }
-        else if (currentTask)
+        else if (taskNode)
         {
-            if (pressed == SDLK_TAB)
-            {
-                currentTask->split(AntManager::maxChildren);
-            }
-            else
-            {
-                auto oldTask = currentTask;
-                switch (pressed)
+            auto task = &(taskNode->task);
+            switch (pressed)
                 {
-                case SDLK_a:
-                    currentTask = currentTask->getChild(0);
-                    break;
-                case SDLK_s:
-                    currentTask = currentTask->getChild(1);
-                    break;
-                case SDLK_d:
-                    currentTask = currentTask->getChild(2);
-                    break;
-                case SDLK_f:
-                    currentTask = currentTask->getChild(3);
-                    break;
+                    case SDLK_TAB:
+                        split();
+                        parentTask = currentTask;
+                        break;
+                    case SDLK_BACKQUOTE:
+                        currentTask = parentTask;
+                        break;
+                    case SDLK_F1:
+                        parentTask = currentTask;
+                        break;
+                    default:
+                        auto parent = parentTask.lock().get();
+                        if (parent)
+                        {
+                            auto oldTask = currentTask;
+                            switch (pressed)
+                            {
+                            case SDLK_a:
+                                currentTask = parent->child[0];
+                                break;
+                            case SDLK_s:
+                                currentTask = parent->child[1];
+                                break;
+                            case SDLK_d:
+                                currentTask = parent->child[2];
+                                break;
+                            case SDLK_f:
+                                currentTask = parent->child[3];
+                                break;
+                            }
+                            if (!currentTask.lock().get())
+                            {
+                                currentTask = oldTask;
+                            }
+                        }
                 }
-                if (!currentTask)
-                {
-                    currentTask = oldTask;
-                }
-            }
         }
     }
 
-
 }
+
+
 
 void Manager::updateAnts()
 {
@@ -140,7 +232,7 @@ void Manager::updateAnts()
     if (MouseManager::getJustClicked() == SDL_BUTTON_LEFT)
     {
        // antManager.clear();
-       currentTask = nullptr;
+       currentTask.reset();
         //selectedUnit = nullptr;
     }
     int index = 0;
@@ -175,11 +267,14 @@ void Manager::updateAnts()
             {
                 if (!newTask)
                 {
-                    newTask = new AntManager(*this, GameWindow::selectColor);
-                    tasks.emplace_back(newTask);
-                    currentTask = newTask;
+                    tasks.emplace_back(new TaskNode(*this));
+                    auto shared = tasks[tasks.size() - 1];
+                    currentTask = shared;
+                    parentTask.reset();
+                    newTask = &(shared->task);
                 }
                 newTask->addAnt(i->second);
+                //std::cout << newTask->getAnts().size() << " "<< tasks[0]->task.getAnts().size() << std::endl;
                 //selectedUnits.emplace_back(ants[i->first]);
             }
         }
@@ -244,6 +339,23 @@ void Manager::updateEntities()
     }
 }
 
+void Manager::split()
+{
+    auto current = currentTask.lock().get();
+    if (current)
+    {
+        auto arr = current->task.split(AntManager::maxChildren);
+        for (int i = 0; i < AntManager::maxChildren; ++i)
+        {
+           // if (i < pieces)
+            {
+                current->child[i].reset(new TaskNode(std::move(arr[i])));
+
+            }
+        }
+    }
+}
+
 void Manager::update()
 {
     //std::vector<Unit*> selected;
@@ -257,9 +369,10 @@ void Manager::update()
 
     updateAntManagers();
 
-    if (currentTask)
+    auto curTask = currentTask.lock().get();
+    if (curTask)
     {
-        currentTask->getInput();
+        curTask->task.getInput();
         //std::cout << currentTask->getAnts().size() << std::endl;
     }
    /* else if (selectedUnit)
@@ -269,7 +382,7 @@ void Manager::update()
     int size = GameWindow::getLevel().getEntities(GameWindow::getLevel().getCurrentChunk()).size();
     if (size < 10)
     {
-        spawnCreatures();
+      //  spawnCreatures();
     }
     //glm::vec2 disp = {GameWindow::getCamera().getRect().x,GameWindow::getCamera().getRect().y};
     //tree->render(disp);

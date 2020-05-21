@@ -58,9 +58,24 @@ struct C : public A, public B<C>
 
 };
 
+struct Mirror
+{
+    std::shared_ptr<Mirror> self;
+    Mirror()
+    {
+        self.reset(this);
+        std::cout << "Mirror created: " << this << std::endl;
+    }
+    ~Mirror()
+    {
+        std::cout << "Mirror dead: " << this << std::endl;
+    }
+};
+
 
 int main(int args, char* argsc[])
 {
+
     const int screenWidth = 960;
     const int screenHeight = 960;
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
@@ -119,7 +134,9 @@ int main(int args, char* argsc[])
         }
 
        //drawRectangle(RenderProgram::lineProgram,{1,1,1},{0,0,64,64},0);
-      // comic.requestWrite({"1234567890asdf",{320,320,128,64},0,{0,0,0,1},1});
+      // glm::vec4 rect = {320,320,128,64};
+     //  PolyRender::requestRect(rect,{0,0,1,1},true,0,.1);
+   //    Font::alef.requestWrite({"a",rect,0,{0,1,0,1},1});
         SpriteManager::render();
         PolyRender::render();
         FontManager::update();

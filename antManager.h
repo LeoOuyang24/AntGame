@@ -45,11 +45,8 @@ public:
     void remove(Unit& unit);
     void addAnt(const std::shared_ptr<Ant>& ant);
     void render(const glm::vec4& rect, std::string c); //renders the AntManager on the left side of the screen. i is the index of the antManager in Manager
-    void split(int pieces);
-    AntManager* getChild(int index); //returns the child at that index. Null if there is none
+    std::vector<AntManager> split(int index);
     void setTask(Task t);
-private:
-    std::unique_ptr<AntManager> child[maxChildren];
 
 };
 
