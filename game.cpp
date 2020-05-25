@@ -61,7 +61,7 @@ void Manager::init(const glm::vec4& region)
     tasks.reserve(maxTasks);
 }
 
-void Manager::spawnCreatures()
+Unit* Manager::generateCreature()
 {
     int random = rand()%5;
     Unit* toSpawn = nullptr;
@@ -71,17 +71,23 @@ void Manager::spawnCreatures()
         toSpawn = new Bug(0,0);
         break;
     case 1:
-        toSpawn = new Beetle(0,0);
+        toSpawn = new Bug(0,0);
         break;
     case 2:
     case 3:
     case 4:
-        toSpawn = new Mushroom(0,0);
+        toSpawn = new Bug(0,0);
         break;
     default:
         toSpawn = new Bug(0,0);
     }
+    return toSpawn;
+}
 
+void Manager::spawnCreatures()
+{
+
+    Unit* toSpawn = generateCreature();
     Map* level = &(GameWindow::getLevel());
     const glm::vec4* mapSize = &(level->getRect(level->getCurrentChunk()));
     const glm::vec4* camera = &(GameWindow::getCamera().getRect());
@@ -91,8 +97,27 @@ void Manager::spawnCreatures()
     int y = rand() % ((int)(mapSize->a - entityRect->a - camera->a*cameraInTheWay)) + mapSize->y;
     //modify coordinates so our object doesn't spawn in the player's view
     y += camera->a*(y > camera->y)*cameraInTheWay;
-    toSpawn->getRect().setRect({x,y,entityRect->z,entityRect->a});
+    toSpawn->getRect().setPos({x,y});
     level->addUnit(*toSpawn);
+
+}
+
+void Manager::spawnCreatures(Anthill& hill, double minR, double maxR) //spawn creatures near an anthill at a certain radius
+{
+    const glm::vec4* rect = &(hill.getRect().getRect());
+    double diag = rect->z*sqrt(2); //largest distance from the center that intersects with the anthill
+    minR = std::max(diag,minR);
+    maxR = std::max(minR, maxR);
+    double r = fmod(rand(),(maxR - minR)) + minR;
+    double theta = rand()%360*M_PI/180;
+    Unit* toSpawn = generateCreature();
+    glm::vec2 point = {rect->x + rect->z/2 + cos(theta)*r,rect->y + rect->a/2 + sin(theta)*r};
+    GameWindow::getLevel().moveObject(*toSpawn,point.x,point.y);
+    SeigeComponent* seige = new SeigeComponent(*toSpawn,hill);
+    toSpawn->addComponent(*seige);
+    GameWindow::getLevel().addUnit(*toSpawn);
+
+   // std::cout << point.x << " " << point.y << std::endl;
 
 }
 
@@ -113,6 +138,7 @@ int Manager::processAntManagers(std::shared_ptr<TaskNode>& node,int index, int y
         {
             key = convert(index + 1);
         }
+
         else
         {
             if ( parent != nullptr)
@@ -149,6 +175,7 @@ int Manager::processAntManagers(std::shared_ptr<TaskNode>& node,int index, int y
 
 void Manager::updateAntManagers()
 {
+
     int size = tasks.size();
     int previous = 0;
     for (int i = 0; i < size; ++i)
@@ -221,12 +248,17 @@ void Manager::updateAntManagers()
                 }
         }
     }
+    if (MouseManager::getJustClicked() == SDL_BUTTON_LEFT)
+    {
+        currentTask.reset();
+        parentTask.reset();
+    }
 
 }
 
 
 
-void Manager::updateAnts()
+/*void Manager::updateAnts()
 {
     int released = MouseManager::getJustReleased();
     if (MouseManager::getJustClicked() == SDL_BUTTON_LEFT)
@@ -237,7 +269,7 @@ void Manager::updateAnts()
     }
     int index = 0;
     Map* level = &(GameWindow::getLevel());
-    AntStorage* ants = &(level->getAnts(level->getCurrentChunk()));
+    AntStorage* ants = &(level->getUnit(level->getCurrentChunk()));
     auto it = ants->begin();
     AntManager* newTask = nullptr; //if we select any ants, this pointer will point to the new task
     const glm::vec4* selectRect = &(GameWindow::getSelection());
@@ -252,31 +284,8 @@ void Manager::updateAnts()
             RawQuadTree* oldTree = tree->find(*rectPos);
             i->second->update();
             tree->update(*rectPos,*oldTree);
-            std::vector<Positional*> vec;
-            tree->getNearest(vec,*(rectPos));
-            for (int j = vec.size() - 1; j >= 0; j --)
-            {
-                Entity* ptr = &(((RectComponent*)vec[j])->getEntity());
-                if ( ptr != i->first && vec[j]->collides(*rect))
-                {
-                    i->second->collide(*ptr);
-                    ptr->collide(*(i->second.get()));
-                }
-            }
-            if (released == SDL_BUTTON_LEFT && i->second->getRect().collides(*selectRect))
-            {
-                if (!newTask)
-                {
-                    tasks.emplace_back(new TaskNode(*this));
-                    auto shared = tasks[tasks.size() - 1];
-                    currentTask = shared;
-                    parentTask.reset();
-                    newTask = &(shared->task);
-                }
-                newTask->addAnt(i->second);
-                //std::cout << newTask->getAnts().size() << " "<< tasks[0]->task.getAnts().size() << std::endl;
-                //selectedUnits.emplace_back(ants[i->first]);
-            }
+
+
         }
         else
         {
@@ -285,18 +294,20 @@ void Manager::updateAnts()
         }
         index ++;
     }
-}
+}*/
 
 void Manager::updateEntities()
 {
     Map* level = &(GameWindow::getLevel());
     ObjectStorage* entities = &(level->getEntities(level->getCurrentChunk()));
+    const glm::vec4* selectRect = &(GameWindow::getSelection());
     RawQuadTree* tree = level->getTree(level->getCurrentChunk());
-
+    AntManager* newTask = nullptr;
     auto it2 = entities->begin();
     auto end = entities->end(); //we do this in case we added an object while looping. This ensures we still iterate as if the object wasn't added.
    // const glm::vec4* selectRect = &(GameWindow::getSelection());
     bool clicked = MouseManager::getJustClicked() == SDL_BUTTON_LEFT;
+    int released = MouseManager::getJustReleased();
    // std::cout << mousePos.x << " " << mousePos.y << std::endl;
     Object* newSelected = nullptr;
     int index = 0;
@@ -312,12 +323,42 @@ void Manager::updateEntities()
         {
             current->update();
             tree->update(*rectPos,*oldTree);
-            if (current->clicked())
+            positionalVec vec = tree->getNearest(*(rectPos));
+            for (int j = vec.size() - 1; j >= 0; j --)
+            {
+                Entity* ptr = &(((RectComponent*)vec[j])->getEntity());
+                if ( ptr != i->first && vec[j]->collides(rectPos->getRect()))
+                {
+                    i->second->collide(*ptr);
+                    ptr->collide(*(i->second.get()));
+                }
+            }
+            if (current->getComponent<Ant::AntMoveComponent>())
+            {
+                if (released == SDL_BUTTON_LEFT && i->second->getRect().collides(*selectRect))
+                {
+                    if (!newTask)
+                    {
+                        tasks.emplace_back(new TaskNode(*this));
+                        auto shared = tasks[tasks.size() - 1];
+                        currentTask = shared;
+                        parentTask.reset();
+                        newTask = &(shared->task);
+                    }
+                    newTask->addAnt(std::dynamic_pointer_cast<Ant>(i->second));
+                    //std::cout << newTask->getAnts().size() << " "<< tasks[0]->task.getAnts().size() << std::endl;
+                    //selectedUnits.emplace_back(ants[i->first]);
+                }
+            }
+            else
+            {
+                if (current->clicked())
                {
                    //current->getClickable().click(true);
                    //selectedUnits.emplace_back(entities[current]);
                    newSelected = current;
                }
+            }
         }
         else
         {
@@ -363,7 +404,6 @@ void Manager::update()
     //std::cout << released << std::endl;
 
 
-    updateAnts();
 
     updateEntities();
 
@@ -375,17 +415,25 @@ void Manager::update()
         curTask->task.getInput();
         //std::cout << currentTask->getAnts().size() << std::endl;
     }
+    if (signalling && spawner.framesPassed(100))
+    {
+        Map* map = &(GameWindow::getLevel());
+        spawnCreatures(*signalling, 500, map->getRect(map->getCurrentChunk()).z);
+        spawner.reset();
+        spawner.set();
+    }
    /* else if (selectedUnit)
     {
         selectedUnit->getClickable().click(true);
     }*/
-    int size = GameWindow::getLevel().getEntities(GameWindow::getLevel().getCurrentChunk()).size();
-    if (size < 10)
-    {
-      //  spawnCreatures();
-    }
     //glm::vec2 disp = {GameWindow::getCamera().getRect().x,GameWindow::getCamera().getRect().y};
     //tree->render(disp);
+}
+
+void Manager::setSignalling(Anthill& hill)
+{
+    signalling = &hill;
+    spawner.set();
 }
 
 class AntClickable;
@@ -583,10 +631,11 @@ GameWindow::GameWindow() : Window({0,0},nullptr,{0,0,0,0})
     manager.init(level.getRect(level.getCurrentChunk()));
     Anthill* hill = (new Anthill({320,320}));
     anthill = level.addUnit(*hill);
+    hill->setManager(manager);
     //level.remove(*hill);
    // level.addUnit(*(new Beetle(320,320)));
 
-    auto antPtr = level.addAnt(*(new Ant({380,380,10,10},*hill)));
+    auto antPtr = level.addUnit(*(new Ant({380,380,10,10},*hill)));
  //   hill->getComponent<ResourceComponent>()->setResource(-1000);
     auto mushPtr = level.addUnit(*(new Mushroom(480,480)));
     std::shared_ptr<Label> antLabel = std::shared_ptr<Label>(new Label({400,300,128,32},"Click on the ant",{1,1,1,1},{385,385},
@@ -819,7 +868,7 @@ void GameWindow::close()
     level.reset();
 }
 
-GameWindow::QuitButton::QuitButton(GameWindow& window_) : Button({10,50,32,32},nullptr,nullptr, {"Quit"},&Font::alef,{0,1,0,1}), window(&window_)
+GameWindow::QuitButton::QuitButton(GameWindow& window_) : Button({10,50,32,32},nullptr,nullptr, {"Quit"},&Font::tnr,{0,1,0,1}), window(&window_)
 {
 
 }

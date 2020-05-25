@@ -68,8 +68,8 @@ void ClickableComponent::update()
                 {
                     stillClicked = true;
                     buttons[i]->press();
+                    break;
                 }
-                break;
             }
             offset += rect->a + spacing.y;
         }
@@ -85,7 +85,7 @@ void ClickableComponent::update()
 }
 void ClickableComponent::display(const glm::vec4& rect)
 {
-    Font::alef.write(Font::wordProgram,{name,rect});
+    Font::tnr.write(Font::wordProgram,{name,rect});
 }
 
 void ClickableComponent::addButton(Button& button)
@@ -163,9 +163,31 @@ InteractionComponent::~InteractionComponent()
 
 }
 
+void HealthComponent::addHealth(int amount)
+{
+    if (amount < 0)
+    {
+        if (invincible.framesPassed(10) || !invincible.isSet())
+        {
+            invincible.set();
+            health = std::max(0.0,std::min(health + amount, maxHealth));
+        }
+    }
+    else
+    {
+        health = std::max(0.0,std::min(health + amount, maxHealth));
+    }
+}
+
 HealthComponent::HealthComponent(Entity& entity, double health_,  int displacement_) : Component(entity), ComponentContainer<HealthComponent>(&entity), health(health_), maxHealth(health_), displacement(displacement_)//height defaults to 10 and displacement defaults to 20
 {
 
+}
+
+void HealthComponent::takeDamage(int amount, Object& attacker)
+{
+    lastAttacker = GameWindow::getLevel().getUnit(&attacker);
+    addHealth(-1*amount);
 }
 
 double HealthComponent::getHealth()
@@ -184,22 +206,6 @@ void HealthComponent::setVisible(bool value)
 }
 
 
-void HealthComponent::addHealth(int amount)
-{
-    if (amount < 0)
-    {
-        if (invincible.framesPassed(10) || !invincible.isSet())
-        {
-            invincible.set();
-            health = std::max(0.0,std::min(health + amount, maxHealth));
-        }
-    }
-    else
-    {
-        health = std::max(0.0,std::min(health + amount, maxHealth));
-    }
-}
-
 void HealthComponent::update()
 {
     RectComponent* rectComp = entity->getComponent<RectComponent>();
@@ -215,6 +221,11 @@ void HealthComponent::render(const glm::vec3& rect, float z)
 {
     //PolyRender::requestRect({rect.x,rect.y,health/maxHealth*rect.z,height},{1,0,0,1},true,0,rect.a);
     renderMeter({rect.x,rect.y,rect.z},{1,0,0,1},health,maxHealth,z);
+}
+
+Object* HealthComponent::getLastAttacker()
+{
+    return lastAttacker.lock().get();
 }
 
 HealthComponent::~HealthComponent()
@@ -253,9 +264,9 @@ void Unit::interact(Ant& ant)
 
 }
 
-Manager& Unit::getManager()
+Manager* Unit::getManager()
 {
-    return *manager;
+    return manager;
 }
 
 AttackComponent::AttackComponent(float damage_, int endLag_, Unit& unit) : Component(unit), ComponentContainer<AttackComponent>(&unit),  damage(damage_), endLag(endLag_)
@@ -265,9 +276,9 @@ AttackComponent::AttackComponent(float damage_, int endLag_, Unit& unit) : Compo
 
 void AttackComponent::attack(HealthComponent* health)
 {
-    if (health && (attackTimer.framesPassed(endLag) || !attackTimer.isSet()))
+    if (entity && health && (attackTimer.framesPassed(endLag) || !attackTimer.isSet()))
     {
-        health->addHealth(-1*damage);
+        health->takeDamage(damage,*static_cast<Unit*>(entity));
         attackTimer.set();
     }
 }
@@ -429,17 +440,20 @@ Object* ApproachComponent::getTargetUnit()
 }
 void ApproachComponent::setTarget(const glm::vec2& target, const std::shared_ptr<Object>* unit)
 {
-    if (unit)
+    if (move)
     {
-        const glm::vec4* tarRect = &((*unit)->getRect().getRect());
-        displacement = {target.x - (tarRect->x + tarRect->z/2) , target.y - (tarRect->y + tarRect->a/2)};
-        targetUnit = *unit;
+        if (unit)
+        {
+            const glm::vec4* tarRect = &((*unit)->getRect().getRect());
+            displacement = {target.x - (tarRect->x + tarRect->z/2) , target.y - (tarRect->y + tarRect->a/2)};
+            targetUnit = *unit;
+        }
+        else
+        {
+            targetUnit.reset();
+        }
+        move->setTarget(target);
     }
-    else
-    {
-        targetUnit.reset();
-    }
-    move->setTarget(target);
 }
 
 void ApproachComponent::setTarget(const std::shared_ptr<Object>& unit)
@@ -452,14 +466,14 @@ void ApproachComponent::update()
     if (move)
     {
         Object* ptr = targetUnit.lock().get();
-        if (ptr)
+        if (ptr) //if we have a target...
         {
             glm::vec2 center = ptr->getRect().getCenter() + displacement;
-            if (move->collides(ptr->getRect().getRect()))
+            if (move->collides(ptr->getRect().getRect())) //if at the target, stop moving
             {
                 move->setTarget(entity->getComponent<RectComponent>()->getCenter());
             }
-            else
+            else //otherwise, approach
             {
                 move->setTarget(center);
             }
@@ -469,6 +483,35 @@ void ApproachComponent::update()
 }
 
 ApproachComponent::~ApproachComponent()
+{
+
+}
+
+SeigeComponent::SeigeComponent(Unit& entity, Anthill& hill) : ApproachComponent(entity), ComponentContainer<SeigeComponent>(entity),
+ targetHill(std::dynamic_pointer_cast<Anthill>(GameWindow::getLevel().getUnit(&hill)))
+{
+
+}
+
+void SeigeComponent::update()
+{
+    if ( Object* owner = ((Object*)entity))
+    {
+        if (!targetUnit.lock().get())
+        {
+            if (Object* u = owner->getComponent<HealthComponent>()->getLastAttacker())
+            {
+                setTarget(GameWindow::getLevel().getUnit(u));
+            }
+            else
+            {
+                setTarget(GameWindow::getLevel().getUnit(targetHill.lock().get()));
+            }
+        }
+    }
+}
+
+SeigeComponent::~SeigeComponent()
 {
 
 }
@@ -483,7 +526,7 @@ Bug::Bug(int x, int y) : Unit(*(new ClickableComponent("Bug", *this)), *(new Wan
 {
     //getComponent<MoveComponent>()->setTarget({0,0});
     addComponent(*(new CorpseComponent(*this, 100)));
-    addComponent(*(new ResourceEatComponent(*this)));
+   // addComponent(*(new ResourceEatComponent(*this)));
 }
 
 Bug::~Bug()
@@ -512,7 +555,7 @@ void Beetle::BeetleMove::update()
         Object* nearest = findNearestUnit<Ant::AntMoveComponent>(100);
         if (nearest)
         {
-            setTarget(GameWindow::getLevel().getAnt((static_cast<Ant*>(nearest))));
+            setTarget(GameWindow::getLevel().getUnit(nearest));
         }
         if (targetPtr)
         {
@@ -563,7 +606,7 @@ void ResourceEatComponent::update()
         {
             if ( targetPtr->getRect().collides(owner->getRect().getRect()))
             {
-                targetPtr->getComponent<ResourceComponent>()->collect(*targetPtr);
+                targetPtr->getComponent<ResourceComponent>()->collect(*owner);
             }
         }
     }

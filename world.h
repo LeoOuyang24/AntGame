@@ -24,7 +24,6 @@ class Map
         //friend class Map;
         glm::vec4 rect = {0,0,0,0};
         std::map<Object*, std::shared_ptr<Object>> entities;
-        std::map<Ant*, std::shared_ptr<Ant>> ants;
       //  std::vector<std::shared_ptr<Label>> labels;
         std::shared_ptr<RawQuadTree> tree;
         void clear();
@@ -38,14 +37,11 @@ public:
     Map();
     void init(const glm::vec4& region);
     std::shared_ptr<Object> addUnit(Object& entity);//this method returns the shared_ptr in case any other class wants to share ownership.
-    std::shared_ptr<Ant> addAnt(Ant& ant);
-    std::shared_ptr<Ant>& getAnt(Ant* ant);
     std::shared_ptr<Object>& getUnit(Object* unit);
     void moveObject(Object& obj, double x, double y); //can move either ants or objects
     Chunk& getChunk(int x, int y); //assumes 0,0 = [5][5]
     Chunk& getChunk(Object& unit);
     void setCurrentChunk(Chunk& chunk);
-    AntStorage& getAnts(Chunk& chunk);
     ObjectStorage& getEntities(Chunk& chunk);
     void remove(Object& unit);
     Chunk& getCurrentChunk();

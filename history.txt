@@ -1,5 +1,8 @@
 This document keeps track of all changes as well as considered changes made to the resources as well as why they were made. Consider this a "learning from the past" kind of document. 
 
+5/25/2020:
+	Chunks no longer differentiate between ants and units and store them all into one vector. There's simply know reason to keep them separate as they share many of the same behaviours, notably that they each need to be updated and the moved in the quadtree. Any behaviour specific to ants can be specified by checking if a unit has an AntMoveComponent. The one issue is that now ants are rendered underneath anthills but that may not be an issue since in the future, they won't overlap anyway as they will have their own hitboxes.
+
 5/21/2020:
 	Rewrote how antmanagers store child tasks. AntManagers themselves no longer store their children; rather Managers will have a tree of tasks and their child tasks. This makes a lot more sense because Managers need to know about a task and its children while AntManagers only interact with their children when splitting.
 

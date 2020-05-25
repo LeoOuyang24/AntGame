@@ -63,7 +63,7 @@ void AntManager::getInput()
         //RectPositional post(mouseClick);
         //tree.getNearest(nearest,post);
         Map* map = &(GameWindow::getLevel());
-        map->getTree(map->getCurrentChunk())->getNearest(nearest,mouseClick);
+        map->getTree(map->getCurrentChunk())->getNearest(mouseClick);
         std::shared_ptr<Object>* newTarget = nullptr;
         if (justClicked)
         {
@@ -346,8 +346,12 @@ void AntManager::render(const glm::vec4& rect, std::string c )
                         std::max((double)(currentTask == MOVE || currentTask == IDLE),
                         .5*(currentTask == COLLECT)),currentTask == COLLECT || currentTask == IDLE,1};
     }
-    GameWindow::requestRect(GameWindow::getCamera().toAbsolute(rect),taskColor,true,0,GameWindow::interfaceZ, true);
-    Font::alef.requestWrite({c,GameWindow::getCamera().toAbsolute(rect),0,{0,0,0,1},GameWindow::interfaceZ});
+    if (this == GameWindow::getManager().getCurrentTask())
+    {
+        GameWindow::requestNGon(3,{rect.x + rect.z/2, rect.y + rect.a/2},10,{1,0,0,1},M_PI/3,true,GameWindow::interfaceZ,true);
+    }
+    GameWindow::requestRect(rect,taskColor,true,0,GameWindow::interfaceZ, true);
+    Font::tnr.requestWrite({c,GameWindow::getCamera().toAbsolute(rect),0,{0,0,0,1},GameWindow::interfaceZ});
 }
 
 std::vector<AntManager> AntManager::split(int pieces )

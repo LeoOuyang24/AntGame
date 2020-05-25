@@ -12,7 +12,6 @@ Map::Chunk::Chunk(const glm::vec4& rect_)
 void Map::Chunk::clear()
 {
     entities.clear();
-    ants.clear();
 }
 
 Map::Chunk::~Chunk()
@@ -83,32 +82,21 @@ std::shared_ptr<Object> Map::addUnit(Object& entity)
     return ptr;
 }
 
-std::shared_ptr<Ant> Map::addAnt(Ant& ant)
-{
-    Chunk* chunk = &(getChunk(ant));
-    auto ptr = std::shared_ptr<Ant>(&ant);
-    chunk->ants[&ant] = ptr;
-    chunk->tree->add(ant.getRect());
-    return ptr;
-}
-
-std::shared_ptr<Ant>& Map::getAnt(Ant* ant)
-{
-    Chunk* chunk = &(getChunk(*ant));
-    if (chunk->ants.find(ant) != chunk->ants.end())
-    {
-        return chunk->ants[ant];
-    }
-    throw std::runtime_error("Can't find ant!");
-}
 std::shared_ptr<Object>& Map::getUnit(Object* unit)
 {
-    Chunk* chunk = &(getChunk(*unit));
-    if (chunk->entities.find(unit) != chunk->entities.end())
+    if (unit)
     {
-        return chunk->entities[unit];
+        Chunk* chunk = &(getChunk(*unit));
+        if (chunk->entities.find(unit) != chunk->entities.end())
+        {
+            return chunk->entities[unit];
+        }
+        throw std::runtime_error("Map.GetUnit: Can't find unit!");
     }
-    throw std::runtime_error("Can't find unit!");
+    else
+    {
+        throw std::runtime_error ("Map.GetUnit:Unit is null!");
+    }
 }
 
 void Map::moveObject(Object& obj, double x, double y)
@@ -119,17 +107,9 @@ void Map::moveObject(Object& obj, double x, double y)
     Chunk* newChunk = &(getChunk(obj));
     newChunk->tree->add(obj.getRect());
     //std::cout << getChunk(obj).ants.size() << oldChunk->ants.size() << std::endl;
-    if (obj.getComponent<Ant::AntMoveComponent>())
-    {
-        Ant* ptr = static_cast<Ant*>(&obj);
-        newChunk->ants[ptr] = oldChunk->ants[ptr];
-        oldChunk->ants.erase(ptr);
-    }
-    else
-    {
-        newChunk->entities[&obj] = oldChunk->entities[&obj];
-        oldChunk->entities.erase(&obj);
-    }
+
+    newChunk->entities[&obj] = oldChunk->entities[&obj];
+    oldChunk->entities.erase(&obj);
     //std::cout << obj.getCenter().x << std::endl;
    // std::cout << getChunk(obj).ants.size() << oldChunk->ants.size() << std::endl;
 }
@@ -144,14 +124,7 @@ void Map::remove(Object& unit)
 {
     Chunk* chunk = &(getChunk(unit));
     chunk->tree->remove(unit.getRect());
-    if (unit.getComponent<Ant::AntMoveComponent>())
-    {
-        chunk->ants.erase(static_cast<Ant*>(&unit));
-    }
-    else
-    {
-        chunk->entities.erase(&unit);
-    }
+    chunk->entities.erase(&unit);
 }
 
 Map::Chunk& Map::getChunk(Object& unit)
@@ -191,11 +164,6 @@ Map::Chunk& Map::getCurrentChunk()
         throw std::runtime_error("No current chunk!");
     }
     return *currentChunk;
-}
-
-AntStorage& Map::getAnts(Chunk& chunk)
-{
-    return chunk.ants;
 }
 ObjectStorage& Map::getEntities(Chunk& chunk)
 {
@@ -243,11 +211,6 @@ void Map::reset()
                     {
                         remove(*(current->entities.begin()->second.get()));
                     }
-                size = current->ants.size();
-                for (int it = 0; it < size; ++it)
-                {
-                    remove(*(current->ants.begin()->second.get()));
-                }
                 chunks[i][j].reset();
             }
         }
@@ -292,7 +255,7 @@ Map::Gate::NextAreaComponent::~NextAreaComponent()
 
 }
 
-Map::Gate::NextAreaButton::NextAreaButton(Gate& unit) : Button({0,0,64,16},nullptr,nullptr,{"Next Area!"},&Font::alef,{0,1,0,1}), gate(&unit)
+Map::Gate::NextAreaButton::NextAreaButton(Gate& unit) : Button({0,0,64,16},nullptr,nullptr,{"Next Area!"},&Font::tnr,{0,1,0,1}), gate(&unit)
 {
 
 }

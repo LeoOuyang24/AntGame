@@ -209,12 +209,14 @@ AntHillRender::AntHillRender(Entity& entity) : RenderComponent(entity), Componen
 
 void AntHillRender::update()
 {
+    radius = fmod(radius + 1,500 );
     glm::vec4 rect = entity->getComponent<RectComponent>()->getRect();
    // GameWindow::requestNGon(10,{rect.x + rect.z/2, rect.y + rect.a/2},20,{.5,.5,.5,1},0,true,0);
     render({rect});
     ResourceComponent* counter = entity->getComponent<ResourceComponent>();
     //int width = counter->getResource()/((float)(counter->getMaxResource()))*rect.z, height = 10;
     counter->render({rect.x,rect.y + rect.a+ 10,rect.z},0);
+    GameWindow::requestNGon(50,{rect.x + rect.z/2, rect.y + rect.a/2},radius/(tan(81*M_PI/180)),{.5,.5,0,1}, 0,false, 0);
    // GameWindow::requestRect({rect.x, rect.y + rect.a + 10, width, height},{0,1,0,1},true,0,0);
     //GameWindow::requestRect({rect.x + width, rect.y + rect.a + 10, rect.z - width, height}, {1,0,0,1}, true, 0, 0);
 }
@@ -229,7 +231,7 @@ AntHillRender::~AntHillRender()
 
 }
 
-Anthill::CreateAnt::CreateAnt(Anthill& hill) : Button({0,0,64, 16},nullptr,nullptr,{"Create Ant"},&Font::alef,{0,1,0,1}), hill(&hill)
+Anthill::CreateAnt::CreateAnt(Anthill& hill) : Button({0,0,64, 16},nullptr,nullptr,{"Create Ant"},&Font::tnr,{0,1,0,1}), hill(&hill)
 {
 
 }
@@ -242,9 +244,35 @@ void Anthill::CreateAnt::press()
     }
 }
 
+Anthill::StartSignal::StartSignal(Anthill& hill) : Button({0,0,64,16},nullptr,nullptr,{"Start Signal"}, &Font::tnr, {0,1,0,1}), hill(&hill)
+{
+
+}
+
+void Anthill::StartSignal::press()
+{
+    if(hill)
+    {
+        Manager* manager = (hill->getManager());
+        if (manager)
+        {
+            manager->setSignalling(*hill);
+        }
+        else
+        {
+            throw std::logic_error("Manager is null");
+        }
+    }
+    else
+    {
+        throw std::logic_error("Hill is null");
+    }
+}
+
 Anthill::Anthill(const glm::vec2& pos) : Unit(*(new ClickableComponent("Anthill",*this)), *(new RectComponent({pos.x,pos.y,64,64}, *this)), *(new AntHillRender(*this)), *(new HealthComponent(*this, 100)))
 {
     getClickable().addButton(*(new CreateAnt(*this)));
+    getClickable().addButton(*(new StartSignal(*this)));
     addComponent(*(new ResourceComponent(1000,*this)));
 }
 
@@ -258,7 +286,7 @@ void Anthill::createAnt()
         /*std::shared_ptr<Ant> ptr = ;
         std::cout << ptr.use_count() << std::endl;
         std::weak_ptr<Ant> weak = ptr;*/
-        ants.emplace_back(GameWindow::getLevel().addAnt( *(new Ant({center.x +5*cos(rand()%360/180.0*M_PI),center.y +5*sin(rand()%360/180.0*M_PI),10,10},*this))));
+        (GameWindow::getLevel().addUnit( *(new Ant({center.x +5*cos(rand()%360/180.0*M_PI),center.y +5*sin(rand()%360/180.0*M_PI),10,10},*this))));
         //std::cout << ants.size() << std::endl;
     }
 }

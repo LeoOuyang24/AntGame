@@ -130,7 +130,7 @@ void Label::running()
         auto mousePosMod = camera->toWorld({mousePos.first, mousePos.second});
         float alpha = !pointInVec(box,mousePosMod.x,mousePosMod.y)*(color.a - .1) + .1;
         GameWindow::requestRect(box,glm::vec4(glm::vec3(color),alpha),true,0,z,false);
-        Font::alef.requestWrite({message,camera->toScreen(box),0,{0,0,0,alpha},z});
+        Font::tnr.requestWrite({message,camera->toScreen(box),0,{0,0,0,alpha},z});
         PolyRender::requestPolygon({glm::vec3(camera->toScreen({box.x + box.z/2 - box.z/2*.1, box.y + box.a}),z),
                                    glm::vec3(camera->toScreen({box.x + 1.1*box.z/2, box.y + box.a}),z),
                                    glm::vec3(camera->toScreen({point.x, point.y}),z)},{1,1,1,alpha});

@@ -60,6 +60,7 @@ public:
 class AntHillRender : public RenderComponent, public ComponentContainer<AntHillRender>
 {
     glm::vec4 color;
+    double radius = 0;
 public:
     AntHillRender(Entity& entity);
     void update();
@@ -71,7 +72,6 @@ public:
 
 class Anthill : public Unit
 {
-    std::vector<std::weak_ptr<Ant>> ants;
     class CreateAnt : public Button
     {
         Anthill* hill = nullptr;
@@ -79,13 +79,16 @@ class Anthill : public Unit
         CreateAnt(Anthill& hill);
         void press();
     };
+    class StartSignal : public Button
+    {
+        Anthill* hill = nullptr;
+    public:
+        StartSignal(Anthill& hill);
+        void press();
+    };
 public:
     Anthill(const glm::vec2& pos);
     void createAnt();
-    const std::vector<std::weak_ptr<Ant>>& getAnts()
-    {
-        return ants;
-    }
     virtual ~Anthill();
 
 };

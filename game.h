@@ -39,12 +39,15 @@ class Manager
     std::vector<std::shared_ptr<TaskNode>> tasks;
   //  std::vector<UnitPtr> selectedUnits;
     ObjPtr selectedUnit;
+    DeltaTime spawner; //marks the last time something spawned
+    Anthill* signalling = nullptr; //the anthill currently conquering
+    Unit* generateCreature(); //chooses a random creature to spawn
     void spawnCreatures(); //spawn a creature at a random position
+    void spawnCreatures(Anthill& hill, double minR, double maxR); //spawn creatures near an anthill at a certain radius
     std::weak_ptr<TaskNode> currentTask; //the current antmanager
     std::weak_ptr<TaskNode> parentTask; //the current parent task
     int processAntManagers(std::shared_ptr<TaskNode>& node, int index, int y, int x); //updates an AntManager and all of its children. y and x are the amount of displacement to render the task. index is the index of the antmanager, < 0 if its a child antmanager. Returns the y of the next AntManager
     void updateAntManagers();
-    void updateAnts();
     void updateEntities();
     void split();
 public:
@@ -53,6 +56,7 @@ public:
     const AntManager* getCurrentTask() const;
     void init(const glm::vec4& region);
     void update();
+    void setSignalling(Anthill& hill);
 };
 
 class GameWindow;

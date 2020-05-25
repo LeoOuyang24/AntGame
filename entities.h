@@ -65,7 +65,7 @@ public:
 };
 
 class Unit;
-
+class AttackComponent;
 
 class HealthComponent : public Component, public ComponentContainer<HealthComponent>
 {
@@ -74,14 +74,17 @@ class HealthComponent : public Component, public ComponentContainer<HealthCompon
     int displacement = 0; //height above the entity
     bool visible = true;
     DeltaTime invincible; //keeps track of how many frames of invincibility
+    std::weak_ptr<Object> lastAttacker;// the last thing that attacked this unit
+    void addHealth(int amount); //increases health by amount. Health cannot exceed maxHealth nor go below 0
 public:
     HealthComponent(Entity& entity, double health_,  int displacement_ = 20);
-    void addHealth(int amount); //increases health by amount. Health cannot exceed maxHealth nor go below 0
+    void takeDamage(int amount, Object& attacker ); //the key difference between this and add health is that this keeps track of which attackComponent dealt the damage. Negative damage heals the target
     double getHealth();
     double getMaxHealth();
     void update(); //render health bar and reset invincibility frames
     void render(const glm::vec3& rect, float z); //renders the healthbar at the given location with the given width. The height will always be height so rect.a is the z value to render at.
     void setVisible(bool value);
+    Object* getLastAttacker(); //returns the lastAttacker. May be null;
     ~HealthComponent();
 };
 
@@ -98,7 +101,7 @@ public:
     HealthComponent& getHealth();
     bool clicked();
     virtual void interact(Ant& ant);
-    Manager& getManager();
+    Manager* getManager();
     void setManager(Manager& manager);
 
 };
@@ -173,6 +176,16 @@ public:
     void setMove(MoveComponent& move_);
     Object* getTargetUnit();
     ~ApproachComponent();
+};
+
+class Anthill;
+class SeigeComponent : public ApproachComponent, public ComponentContainer<SeigeComponent> //a component that causes the unit to attack anthills; ants if no anthilsl are nearby. USed when signalling
+{
+    std::weak_ptr<Anthill> targetHill; //this is separate from targetUnit because we want to move always move towards the same anthill, even after changing targets to attack something
+public:
+    SeigeComponent(Unit& entity, Anthill& hill);
+    void update();
+    ~SeigeComponent();
 };
 
 class Mushroom : public Unit
