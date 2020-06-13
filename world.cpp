@@ -2,6 +2,7 @@
 #include "entities.h"
 #include "ants.h"
 #include "game.h"
+#include "navigation.h"
 
 Map::Chunk::Chunk(const glm::vec4& rect_)
 {
@@ -37,6 +38,7 @@ Map::Map()
 void Map::init(const glm::vec4& region)
 {
    // rect = region;
+
     for (int i = 0; i < levels; ++i)
     {
         for (int j = 0; j < levels; ++j)
@@ -45,6 +47,10 @@ void Map::init(const glm::vec4& region)
             chunks[i][j].reset(new Chunk({{topLeft.x,topLeft.y,chunkDimen,chunkDimen}}));
         }
     }
+
+    setCurrentChunk((getChunk(0,0)));
+    mesh.reset(new NavMesh(currentChunk->rect,*(currentChunk->tree.get())));
+
     for (int i = 0; i < levels; ++i)
     {
         for (int j = 0; j < levels; ++j)
@@ -61,7 +67,8 @@ void Map::init(const glm::vec4& region)
           }
         }
     }
-    setCurrentChunk((getChunk(0,0)));
+   // addUnit(*(new Anthill({0,0})));
+    mesh->init(getCurrentChunk().entities);
 }
 
 std::shared_ptr<Object> Map::addUnit(Object& entity)
@@ -76,6 +83,7 @@ std::shared_ptr<Object> Map::addUnit(Object& entity)
     //obj.reset();
     chunk->entities[&entity] = ptr;
     chunk->tree->add(entity.getRect());
+    //mesh->add(entity.getRect().getRect());
     //ptr.reset();
    // remove(entity);
 
@@ -182,6 +190,7 @@ void Map::render()
            // drawRectangle(RenderProgram::basicProgram,{i/(rect.z/width),j/(rect.a/width),1},{rect.x + i*width,rect.y + j*width,width,width},0);
         }
     }
+    mesh->render();
 }
 
 const glm::vec4& Map::getRect(Chunk& chunk) //returns rect of the current Chunk

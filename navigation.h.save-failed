@@ -1,0 +1,44 @@
+#ifndef NAVIGATION_H_INCLUDED
+#define NAVIGATION_H_INCLUDED
+
+#include <unordered_map>
+
+#include "render.h"
+
+#include "entities.h"
+
+bool compareObject(const Object& o1, const Object& o2);
+
+class NavMesh //a navigation mesh of rectangle
+{
+    class NavMeshNode
+    {
+        typedef std::unordered_map<NavMeshNode*,glm::vec4> Neighbors; //pointer to the node and the
+        //typedef std::vector<Neighbors> Adjacents;
+         Neighbors nextTo;
+        glm::vec4 area;
+    public:
+
+        NavMeshNode(const glm::vec4& rect);
+        const glm::vec4& getArea();
+        void addNode(NavMeshNode& n); //tests if n is adjacent to this node. Adds it if it is.
+        void removeNode(NavMeshNode& n);
+        void setDimen(const glm::vec2& dimens);
+        void setRect(const glm::vec4& rect);
+        Neighbors& getNextTo();
+        ~NavMeshNode();
+
+    };
+    NavMeshNode* start = nullptr;
+    void addHelper(const glm::vec4& rect, NavMeshNode* current);
+    void updateHelper(NavMeshNode* node);
+public:
+    NavMesh(const glm::vec4& bounds);
+    void init(std::vector<Object>& vec);
+    void add(const glm::vec4& rect); //adds a rect to the navmesh. UNFINISHED!!!!
+    void update();
+
+
+};
+
+#endif // NAVIGATION_H_INCLUDED

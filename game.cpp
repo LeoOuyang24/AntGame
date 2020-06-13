@@ -481,11 +481,11 @@ void Camera::update()
         {
             rect.y +=  absMin((mousePos.second - 1), (mousePos.second - screenDimen.y + 2 ))*DeltaTime::deltaTime;
         }
-        if (bounds)
+      /*  if (bounds)
         {
             rect.x = std::max(bounds->x,std::min(bounds->x + bounds->z - rect.z,rect.x));
             rect.y = std::max(bounds->y, std::min(bounds->y + bounds->a + GameWindow::getMenuHeight() - rect.a , rect.y));
-        }
+        }*/
         auto mouseWheel = MouseManager::getMouseWheel();
         if (mouseWheel.second > 0)
         {
@@ -561,7 +561,7 @@ void Camera::center(const glm::vec2& point)
 
 void Camera::zoom(float amount)
 {
-    zoomAmount = std::max(minZoom,std::min(maxZoom,zoomAmount+ amount));
+    zoomAmount += amount ;//std::max(minZoom,std::min(maxZoom,zoomAmount+ amount));
     glm::vec2 rectCenter = {rect.x + rect.z/2, rect.y + rect.a/2};
     rect.z = zoomAmount*baseDimen.x;
     rect.a = zoomAmount*baseDimen.y;

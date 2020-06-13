@@ -46,7 +46,7 @@ protected:
     RenderComponent* render = nullptr;
 public:
     Object(ClickableComponent& click, RectComponent& rect, RenderComponent& render);
-    RectComponent& getRect();
+    RectComponent& getRect() const;
     glm::vec2 getCenter();
     ClickableComponent& getClickable();
     RenderComponent& getRender();

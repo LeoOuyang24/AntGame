@@ -1,0 +1,125 @@
+This document keeps track of all changes as well as considered changes made to the resources as well as why they were made. Consider this a "learning from the past" kind of document. 
+
+5/31/2020:
+	NavMeshNodes originally had a vector of all of its neighbors and then a vector of vectors for neighbors from each direction. This was an organization technique to make finding a specific neighbor faster. This has now been replaced with a unordered_map<NavMeshNode*, glm::vec4> where the pointer is the neighbor and the vec4 is the intersecting line. This map finds neighbors in logarithmic time which will always be generally faster than a vector. We could combine the two solutions to have a vector of maps to further organize the maps based on position. I feel like this is unncessary especially that means that something like searching for a certain neighbor will have to be done with a for loop through all the maps. This creates unnecessarily long code for a marginally faster computation time. Keep in mind that this also means that adding a node will take longer.
+
+5/30/2020:
+	NavMeshNode has a vector of vectors where each index represents one set of neighbors. This was done instead of having 4 separate vectors because we can iterate through all neighbors with one for loop rather than 4. 
+
+5/25/2020:
+	Chunks no longer differentiate between ants and units and store them all into one vector. There's simply know reason to keep them separate as they share many of the same behaviours, notably that they each need to be updated and the moved in the quadtree. Any behaviour specific to ants can be specified by checking if a unit has an AntMoveComponent. The one issue is that now ants are rendered underneath anthills but that may not be an issue since in the future, they won't overlap anyway as they will have their own hitboxes.
+
+5/21/2020:
+	Rewrote how antmanagers store child tasks. AntManagers themselves no longer store their children; rather Managers will have a tree of tasks and their child tasks. This makes a lot more sense because Managers need to know about a task and its children while AntManagers only interact with their children when splitting. AntManager::smartThis has been removed as it is no longer needed.
+
+5/14/2020:
+	Decided to not remove the parentTask pointer in Manager because the parentTask isn't always the same as the currentTask's parent. (ie: when we split, the current task is still the old current task but the parentTask is now also the current task.)
+	Changed AntManager::smartThis from a smart pointer to a weak pointer. The reason for this is because upon deleting an AntManager, it's smart pointer would still exist and would prevent the object from being deleted. A weak pointer fixes this problem but now AntManagers must now take a shared_ptr of themselves into their constructor so they can initialize smartThis.
+5/4/2020:
+	The ability to move ants in the opposite direction of the selected point has been removed. I don't think this feature will be used as ants moving away from a point is kind of niche. It was originally used to allow ants to dodge attacks but it's more effective to just move away from them. The feature still technically exists but doesn't do anything; it may be added in later.
+	Added a member variable called smartThis to AntManager. This is an interesting concept; it's a shared_ptr of the "this" pointer, meaning every AntManager has a smart pointer pointing to themselves. This is actually very useful, as we now always know where the smart pointer of a particular AntManager is stored. This can be seen in the split function, where an AntManager must pass itself to its children.
+
+4/7/2020:
+	Because the UI needs to render selected entities onto a set point of the screen but the entities also need to be rendered onto their correct spot on the world, many functions that render objects had to take in a parameter to determine whether to render in an absolute position or to a world position. This is cluncky because we'd have to rewrite every render function with an additional boolean parameter. The truth is, every render function follows a pattern: if it's called when rendering world stuff, it's rendered to the world position and if it's called when rendering UI stuff, it's rendered in an absolute position. If that's the case, we can just create a static boolean variable that determines whether or not something is rendered to the world or to the absolute based on what we are currently rendering. We already have the GameWindow::update function divided into such functions so adding this boolean variable is simple. We'll call it  GameWindow::renderAbsolute. All we have to do now is ensure that every render call is a GameWindow render call, such as GameWindow::requestNGon. As of now, GameWindow::requestNGon and GameWindow::requestRect still allow entities to choose to render absolute if they so choose. This bool will override a false GameWindow::renderAbsolute. You can think of it as:
+	if (bool || renderAbsolute) 
+	{
+		renderAbsolute();
+	}
+
+4/6/2020:
+	The new Label instances can now be turned on/off via the new Trigger class. The Trigger base class consists of a constructor and a single member function that returns false. Children of the Trigger class will return true/false based on their own functionality; the LambTrigger, for example, will return according to a lambda. The motivation behind the Trigger class, rather than just having Label take in two lambdas, is to be able to combine two different types of triggers. If we just had two lambdas, we'd have to specify the type of the lambdas; if they required parameters, we'd have to specify them at compile time. Trigger encapsulates the lambdas and allows us to mix and match triggers for each label. 
+	Why not:
+		Use templated lambdas to pass in different types of lambdas?
+		Problem with this is that sometimes we also need to catch local variables and templates don't allow us to do that. 
+		
+		Use std::function?
+		Std::function would probably solve a lot of issues but it's apparently heavy-weight. We probably don't need that kind of functionality. 
+
+		Combine LamdaTrigger and ObjectTrigger into one class since an Object Trigger can do everything a LambdaTrigger can but more?
+		It's really just to make things more clear to readers of the code. If a label has an ObjectTrigger, you can bet that it relies on an object change rather than something in global scope.
+3/6/2020:
+	All non-templated functions have now been moved to .cpp files for consistency. 
+
+2/28/2020:
+	ComponentContainer was almost removed in favor of having Component<T> handle components and their entities. While this implementation can work, every child class of Component will inherit every member of Component, which may create some very large classes. 
+
+2/25/2020:
+	There is in fact a use for Component inheriting from ComponentContainer; this ensures that deleting a Component* will call both ~Component and ~ComponentContainer. Not having Component inherit from ComponentContainer will only call ~Component. However, we don't want multiple <Entity,Component> pairs in ComponentContainer<Component> so we allow the ComponentContainer to be passed a pointer. If this pointer is null, we don't add Component to ComponentContainer. Unlike all other components, Component always passes null to ComponentContainer<Component>() ensuring that we don't store anything in ComponentContainer<Component>::components while still inheriting form ComponentContainer<Component>.
+
+2/24/2020:
+	ComponentContainer now has unordered maps for better performance.
+	Component no longer inherits from ComponentContainer. Component inheriting from ComponentContainer had no benefit and instead caused a bug where removing a component from an entity more than once would cause a crash as an entity can have multiple Components. Removing an entity from ComponentContainer could remove the wrong instance since the ComponentContainer<Component> will have multiple entries for a certain entity if that entity has multiple components. Our component system has the flaw of not allowing entities to have multiple components of the same descendancy and allowing Component to inherit from ComponentContainer is a way of exploiting this flaw since every component inherits from Component. 
+
+2/14/2020:
+	Rather than give Chunk a bunch of utility functions, like getUnit(), or addUnit(), Map is now in full control of Chunk. It has all the utility functions, Chunk is now a child class of Map, and, since Chunk is only accessible by Map, Chunk's members are all public now. This decision was made because before, Map would have its own version of Chunk's functions that were exactly idential except that Map would first find the correct chunk. Chunk really doesn't do anything fancy and Map already had direct control over it  so there's no reason to encapsulate it. Just let Map do all the work and Chunk will just be data storage.
+	The decision has been made to have Map be the class in charge of removing and adding entities rather than Manager. While it makes sense for Manager to be in charge of everything entity, Map is essentially the entity storage unit; in the same way it makes sense for a vector to be able to erase its own elements, it makes sense for Map to erase its own units.
+	Current roles of each class in game.h:
+	Manager: entity interactions, entity updating, entity rendering. Also currently manages user input. Basically makes the game run.
+	Map: storage class for the chunks. Manages chunks and retrieves them for other classes. Adds and removes entities.
+	GameWindow: Master class. Ties everything together by facilitating communication between classes. Renders display.
+	Chunk: Stores the entities in each chunk.
+	AntManager: Manages player assigned tasks
+
+1/28/2020:
+	currentTask was kept as a rawpointer to an ant manager rather than a weak_ptr because it's very easy to keep track of whether or not it is null in the updateAntManagers functions. Keeping it as a raw pointer should be faster since we don't have to call .lock() everytime to access the currentTask.
+
+1/14/2020:
+	Today I considered removing the idea that AntManager being a task for a group of ants and instead having the player manually reselect groups of ants. This new approach is probably a bit more intuitive but I'm going to stick with the idea of having a list of AntManager, each controlling one task to make controlling a dedicated group of units easier. Starcraft 2 has this feature in the form of control groups.
+
+1/8/2020:
+	ApproachComponent has been changed to no longer be a MoveComponent but rather a vanilla component that requires the user to already have a MoveComponent. Essentially, ApproachComponent "guides" the MoveComponent. While the user hasn't collided with the target yet, ApproachComponent will constantly set the target to be the target unit. If the user has collided, ApproachComponent will set the target to the entity's current center so it stops moving. If there is no targetUnit, ApproachComponent does nothing, allowing the MoveComponent to take over. This was done because of the problem of needing ApproachComponents that operated differently when there is no target. Ants do nothing while there is no target and have a MoveComponent that does nothing. Beetles wander around and uses WanderMove as its MoveComponent. In order to maximize flexibility, ApproachComponent influences an entity's MoveComponent. 
+	Why not have each ApproachComponent that needs to do something different inherit from a different MoveComponent? While this problem can be done by inheritance, the ApproachComponent::update() is always the same, except that a different parent function is called. This seems redundant.
+Here is some pseudocode for what a child of ApproachComponent's update function looks like:
+
+void ApproachChild::Update()
+{
+    	<Code unique to this child. Usually unique way of finding a target> 
+
+	if no target:	
+		MoveParent::Update()
+	if at target:
+		stop moving
+	else:
+		move towards target.
+} 
+The unique way of finding a target and which parent update to call  is the only code that changes. It doesn't make sense to constantly make new classes just to change a couple lines. Besides, repeating code is usually a bad sign as changing one copy of a line of code will mean that all the copies must be changed. Our solution minimizes code reptition. Here's what the code looks like now:
+	
+void ApproachChild::Update()
+{
+	<Code unique to this child>
+	ApproachParent::Update()
+}
+ApproachParent::Update() is the only code that is the same constantly, and even it may change if an ApproachComponent inherits from an ApproachComponent. 
+	Another idea is to have MoveComponent inherit from ApproachComponent, but that really doesn't make much sense. An object that can move may not be able to approach but an object that can approach can definitely move. 
+
+1/2/2020:
+	ResourceComponent now has all the functionality of ResourceCountComponent and ResourceCountComponent has been deleted. There is simply no reason to have both of these components. ResourceCountComponent not only kept track of the amount of resources like a ResourceComponent but also rendered the amount. Fusing these two classes will standardize things and allow more than just ants to collect resources.
+
+
+12/19/2019:
+	ApproachComponent's setTarget member functions now takes in const references to std::shared_ptr rather than just a reference. This allows us to use std::shared_ptr<Ant> in place of std::shared_ptr<Unit>, since having a const reference allows us to take an r-value, in this case the conversion of std::shared_ptr<Ant> to std::shared_ptr<Unit>.
+
+12/18/2019:
+	I considered removing the vector<std::shared_ptr<Component>> components variable in the Entity class because we already have all the components attached to an entity stored in Component Containers. However, searching through every component container would be difficult. I kept the vector to make updating an entity easier.
+	Created ApproachComponent, which is a MoveComponent that can move towards a target Unit. It keeps track of this target unit with a weak ptr. It is essentially a more flexible MoveComponent; if the targetUnit pointer is null, this class behaves exactly like a MoveComponent. Why not instead add the functionality directly to MoveComponent? MoveComponent is in components.h, which means that it should work with all entities, whereas ApproachComponent is only supposed to work with Unit. I considered having MoveComponent hold a weak_ptr to a RectComponent but there's currently no way to get a shared_ptr to a component.
+
+12/17/2019:
+	AntManager now has an enum that represents all the possible tasks the manager can be currently working on. Currently, they are IDLE, ATTACK, MOVE, and COLLECT. IDLE means the manager is not doing anything at the moment and the ants are just standing around. While it is possible to deduce what the AntManager is currently doing based on the values of various member variables, this solution is a bit cleaner and easier to manage.
+	The game now quits if the anthill is destroyed. The way this is done is currently kind of gritty. The Gamewindow has a public boolean variable called quit that represents whether or not the game should quit. The main loop checks the value of this quit value every iteration and quits if it is ever true.
+
+12/8/2019:
+	Both Manager::addEntity and Manager::addAnt now return a shared_ptr to the unit/ant added. This allows other classes that also want to share ownership to copy the pointer. So far, this is only used by the anthill class to create a weak_ptr to ants that it owns. 
+	Anthill currently directly has a list of std::weak_ptr<Ant> to keep track of what ants are associated with it rather than a component that keeps track of the ants. This may be changed later.
+	Anthill now directly creates ants. Pressing the create ant button now instead causes the anthill to create an ant. This is a built-in Anthill feature; Anthill directly does this rather than relying on a component. Feel free to change this. 
+
+12/5/2019:
+	Manager's RawQuadTree member variable was changed from a RawQuadTree to a regular QuadTree. This change was reverted because the RawQuadTree keeps track of RectComponents, not the actual units. Since it doesn't own the components, it doesn't make sense to use QuadTree.
+	AntManager is now no longer considered to be a singleton class like Manager, but a class that represents all the tasks various groups of ants are working on. One change is that the class now manages a raw pointer to its creating Manager. This is a raw pointer because the pointer is only alive as long as either the Manager is; if the Manager is ever null, the AntManager should also be destroyed. It should be noted that Manager still has a singleton shared_ptr to AntManager. It'll be changed to a vector of AntManagers at a later more convenient time.
+	AntManager's targetUnit member variable was changed from a Unit* to a std::weak_ptr<Unit>. A weak_ptr is now used to prevent dangling memory. Since there are now supposed to be multiple instances of AntManager, having a raw pointer to a target unit that is manually handled becomes more expensive, so a weak_ptr makes things easier.-
+	AntManager is now a public friend class outside of Manager. There is clearly a lot of variables inside Manager that AntManager wants to access. The question was whether or not to keep AntManager inside Manager and if so, should it be public or private? Private nesting was overturned because other classes may need pointers to AntManager, most notably Ant since each Ant may need to point to its owning AntManager. This may change in the future. Public Nesting was overturned because there's no reason to have public nesting since the only change is that the name of AntManager's member functions in game.cpp are now longer. May as well move AntManager out and make it a friend class to create less typing.
+	The spacing variable inside Manager has now been moved to AntManager. Since AntManager is the class that controls ant positioning, the variable makes more since in AntManager.
+	Manager now no longer has a master vector of entities, but rather a master map of entities, where the key is the address of the entity. This was primarily done to make accessing entities, particularly when testing collision easier. The RawQuadTree only has raw pointers to the RectComponent within each Unit; if a class, such as say AntManager, wants to maintain a weak_ptr to an entity, it would need to copy the original shared_ptr. This mapping allows one to quickly find collision detection with a RectComponent, then quickly find not only the actual Unit the RectComponent stands for, but also the shared_ptr to copy.
+	Having a RawQuadTree of actual Units may make things easier than having a RawQuadTree of RectComponents. This way, the RawQuadTree could become a regular QuadTree and actually own each object, which will make copying into a weak_ptr easier. However, then Unit would have to inherit from either RectPositional or RectComponent. In either case, making Units that have different movement/collision patterns is awkward as that would cause a lot of inheritance from Unit. One point of the component system is to prevent our actual Units from inheriting as changes to the base class (in this case Unit) causes a waterfall of changes. 
+
+
+	

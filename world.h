@@ -3,9 +3,11 @@
 
 #include "glInterface.h"
 #include "SDLhelper.h"
+
 #include "components.h"
 #include "entities.h"
 
+class NavMesh;
 
 class Object;
 class Ant;
@@ -33,6 +35,7 @@ class Map
     std::shared_ptr<Chunk> chunks[levels][levels];
     Chunk* currentChunk = nullptr;
     void addGatePair(int x1, int y1, int x2, int y2);
+    std::shared_ptr<NavMesh> mesh;
 public:
     Map();
     void init(const glm::vec4& region);

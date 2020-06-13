@@ -93,7 +93,6 @@ int main(int args, char* argsc[])
     Font::init(screenWidth, screenHeight);
     SDL_Event e;
     bool quit = false;
-
     bool eventsEmpty = true;
         //std::cout << tree.count() << std::endl;
     Interface interface;

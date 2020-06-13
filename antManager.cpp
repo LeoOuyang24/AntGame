@@ -63,7 +63,7 @@ void AntManager::getInput()
         //RectPositional post(mouseClick);
         //tree.getNearest(nearest,post);
         Map* map = &(GameWindow::getLevel());
-        map->getTree(map->getCurrentChunk())->getNearest(mouseClick);
+        nearest = map->getTree(map->getCurrentChunk())->getNearest(mouseClick);
         std::shared_ptr<Object>* newTarget = nullptr;
         if (justClicked)
         {

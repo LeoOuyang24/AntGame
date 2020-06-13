@@ -97,6 +97,8 @@
 		<Unit filename="game.cpp" />
 		<Unit filename="game.h" />
 		<Unit filename="main.cpp" />
+		<Unit filename="navigation.cpp" />
+		<Unit filename="navigation.h" />
 		<Unit filename="sequence.cpp" />
 		<Unit filename="sequence.h" />
 		<Unit filename="sprites.cpp" />

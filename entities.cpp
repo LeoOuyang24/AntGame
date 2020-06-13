@@ -115,7 +115,7 @@ Object::Object(ClickableComponent& click, RectComponent& rect_, RenderComponent&
     addComponent(render_);
 
 }
-RectComponent& Object::getRect()
+RectComponent& Object::getRect() const
 {
     return *rect;
 }
@@ -276,7 +276,7 @@ AttackComponent::AttackComponent(float damage_, int endLag_, Unit& unit) : Compo
 
 void AttackComponent::attack(HealthComponent* health)
 {
-    if (entity && health && (attackTimer.framesPassed(endLag) || !attackTimer.isSet()))
+    if (entity && health && (attackTimer.timePassed(endLag) || !attackTimer.isSet()))
     {
         health->takeDamage(damage,*static_cast<Unit*>(entity));
         attackTimer.set();
@@ -320,6 +320,7 @@ void ResourceComponent::collect(Object& other)
         {
             antMove->setCarrying(1);
         }
+
         resource -=1;
         if (resource <= 0)
         {
