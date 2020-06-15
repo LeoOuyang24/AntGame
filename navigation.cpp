@@ -194,42 +194,57 @@ void NavMesh::init(ObjectStorage& storage)
 
 void NavMesh::render()
 {
-   for (auto it = nodes.begin(); it != nodes.end(); ++it)
-   {
-       GameWindow::requestRect(it->get()->getArea(),{0,0,0,1},false,0,1,false);
-       it->get()->render();
-       //std::cout << it->get()->getArea().z << " " << it->get()->getArea().a << std::endl;
-   }
-   if (MouseManager::getJustClicked() == SDL_BUTTON_LEFT)
-   {
-       left = GameWindow::getCamera().toWorld({MouseManager::getMousePos().first, MouseManager::getMousePos().second});
-   }
-   else if (MouseManager::getJustClicked() == SDL_BUTTON_RIGHT)
-   {
-       right = GameWindow::getCamera().toWorld({MouseManager::getMousePos().first, MouseManager::getMousePos().second});
-   }
-   if (left != right)
-   {
-
-       auto path = getPath(left,right);
-       auto end = path.end();
-       glm::vec2* prev = &left, *next;
-       for (auto it = path.begin(); it != end; ++it)
+    switch (KeyManager::getJustPressed())
+    {
+    case SDLK_F1:
+        renderNodes = !renderNodes;
+        break;
+    case SDLK_F2:
+        renderPath = !renderPath;
+        break;
+    }
+    if (renderNodes)
+    {
+       for (auto it = nodes.begin(); it != nodes.end(); ++it)
        {
-            next = &(*it);
-            GameWindow::requestNGon(10,*prev,2,{1,0,0,1},0,true,0,false);
-            GameWindow::requestNGon(10,*next,2,{1,0,0,1},0,true,0,false);
-            glm::vec2 p1 = GameWindow::getCamera().toScreen(*prev);
-            glm::vec2 p2 = GameWindow::getCamera().toScreen(*next);
-            PolyRender::requestLine({p1.x,p1.y,p2.x,p2.y},{1,1,1,1},1);
-            prev = next;
-           // std::cout << p1.x << " " << p1.y << " " << p2.x << " " << p2.y << std::endl;
+           GameWindow::requestRect(it->get()->getArea(),{0,0,0,1},false,0,1,false);
+           it->get()->render();
+           //std::cout << it->get()->getArea().z << " " << it->get()->getArea().a << std::endl;
        }
-      // GameWindow::requestNGon(10,right,2,{0,1,0,1},0,true,0,false);
-   }
+    }
+    if (renderPath)
+    {
+       if (MouseManager::getJustClicked() == SDL_BUTTON_LEFT)
+       {
+           left = GameWindow::getCamera().toWorld({MouseManager::getMousePos().first, MouseManager::getMousePos().second});
+       }
+       else if (MouseManager::getJustClicked() == SDL_BUTTON_RIGHT)
+       {
+           right = GameWindow::getCamera().toWorld({MouseManager::getMousePos().first, MouseManager::getMousePos().second});
+       }
+       if (left != right)
+       {
+
+           auto path = getPath(left,right);
+           auto end = path.end();
+           glm::vec2* prev = &left, *next;
+           for (auto it = path.begin(); it != end; ++it)
+           {
+                next = &(*it);
+                GameWindow::requestNGon(10,*prev,2,{1,0,0,1},0,true,0,false);
+                GameWindow::requestNGon(10,*next,2,{1,0,0,1},0,true,0,false);
+                glm::vec2 p1 = GameWindow::getCamera().toScreen(*prev);
+                glm::vec2 p2 = GameWindow::getCamera().toScreen(*next);
+                PolyRender::requestLine({p1.x,p1.y,p2.x,p2.y},{1,1,1,1},1);
+                prev = next;
+               // std::cout << p1.x << " " << p1.y << " " << p2.x << " " << p2.y << std::endl;
+           }
+          // GameWindow::requestNGon(10,right,2,{0,1,0,1},0,true,0,false);
+       }
+    }
 }
 
-NavMesh::Path NavMesh::getPath(const glm::vec2& start, const glm::vec2& end)
+Path NavMesh::getPath(const glm::vec2& start, const glm::vec2& end)
 {
     NavMeshNode* startNode = getNode(start);  //ndoe we start off with. Repurposed later to be the node we are currently working on
     NavMeshNode* endNode = getNode(end);
@@ -239,36 +254,37 @@ NavMesh::Path NavMesh::getPath(const glm::vec2& start, const glm::vec2& end)
         {
             return {start,end}; //if both the start and end is in the same node then just move lol
         }
-        int nodesSize = nodes.size();
         std::unordered_map<glm::vec2,std::pair<double,glm::vec2>,HashPoint> paths; //shortest distance from start to paths as well as the closest node. Used for backtracking
         MinHeap<std::pair<glm::vec2,NavMeshNode*>> heap; //finds the next node to process. We have to also store what node the point is associated with since the points all lie on the border of two nodes.
         heap.add({start,startNode},0);
         glm::vec2 curPoint; //current point to analyze
         NavMeshNode* curNode = startNode; //current node to analyze
         bool done = false; //whether or not we found a path
-       // std::cout << "START" << std::endl;
         while (!done && heap.size() != 0)
         {
-          //  std::cout << "PrePeak" << std::endl;
             curPoint = heap.peak().first;
+            //curPoint.x = floor(curPoint.x);
             curNode = heap.peak().second;
             heap.pop();
 
-            auto vec = tree->getNearest({std::min(curPoint.x,end.x), std::min(curPoint.y,end.y), abs(end.x - curPoint.x), abs(end.y - curPoint.y)});
+            glm::vec4 tempRect = {std::min(curPoint.x,end.x), std::min(curPoint.y,end.y), std::max(abs(end.x - curPoint.x),1.0f), std::max(1.0f,abs(end.y - curPoint.y))};
+            auto vec = tree->getNearest(tempRect);
+           // GameWindow::requestRect(tempRect,{1,0,1,1},false,0,1,0);
             int size = vec.size();
             if (size == 0)
             {
-                done = true;
+                done = true; //if there is a direct path between our current point and the goal, we can stop right here.
             }
             else
             {
                 for (int i = 0; i < size; ++i)
                 {
-                    if (lineInVec(end,curPoint,(static_cast<RectPositional*>(vec[i]))->getRect()))
+                    printRect(static_cast<RectPositional*>(vec[i])->getRect());
+                    if (lineInVec(curPoint,end,(static_cast<RectPositional*>(vec[i]))->getRect())) //unfortunately, there is not a direct path
                     {
                         break;
                     }
-                    if (i == size-1)
+                    if (i == size-1) //there is a direct path!
                     {
                         done = true;
                     }
@@ -278,13 +294,26 @@ NavMesh::Path NavMesh::getPath(const glm::vec2& start, const glm::vec2& end)
             if (!done)
             {
                 Neighbors* nextTo = &(curNode->getNextTo());
-                auto end = nextTo->end(); //get the end iterator
+                auto endIt = nextTo->end(); //get the end iterator
                // printRect(curNode->getArea());
               //  std::cout << "Size: " << nextTo->size() << std::endl;
-                for (auto it = nextTo->begin(); it != end; ++it)
+                for (auto it = nextTo->begin(); it != endIt; ++it)
                 {
-                    glm::vec2 midpoint = findMidpoint(it->second);
+                    glm::vec2 midpoint; //this is not actually the midpoint, but rather the point on the intersection line we think will be closest to the goal
+                    if (it->second.y == it->second.a) //if the intersection is horizontal
+                    {
+                        float left = std::min(it->second.x,it->second.z);
+                        float right = it->second.x + it->second.z - left;
+                       midpoint = {std::max(std::min(right,(end.x + curPoint.x)/2),left), it->second.y} ; //find the best point. Sometimes, the best point is off the line, so we take either edge point
+                    }
+                    else //if the intersection is vertical
+                    {
+                        float high = std::max(it->second.y, it->second.a);
+                        float low = it->second.y + it->second.a - high;
+                       midpoint = {it->second.x, std::max(std::min(high,(end.y + curPoint.y)/2),low)};
+                    }
                     double newDistance = pointDistance(curPoint,midpoint) + paths[curPoint].first;
+                    double score = newDistance + pointDistance(midpoint,end); //the final score that also uses the heuristic
                     if (it->first == endNode) //found it
                     {
                         paths[midpoint].second = curPoint;
@@ -292,7 +321,7 @@ NavMesh::Path NavMesh::getPath(const glm::vec2& start, const glm::vec2& end)
                         done = true;
                         break;
                     }
-                    if (midpoint == curPoint) //no reason to process the current point
+                    if (midpoint.x == curPoint.x || midpoint.y == curPoint.y) //don't process points on the same side
                     {
                         continue;
                     }
@@ -300,11 +329,11 @@ NavMesh::Path NavMesh::getPath(const glm::vec2& start, const glm::vec2& end)
                     {
                         if (paths.count(midpoint) == 0)
                         {
-                            heap.add({midpoint,it->first},newDistance);
+                            heap.add({midpoint,it->first},score);
                         }
                         else
                         {
-                            heap.update({midpoint,it->first},paths[midpoint].first,newDistance);
+                            heap.update({midpoint,it->first},paths[midpoint].first,score);
                         }
                         paths[midpoint].first = newDistance;
                         paths[midpoint].second = curPoint;
@@ -319,15 +348,11 @@ NavMesh::Path NavMesh::getPath(const glm::vec2& start, const glm::vec2& end)
             while (curPoint != start )
             {
 
-                finalPath.insert(finalPath.begin(),curPoint);
+                finalPath.push_front(curPoint);
                 curPoint = paths[curPoint].second;
             }
             finalPath.push_back(end);
-            finalPath.insert(finalPath.begin(), start);
-        }
-        else
-        {
-            int x = 5;
+            finalPath.push_front(start);
         }
             return finalPath;
     }

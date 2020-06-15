@@ -15,6 +15,12 @@ class Ant;
 typedef  std::map<Object*, std::shared_ptr<Object>> ObjectStorage;
 typedef  std::map<Ant*, std::shared_ptr<Ant>> AntStorage;
 
+class Terrain : public Object
+{
+public:
+    Terrain(int x, int y, int w, int h);
+};
+
 class Map
 {
     constexpr static int levels = 11;
@@ -36,6 +42,7 @@ class Map
     Chunk* currentChunk = nullptr;
     void addGatePair(int x1, int y1, int x2, int y2);
     std::shared_ptr<NavMesh> mesh;
+
 public:
     Map();
     void init(const glm::vec4& region);
@@ -46,6 +53,7 @@ public:
     Chunk& getChunk(Object& unit);
     void setCurrentChunk(Chunk& chunk);
     ObjectStorage& getEntities(Chunk& chunk);
+    NavMesh& getMesh(); //might be null if init hasn't been called
     void remove(Object& unit);
     Chunk& getCurrentChunk();
     void render();

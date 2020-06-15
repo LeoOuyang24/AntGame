@@ -4,6 +4,7 @@
 #include "entities.h"
 #include "game.h"
 #include "ants.h"
+#include "navigation.h"
 
 void renderMeter(const glm::vec3& xyWidth, const glm::vec4& color, double current, double maximum, float z)
 {
@@ -363,6 +364,38 @@ ResourceUnit::ResourceUnit(int resources, const glm::vec4& rect) : Unit(*(new Cl
 ResourceUnit::~ResourceUnit()
 {
 
+}
+
+PathComponent::PathComponent(double speed, const glm::vec4& rect, Entity& unit) : MoveComponent(speed,rect,unit), ComponentContainer<PathComponent> (unit)
+{
+
+}
+
+void PathComponent::setTarget(const glm::vec2& point)
+{
+    path.clear();
+    NavMesh* mesh = &(GameWindow::getLevel().getMesh());
+    path = mesh->getPath(getCenter(),point);
+    target = path.front();
+    //MoveComponent::setTarget(point);
+}
+
+void PathComponent::addPoint(const glm::vec2& point)
+{
+    path.push_back(point);
+}
+
+void PathComponent::update()
+{
+    MoveComponent::update();
+    if (atTarget())
+    {
+        if (path.size() > 1) //if we haven't reached the end of the path, select the next point
+        {
+            path.pop_front();
+            target = path.front();
+        } //otherwise, we're done
+    }
 }
 
 WanderMove::WanderMove(double speed, const glm::vec4& rect, Entity& unit) : MoveComponent(speed, rect, unit), ComponentContainer<WanderMove>(unit)

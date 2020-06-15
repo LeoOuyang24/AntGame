@@ -12,7 +12,7 @@ class Ant : public Unit
     AntManager* currentTask = nullptr;
 public:
     const static short dimen;
-    class AntMoveComponent : public MoveComponent, public ComponentContainer<AntMoveComponent> //controls ant behavior based on the ant's home and what they are carrying
+    class AntMoveComponent : public PathComponent, public ComponentContainer<AntMoveComponent> //controls ant behavior based on the ant's home and what they are carrying
     {
         Anthill* home = nullptr;
         int carrying = 0;

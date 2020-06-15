@@ -919,7 +919,7 @@
 	"FreeTypeHelper.h"
 	"render.h"
 
-1591991140 source:c:\users\leoou\onedrive\desktop\resources\render.cpp
+1592173028 source:c:\users\leoou\onedrive\desktop\resources\render.cpp
 	<sstream>
 	<fstream>
 	"stb_image.h"
@@ -957,7 +957,7 @@
 	<limits.h>
 	"vanilla.h"
 
-1592009522 c:\users\leoou\onedrive\desktop\resources\vanilla.h
+1592090794 c:\users\leoou\onedrive\desktop\resources\vanilla.h
 	<iostream>
 	<tuple>
 	<math.h>
@@ -968,7 +968,7 @@
 	<memory>
 	<stack>
 
-1591330987 source:c:\users\leoou\onedrive\desktop\projects\ants\main.cpp
+1592174553 source:c:\users\leoou\onedrive\desktop\projects\ants\main.cpp
 	<iostream>
 	<time.h>
 	<typeinfo>
@@ -988,20 +988,20 @@
 1564186026 c:\users\leoou\onedrive\desktop\projects\ants\sprites.h
 	"render.h"
 
-1586899107 source:c:\users\leoou\onedrive\desktop\projects\ants\components.cpp
+1592114883 source:c:\users\leoou\onedrive\desktop\projects\ants\components.cpp
 	<iostream>
 	"vanilla.h"
 	"SDLHelper.h"
 	"render.h"
 	"components.h"
 
-1586803750 c:\users\leoou\onedrive\desktop\projects\ants\components.h
+1592115794 c:\users\leoou\onedrive\desktop\projects\ants\components.h
 	<memory.h>
 	<unordered_map>
 	<typeinfo>
 	"glGame.h"
 
-1590384334 source:c:\users\leoou\onedrive\desktop\projects\ants\ants.cpp
+1592154901 source:c:\users\leoou\onedrive\desktop\projects\ants\ants.cpp
 	<cmath>
 	"render.h"
 	"vanilla.h"
@@ -1009,7 +1009,7 @@
 	"world.h"
 	"game.h"
 
-1590384307 c:\users\leoou\onedrive\desktop\projects\ants\ants.h
+1592154235 c:\users\leoou\onedrive\desktop\projects\ants\ants.h
 	"components.h"
 	"entities.h"
 
@@ -1030,25 +1030,27 @@
 	"ants.h"
 	"antManager.h"
 
-1591056733 c:\users\leoou\onedrive\desktop\projects\ants\entities.h
+1592115809 c:\users\leoou\onedrive\desktop\projects\ants\entities.h
+	<deque>
 	"glInterface.h"
 	"SDLhelper.h"
 	"components.h"
 
-1591056733 source:c:\users\leoou\onedrive\desktop\projects\ants\entities.cpp
+1592159363 source:c:\users\leoou\onedrive\desktop\projects\ants\entities.cpp
 	"SDLHelper.h"
 	"render.h"
 	"entities.h"
 	"game.h"
 	"ants.h"
+	"navigation.h"
 
-1591211511 c:\users\leoou\onedrive\desktop\projects\ants\world.h
+1592168666 c:\users\leoou\onedrive\desktop\projects\ants\world.h
 	"glInterface.h"
 	"SDLhelper.h"
 	"components.h"
 	"entities.h"
 
-1592087622 source:c:\users\leoou\onedrive\desktop\projects\ants\world.cpp
+1592167561 source:c:\users\leoou\onedrive\desktop\projects\ants\world.cpp
 	"world.h"
 	"entities.h"
 	"ants.h"
@@ -1073,12 +1075,12 @@
 1589135255 c:\users\leoou\onedrive\desktop\projects\ants\asciartvromvrom.h
 	<iostream>
 
-1592075677 source:c:\users\leoou\onedrive\desktop\projects\ants\navigation.cpp
+1592174367 source:c:\users\leoou\onedrive\desktop\projects\ants\navigation.cpp
 	<algorithm>
 	"navigation.h"
 	"game.h"
 
-1592087655 c:\users\leoou\onedrive\desktop\projects\ants\navigation.h
+1592168666 c:\users\leoou\onedrive\desktop\projects\ants\navigation.h
 	<unordered_map>
 	"render.h"
 	"entities.h"

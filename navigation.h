@@ -18,7 +18,6 @@ struct HashPoint
 class NavMesh //a navigation mesh of rectangle
 {
     class NavMeshNode;
-    typedef std::vector<glm::vec2> Path;
     typedef std::unordered_map<NavMeshNode*,glm::vec4> Neighbors; //pointer to the node and the line of intersection
     class NavMeshNode
     {
@@ -44,6 +43,9 @@ class NavMesh //a navigation mesh of rectangle
     RawQuadTree* tree = nullptr;
   //  void addHelper(const glm::vec4& rect, NavMeshNode* current);
   NavMeshNode* getNode(const glm::vec2 point); //returns the node at the given position. Null if none
+
+    bool renderNodes = false; //whether or not to render all the nodes
+    bool renderPath = false; //whether or not to render left and right and their path
 public:
     NavMesh(const glm::vec4& bounds_, RawQuadTree& tree_);
     void init(ObjectStorage& storage); //initialize the mesh with given the vector of objects

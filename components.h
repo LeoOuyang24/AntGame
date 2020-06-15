@@ -120,8 +120,8 @@ public:
     void teleport(const glm::vec2& point); //centers the entity at the point and sets it as the new target
     virtual void update();
     bool atTarget(); //returns whether or not we have arrived at the target
-    void setTarget(const glm::vec2& point);
-    const glm::vec2& getTarget();
+    virtual void setTarget(const glm::vec2& point);
+    virtual const glm::vec2& getTarget();
     void setSpeed(double newSpeed);
     virtual ~MoveComponent();
 

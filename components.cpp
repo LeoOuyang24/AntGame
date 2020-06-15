@@ -80,7 +80,7 @@ void MoveComponent::update()
 
 bool MoveComponent::atTarget()
 {
-    return pointDistance(getCenter(),target) == 0;
+    return pointDistance(getCenter(),getTarget()) == 0;
 }
 
 void MoveComponent::teleport(const glm::vec2& point)

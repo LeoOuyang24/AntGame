@@ -1,14 +1,16 @@
 #ifndef ENTITIES_H_INCLUDED
 #define ENTITIES_H_INCLUDED
 
+#include <deque>
+
 #include "glInterface.h"
 #include "SDLhelper.h"
 
 #include "components.h"
 
+typedef std::deque<glm::vec2> Path;
 
 void renderMeter(const glm::vec3& xyWidth, const glm::vec4& color, double current, double maximum, float z);
-
 
 class ClickableComponent : public Component, public ComponentContainer<ClickableComponent> //clickable component handles user inputs, like when the user selects the unit or presses a button
 {
@@ -150,6 +152,16 @@ public:
     virtual ~ResourceUnit();
 };
 
+class PathComponent : public MoveComponent, public ComponentContainer<PathComponent> //a MoveComponent that holds a whole path rather than just a single target
+{
+    Path path;
+public:
+    PathComponent(double speed, const glm::vec4& rect, Entity& unit);
+    virtual void setTarget(const glm::vec2& point);
+    void addPoint(const glm::vec2& point); //add a point to the path
+    virtual void update();
+};
+
 class WanderMove : public MoveComponent, public ComponentContainer<WanderMove>
 {
 public:
@@ -157,8 +169,6 @@ public:
     void update();
     ~WanderMove();
 };
-
-
 
 class ApproachComponent : public Component, public ComponentContainer<ApproachComponent> //a component that can move towards a unit. It is NOT a movecomponent because it by itself cannot function. If the targetUnit is null, it uses the owning entity's movecomponent to decide what to do.
 {

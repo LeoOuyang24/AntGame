@@ -9,7 +9,7 @@
 #include "game.h"
 
 const short Ant::dimen = 10;
-Ant::AntMoveComponent::AntMoveComponent(Anthill* hill, double speed, const glm::vec4& rect, Entity& entity) : MoveComponent(speed,rect,entity), ComponentContainer<Ant::AntMoveComponent>(entity), home(hill)
+Ant::AntMoveComponent::AntMoveComponent(Anthill* hill, double speed, const glm::vec4& rect, Entity& entity) : PathComponent(speed,rect,entity), ComponentContainer<Ant::AntMoveComponent>(entity), home(hill)
 {
 
 }
@@ -57,40 +57,7 @@ Anthill* Ant::AntMoveComponent::getHome()
 
 void Ant::AntMoveComponent::update()
 {
-    if (!atTarget())
-    {
-        /*Object* owner = static_cast<Object*>(entity);
-        RawQuadTree* tree = GameWindow::getLevel().getTreeOf(*owner);
-        auto nearby = tree->getNearest(getCenter(), 100);
-        int size = nearby.size();
-        glm::vec2 modified = {0,0};
-        glm::vec2 avgTarg = {0,0};
-        int ants = 0;
-        glm::vec2 ownerCenter = owner->getCenter();
-        for (int i = 0; i < size; ++i)
-        {
-            Unit* current = static_cast<Unit*>(&((static_cast<RectComponent*>(nearby[i]))->getEntity()));
-            AntMoveComponent* move = current->getComponent<AntMoveComponent>();
-            if (move)
-            {
-                ants ++;
-                glm::vec2 center =  current->getCenter();
-                double distance = glm::distance(center,ownerCenter);
-                bool repulse =  false;
-                modified.x += center.x - ownerCenter.x + repulse*(-.1*distance);
-                modified.y += center.y - ownerCenter.y + repulse*(-.1*distance);
-                avgTarg.x += move->getTarget().x;
-                avgTarg.y += move->getTarget().y;
-            }
-        }
-        modified.x /= ants;
-        modified.y /= ants;
-      //  target.x = (avgTarg.x + target.x)/(ants+1);
-     //   target.y = (avgTarg.y + target.y)/(ants+1);
-        target.x += .1*modified.x;
-        target.y += .1*modified.y;*/
-        MoveComponent::update();
-    }
+    PathComponent::update();
 
 }
 

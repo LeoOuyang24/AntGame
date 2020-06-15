@@ -82,6 +82,7 @@ int main(int args, char* argsc[])
         SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
         return 1;
     }
+   // std::cout << lineInVec({82.9492,10},{83,-90},{-10,-33,200,-10},0) << std::endl;
 
     srand(time(NULL));
     SDL_Window* window = SDL_CreateWindow("Project",SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,screenWidth, screenHeight, SDL_WINDOW_OPENGL);

@@ -4,6 +4,11 @@
 #include "game.h"
 #include "navigation.h"
 
+Terrain::Terrain(int x, int y, int w, int h) : Object(*(new ClickableComponent("Terrain", *this)), *(new RectComponent({x,y,w,h},*this)), *(new RectRenderComponent({.5,.5,.5,1},*this)))
+{
+
+}
+
 Map::Chunk::Chunk(const glm::vec4& rect_)
 {
     this->rect = rect_;
@@ -67,7 +72,9 @@ void Map::init(const glm::vec4& region)
           }
         }
     }
-   // addUnit(*(new Anthill({0,0})));
+    //addUnit(*(new Anthill({0,0})));
+    addUnit(*(new Terrain(-10,-33,200,10)));
+    addUnit(*(new Terrain(-33,10,10,200)));
     mesh->init(getCurrentChunk().entities);
 }
 
@@ -176,6 +183,16 @@ Map::Chunk& Map::getCurrentChunk()
 ObjectStorage& Map::getEntities(Chunk& chunk)
 {
     return chunk.entities;
+}
+
+NavMesh& Map::getMesh()
+{
+    auto ptr = mesh.get();
+    if (ptr)
+    {
+        return *mesh.get();
+    }
+    throw std::logic_error("Map::getMesh(): Tried to return null mesh!");
 }
 
 void Map::render()
