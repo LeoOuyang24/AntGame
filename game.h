@@ -10,6 +10,7 @@
 #include "world.h"
 #include "ants.h"
 #include "antManager.h"
+#include "debug.h"
 
 extern SpriteWrapper frame;
 
@@ -103,6 +104,7 @@ class GameWindow : public Window //the gamewindow is mostly static because most 
     static Map level;
     static Manager manager;
     static Window* gameOver;
+    static Debug debug;
     static bool renderAbsolute; //whether or not to renderAbsolute
 
     ObjPtr anthill; //pointer to the anthill. Keeps track of whether or not the player has lost

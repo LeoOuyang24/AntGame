@@ -614,6 +614,7 @@ const glm::vec4 GameWindow::selectColor = {1,1,1,.5};
 Camera GameWindow::camera;
 Manager GameWindow::manager;
 Map GameWindow::level;
+Debug GameWindow::debug;
 Window* GameWindow::gameOver = nullptr;
 float GameWindow::interfaceZ = .3;
 bool GameWindow::renderAbsolute = false;
@@ -629,6 +630,7 @@ GameWindow::GameWindow() : Window({0,0},nullptr,{0,0,0,0})
     gameOver = new Window({screenDimen.x/10, screenDimen.y/10},nullptr, {1,0,0,1});
     gameOver->addButton(*(new QuitButton(*this)));
     manager.init(level.getRect(level.getCurrentChunk()));
+    debug.init();
     Anthill* hill = (new Anthill({320,320}));
     anthill = level.addUnit(*hill);
     hill->setManager(manager);
@@ -739,6 +741,7 @@ void GameWindow::update(int x, int y, bool clicked)
                 labels[i]->update();
             }
         }
+        debug.update();
 
         renderAbsolute = true;
     // std::cout << camera.getRect().x << " " << camera.getRect().x + camera.getRect().z << std::endl;

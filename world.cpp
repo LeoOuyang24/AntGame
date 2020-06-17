@@ -64,11 +64,11 @@ void Map::init(const glm::vec4& region)
           //  remove(*g);*/
           if ( i != levels - 1)
           {
-            addGatePair(currentRect->x + chunkDimen - 64, currentRect->y + chunkDimen/2 - 32, chunks[i+1][j]->rect.x, currentRect->y + chunkDimen/2 - 32); //rightmost gate
+         //   addGatePair(currentRect->x + chunkDimen - 64, currentRect->y + chunkDimen/2 - 32, chunks[i+1][j]->rect.x, currentRect->y + chunkDimen/2 - 32); //rightmost gate
           }
           if (j != levels - 1)
           {
-            addGatePair(currentRect->x + chunkDimen/2 - 32, currentRect->y + chunkDimen - 64, chunks[i][j+1]->rect.x + chunkDimen/2,chunks[i][j+1]->rect.y); //downmost gate
+           // addGatePair(currentRect->x + chunkDimen/2 - 32, currentRect->y + chunkDimen - 64, chunks[i][j+1]->rect.x + chunkDimen/2,chunks[i][j+1]->rect.y); //downmost gate
           }
         }
     }
@@ -207,7 +207,7 @@ void Map::render()
            // drawRectangle(RenderProgram::basicProgram,{i/(rect.z/width),j/(rect.a/width),1},{rect.x + i*width,rect.y + j*width,width,width},0);
         }
     }
-    mesh->render();
+  //  mesh->render();
 }
 
 const glm::vec4& Map::getRect(Chunk& chunk) //returns rect of the current Chunk

@@ -13,20 +13,15 @@ std::size_t HashPoint::operator()(const glm::vec2& p1) const
     return pow(10,floor(log(abs(p1.x))))*abs(p1.x) + abs(p1.y);
 }
 
-NavMesh::NavMeshNode::NavMeshNode(const glm::vec4& rect) : area(rect)
+NavMesh::NavMeshNode::NavMeshNode(const glm::vec4& rect) : RectPositional(rect)
 {
 
-}
-
-const glm::vec4& NavMesh::NavMeshNode::getArea()
-{
-    return area;
 }
 
 void NavMesh::NavMeshNode::addNode(NavMeshNode& n)
 {
-    const glm::vec4* otherArea = &(n.getArea());
-    glm::vec4 intersect = vecIntersectRegion(*otherArea,area);
+    const glm::vec4* otherArea = &(n.getRect());
+    glm::vec4 intersect = vecIntersectRegion(*otherArea,rect);
     nextTo.insert({&n,{intersect.x,intersect.y, intersect.x + intersect.z, intersect.y + intersect.a}});
     if (n.getNextTo().count(this) == 0) //if the other node hasn't added us, add it!
     {
@@ -45,12 +40,12 @@ void NavMesh::NavMeshNode::removeNode(NavMeshNode& n)
 
 void NavMesh::NavMeshNode::setDimen(const glm::vec2& dimens)
 {
-    area.z = dimens.x;
-    area.a = dimens.y;
+    rect.z = dimens.x;
+    rect.a = dimens.y;
 }
 void NavMesh::NavMeshNode::setRect(const glm::vec4& rect)
 {
-    area = rect;
+   this->rect = rect;
 }
 
 NavMesh::Neighbors& NavMesh::NavMeshNode::getNextTo()
@@ -58,14 +53,14 @@ NavMesh::Neighbors& NavMesh::NavMeshNode::getNextTo()
     return nextTo;
 }
 
-void NavMesh::NavMeshNode::render()
+void NavMesh::NavMeshNode::render() const
 {
     Camera* cam = &(GameWindow::getCamera());
     for (auto it = nextTo.begin(); it != nextTo.end(); ++it)
     {
         GameWindow::requestNGon(4,{(it->second.x + it->second.z)/2,(it->second.y + it->second.a)/2},10,{0,1,0,1},0,true,1,false);
-        glm::vec2 center = cam->toScreen({area.x + area.z/2, area.y + area.a/2});
-        glm::vec2 otherCenter = cam->toScreen({it->first->getArea().x + it->first->getArea().z/2, it->first->getArea().y + it->first->getArea().a/2});
+        glm::vec2 center = cam->toScreen({rect.x + rect.z/2, rect.y + rect.a/2});
+        glm::vec2 otherCenter = cam->toScreen({it->first->getRect().x + it->first->getRect().z/2, it->first->getRect().y + it->first->getRect().a/2});
         PolyRender::requestLine({center.x,center.y,otherCenter.x,otherCenter.y},{center.x,0,otherCenter.x,1},1);
     }
 }
@@ -83,17 +78,96 @@ NavMesh::NavMeshNode::~NavMeshNode()
 
 NavMesh::NavMeshNode* NavMesh::getNode(const glm::vec2 point)
 {
-    for (int i = nodes.size() - 1; i >= 0; i-- ) //nothing special about iterating backwards; just didn't want to make a size variable
+    Positional p(point);
+    auto vec = nodeTree.getNearest(p);
+    int size = vec.size();
+    for (int i = 0; i < size; ++i)
     {
-        if (pointInVec(nodes[i]->getArea(), point.x, point.y, 0))
+        if (vec[i]->distance(point) == 0)
         {
-            return nodes[i].get();
+            return static_cast<NavMeshNode*>(vec[i]);
         }
     }
     return nullptr;
 }
 
-NavMesh::NavMesh(const glm::vec4& bounds_, RawQuadTree& tree_) : bounds(bounds_), tree(&tree_)
+
+void NavMesh::NavMesh::addNode(const glm::vec4& rect)
+{
+    NavMeshNode* node = new NavMeshNode(rect);
+    addNode(*node);
+}
+
+void NavMesh::addNode(NavMeshNode& node)
+{
+    nodeTree.add(node);
+}
+
+void NavMesh::smartAddNodeHelper(const glm::vec4& rect, NavMeshNode& node)
+{
+    splitNode(node,rect);
+    if (!vecContains(rect,node.getRect())) //if the rect is completely encompassed by node, there is no reason to check neighbors as it is impossible for them to intersect with the rect
+    {
+        auto neigh = &(node.getNextTo());
+        auto end = neigh->end();
+        for (auto i = neigh->begin(); i != end; ++i)
+        {
+            if (i->first->collides(rect))
+            {
+                smartAddNodeHelper(rect,*(i->first));
+            }
+        }
+    }
+    removeNode(node);
+
+}
+
+void NavMesh::smartAddNode(const glm::vec4& rect)
+{
+    std::vector<Positional*> vec = nodeTree.getNearest(rect);
+    for (int i = vec.size() - 1; i >= 0 ; i--) //find the first node that collides with rect. Once we've found it, we use the helper to finish the job. This is slightly more efficient since we only have to process nodes that are guaranteed to collide with the rect
+    {
+        if (vec[i]->collides(rect))
+        {
+            NavMeshNode* ptr = static_cast<NavMeshNode*>(vec[i]);
+            smartAddNodeHelper(rect,*ptr);
+            break;
+        }
+    }
+}
+
+void NavMesh::removeNode(NavMeshNode& node)
+{
+    nodeTree.remove(node);
+}
+
+void NavMesh::splitNode(NavMeshNode& node, const glm::vec4& overlap)
+{
+    const glm::vec4* nodeRect = &(node.getRect());
+    glm::vec4 region = vecIntersectRegion(*nodeRect,overlap);
+    glm::vec4 borders[4] = { //the four new nodes of the current node is being split into
+        {nodeRect->x, nodeRect->y, region.x - nodeRect->x, nodeRect->a}, //left
+        {region.x, nodeRect->y,region.z, region.y - nodeRect->y }, //top
+        {region.x + region.z, nodeRect->y,nodeRect->x + nodeRect->z - region.x - region.z, nodeRect->a}, //right
+        {region.x, region.y + region.a, region.z, nodeRect->y + nodeRect->a - region.y + region.a} //bottom
+        };
+    for (int i = 0; i < 4; ++i)
+    {
+        if (borders[i].z != 0 && borders[i].a != 0)
+        {
+            NavMeshNode* node = new NavMeshNode(borders[i]);
+            addNode(*node); //add each node if they have non-0 dimensions and add them to neighbors
+            auto neigh = &(node->getNextTo());
+            auto end = neigh->end();
+            for (auto j = neigh->begin(); j != end; ++ j)
+            {
+                j->first->addNode(*node);
+            }
+        }
+    }
+}
+
+NavMesh::NavMesh(const glm::vec4& bounds_, RawQuadTree& tree_) : bounds(bounds_), tree(&tree_), nodeTree(bounds)
 {
 
 }
@@ -128,7 +202,7 @@ void NavMesh::init(ObjectStorage& storage)
                     if (rect->x - line->x > 0) //no reason to create a node if it has a width of 0
                     {
                         node = new NavMeshNode({line->x,line->y, rect->x - line->x, line->z}); //create the new node that is from the line up to the object
-                        nodes.emplace_back(node);
+                        addNode(*node);
                         int size1 = frontLine[it].second.size();
                         for (int j = 0; j < size1; ++j) //add all of the neighbors we've encountered so far
                         {
@@ -192,58 +266,6 @@ void NavMesh::init(ObjectStorage& storage)
 }
 
 
-void NavMesh::render()
-{
-    switch (KeyManager::getJustPressed())
-    {
-    case SDLK_F1:
-        renderNodes = !renderNodes;
-        break;
-    case SDLK_F2:
-        renderPath = !renderPath;
-        break;
-    }
-    if (renderNodes)
-    {
-       for (auto it = nodes.begin(); it != nodes.end(); ++it)
-       {
-           GameWindow::requestRect(it->get()->getArea(),{0,0,0,1},false,0,1,false);
-           it->get()->render();
-           //std::cout << it->get()->getArea().z << " " << it->get()->getArea().a << std::endl;
-       }
-    }
-    if (renderPath)
-    {
-       if (MouseManager::getJustClicked() == SDL_BUTTON_LEFT)
-       {
-           left = GameWindow::getCamera().toWorld({MouseManager::getMousePos().first, MouseManager::getMousePos().second});
-       }
-       else if (MouseManager::getJustClicked() == SDL_BUTTON_RIGHT)
-       {
-           right = GameWindow::getCamera().toWorld({MouseManager::getMousePos().first, MouseManager::getMousePos().second});
-       }
-       if (left != right)
-       {
-
-           auto path = getPath(left,right);
-           auto end = path.end();
-           glm::vec2* prev = &left, *next;
-           for (auto it = path.begin(); it != end; ++it)
-           {
-                next = &(*it);
-                GameWindow::requestNGon(10,*prev,2,{1,0,0,1},0,true,0,false);
-                GameWindow::requestNGon(10,*next,2,{1,0,0,1},0,true,0,false);
-                glm::vec2 p1 = GameWindow::getCamera().toScreen(*prev);
-                glm::vec2 p2 = GameWindow::getCamera().toScreen(*next);
-                PolyRender::requestLine({p1.x,p1.y,p2.x,p2.y},{1,1,1,1},1);
-                prev = next;
-               // std::cout << p1.x << " " << p1.y << " " << p2.x << " " << p2.y << std::endl;
-           }
-          // GameWindow::requestNGon(10,right,2,{0,1,0,1},0,true,0,false);
-       }
-    }
-}
-
 Path NavMesh::getPath(const glm::vec2& start, const glm::vec2& end)
 {
     NavMeshNode* startNode = getNode(start);  //ndoe we start off with. Repurposed later to be the node we are currently working on
@@ -257,75 +279,79 @@ Path NavMesh::getPath(const glm::vec2& start, const glm::vec2& end)
         std::unordered_map<glm::vec2,std::pair<double,glm::vec2>,HashPoint> paths; //shortest distance from start to paths as well as the closest node. Used for backtracking
         MinHeap<std::pair<glm::vec2,NavMeshNode*>> heap; //finds the next node to process. We have to also store what node the point is associated with since the points all lie on the border of two nodes.
         heap.add({start,startNode},0);
+        double bestDist = -1; //the distance of the best path found so far. -1 until one path is found
+        glm::vec2 bestPoint = {0,0}; //the last point of the best path found so far. origin until one path is found
         glm::vec2 curPoint; //current point to analyze
         NavMeshNode* curNode = startNode; //current node to analyze
-        bool done = false; //whether or not we found a path
-        while (!done && heap.size() != 0)
+        while (heap.size() != 0)
         {
             curPoint = heap.peak().first;
             //curPoint.x = floor(curPoint.x);
             curNode = heap.peak().second;
             heap.pop();
-
-            glm::vec4 tempRect = {std::min(curPoint.x,end.x), std::min(curPoint.y,end.y), std::max(abs(end.x - curPoint.x),1.0f), std::max(1.0f,abs(end.y - curPoint.y))};
-            auto vec = tree->getNearest(tempRect);
-           // GameWindow::requestRect(tempRect,{1,0,1,1},false,0,1,0);
-            int size = vec.size();
-            if (size == 0)
+            int direct = paths[curPoint].first + pointDistance(curPoint,end);
+            bool isDirect = false;
+            if ( direct < bestDist || bestDist == -1) //if the direct path between the current point and the end is smaller than the best known path, check to make sure there are no obstacles
             {
-                done = true; //if there is a direct path between our current point and the goal, we can stop right here.
-            }
-            else
-            {
-                for (int i = 0; i < size; ++i)
+                glm::vec4 tempRect = {std::min(curPoint.x,end.x), std::min(curPoint.y,end.y), std::max(abs(end.x - curPoint.x),1.0f), std::max(1.0f,abs(end.y - curPoint.y))};
+                auto vec = tree->getNearest(tempRect);
+                int size = vec.size();
+                if (size == 0)
                 {
-                    printRect(static_cast<RectPositional*>(vec[i])->getRect());
-                    if (lineInVec(curPoint,end,(static_cast<RectPositional*>(vec[i]))->getRect())) //unfortunately, there is not a direct path
+                    isDirect = true;
+                }
+                else
+                {
+                    for (int i = 0; i < size; ++i)
                     {
-                        break;
-                    }
-                    if (i == size-1) //there is a direct path!
-                    {
-                        done = true;
+                    //    printRect(static_cast<RectPositional*>(vec[i])->getRect());
+                        if (lineInVec(curPoint,end,(static_cast<RectPositional*>(vec[i]))->getRect())) //unfortunately, there is not a direct path
+                        {
+                            break;
+                        }
+                        if (i == size-1) //there is a direct path!
+                        {
+                            isDirect = true;
+                        }
                     }
                 }
-            }
-          //  std::cout << "Heap" << std::endl;
-            if (!done)
-            {
-                Neighbors* nextTo = &(curNode->getNextTo());
-                auto endIt = nextTo->end(); //get the end iterator
-               // printRect(curNode->getArea());
-              //  std::cout << "Size: " << nextTo->size() << std::endl;
-                for (auto it = nextTo->begin(); it != endIt; ++it)
+                if (isDirect) //if there is a direct path
                 {
-                    glm::vec2 midpoint; //this is not actually the midpoint, but rather the point on the intersection line we think will be closest to the goal
-                    if (it->second.y == it->second.a) //if the intersection is horizontal
-                    {
-                        float left = std::min(it->second.x,it->second.z);
-                        float right = it->second.x + it->second.z - left;
-                       midpoint = {std::max(std::min(right,(end.x + curPoint.x)/2),left), it->second.y} ; //find the best point. Sometimes, the best point is off the line, so we take either edge point
-                    }
-                    else //if the intersection is vertical
-                    {
-                        float high = std::max(it->second.y, it->second.a);
-                        float low = it->second.y + it->second.a - high;
-                       midpoint = {it->second.x, std::max(std::min(high,(end.y + curPoint.y)/2),low)};
-                    }
-                    double newDistance = pointDistance(curPoint,midpoint) + paths[curPoint].first;
-                    double score = newDistance + pointDistance(midpoint,end); //the final score that also uses the heuristic
-                    if (it->first == endNode) //found it
-                    {
-                        paths[midpoint].second = curPoint;
-                        curPoint = midpoint;
-                        done = true;
-                        break;
-                    }
-                    if (midpoint.x == curPoint.x || midpoint.y == curPoint.y) //don't process points on the same side
-                    {
-                        continue;
-                    }
-                    if (paths.count(midpoint) == 0 || paths[midpoint].first > newDistance) //if we found the new shortest distance, update
+                    bestPoint = curPoint;
+                    bestDist = direct;
+                    continue;
+                }
+            } //if there is no direct path, check neighbors for a path
+            Neighbors* nextTo = &(curNode->getNextTo());
+            auto endIt = nextTo->end(); //get the end iterator
+            for (auto it = nextTo->begin(); it != endIt; ++it)
+            {
+                if ((curPoint.x >= it->second.x && curPoint.x <= it->second.z) && (curPoint.y >= it->second.y && curPoint.y <= it->second.a)) //since all lines are horizontal or vertical, this tests to see if the our current point is on the intersection of our neighbor.
+                    //We don't want to process this as it makes no progress
+                {
+                    continue;
+                }
+                glm::vec2 midpoint; //this is not actually the midpoint, but rather the point on the intersection line we think will be closest to the goal
+                if (it->second.y == it->second.a) //if the intersection is horizontal
+                {
+                    float left = std::min(it->second.x,it->second.z);
+                    float right = it->second.x + it->second.z - left;
+                   midpoint = {std::max(std::min(right,(end.x + curPoint.x)/2),left), it->second.y} ; //find the best point. Sometimes, the best point is off the line, so we take either edge point
+                }
+                else //if the intersection is vertical
+                {
+                    float high = std::max(it->second.y, it->second.a);
+                    float low = it->second.y + it->second.a - high;
+                   midpoint = {it->second.x, std::max(std::min(high,(end.y + curPoint.y)/2),low)};
+                }
+                double newDistance = pointDistance(curPoint,midpoint) + paths[curPoint].first;
+                double score = newDistance + pointDistance(midpoint,end); //the final score that also uses the heuristic
+
+
+                if (((bestDist != -1 && score < bestDist)  || bestDist == -1) &&
+                    (paths.count(midpoint) == 0 || paths[midpoint].first > newDistance)) //if we found the new shortest distance from start to this point, update. If this distance is longer than the shortest known path to the destination, don't even bother recording it
+                {
+                    if (it->first != endNode)
                     {
                         if (paths.count(midpoint) == 0)
                         {
@@ -335,23 +361,29 @@ Path NavMesh::getPath(const glm::vec2& start, const glm::vec2& end)
                         {
                             heap.update({midpoint,it->first},paths[midpoint].first,score);
                         }
-                        paths[midpoint].first = newDistance;
-                        paths[midpoint].second = curPoint;
                     }
+                    else //don't add a point with a direct path to the end since the shortest path from it to the end is just their direct path; there's no reason to process it further
+                    {
+                        bestDist = score; //score is now the actual distance from the point to the end since they are in the same node
+                        bestPoint = midpoint;
+                    }
+                    paths[midpoint].first = newDistance;
+                    paths[midpoint].second = curPoint;
                 }
             }
         }
 
         Path finalPath;
-        if (done)
+        if (bestDist != -1)
         {
+            curPoint = bestPoint;
             while (curPoint != start )
             {
 
                 finalPath.push_front(curPoint);
                 curPoint = paths[curPoint].second;
             }
-            finalPath.push_back(end);
+            finalPath.push_back(end); //we always have to add the start and end so we just do it at the very end.
             finalPath.push_front(start);
         }
             return finalPath;

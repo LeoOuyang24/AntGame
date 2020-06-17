@@ -1,5 +1,0 @@
-6/7/2020:
-	Optimize navmesh generation (At least make finding lines that intersect run in O(logn) rather than linear time).
-	Optimize pathfinding between navmesh nodes. Right now, we move from our current point to the midpoint of the intersection between nodes. This is extremely inefficient when we have long intersection regions.
-	Have units avoid other units.
-	Possibly add the ability to add objects to NavMesh so we can build buildings.
