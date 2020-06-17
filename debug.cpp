@@ -78,6 +78,7 @@ void Debug::update()
         meshDB.renderNodes = !meshDB.renderNodes;
         break;
     case SDLK_F2:
+        std::cout << "Rendering Path" << std::endl;
         meshDB.renderPath = !meshDB.renderPath;
         break;
     case SDLK_F3:
