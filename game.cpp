@@ -637,9 +637,9 @@ GameWindow::GameWindow() : Window({0,0},nullptr,{0,0,0,0})
     //level.remove(*hill);
    // level.addUnit(*(new Beetle(320,320)));
 
-    auto antPtr = level.addUnit(*(new Ant({380,380,10,10},*hill)));
+  //  auto antPtr = level.addUnit(*(new Ant({380,380,10,10},*hill)));
  //   hill->getComponent<ResourceComponent>()->setResource(-1000);
-    auto mushPtr = level.addUnit(*(new Mushroom(480,480)));
+   /* auto mushPtr = level.addUnit(*(new Mushroom(480,480)));
     std::shared_ptr<Label> antLabel = std::shared_ptr<Label>(new Label({400,300,128,32},"Click on the ant",{1,1,1,1},{385,385},
                                   *(new LambdaTrigger([](){return !GameWindow::getCamera().isZooming();})),
                                   *(new ObjectTrigger([](Object* obj){

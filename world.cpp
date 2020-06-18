@@ -64,18 +64,23 @@ void Map::init(const glm::vec4& region)
           //  remove(*g);*/
           if ( i != levels - 1)
           {
-         //   addGatePair(currentRect->x + chunkDimen - 64, currentRect->y + chunkDimen/2 - 32, chunks[i+1][j]->rect.x, currentRect->y + chunkDimen/2 - 32); //rightmost gate
+          //  addGatePair(currentRect->x + chunkDimen - 64, currentRect->y + chunkDimen/2 - 32, chunks[i+1][j]->rect.x, currentRect->y + chunkDimen/2 - 32); //rightmost gate
           }
           if (j != levels - 1)
           {
-           // addGatePair(currentRect->x + chunkDimen/2 - 32, currentRect->y + chunkDimen - 64, chunks[i][j+1]->rect.x + chunkDimen/2,chunks[i][j+1]->rect.y); //downmost gate
+         //   addGatePair(currentRect->x + chunkDimen/2 - 32, currentRect->y + chunkDimen - 64, chunks[i][j+1]->rect.x + chunkDimen/2,chunks[i][j+1]->rect.y); //downmost gate
           }
         }
     }
     //addUnit(*(new Anthill({0,0})));
-    addUnit(*(new Terrain(-10,-33,200,10)));
-    addUnit(*(new Terrain(-33,10,10,200)));
+  //  addUnit(*(new Terrain(-10,-33,200,10)));
+ //   addUnit(*(new Terrain(-33,10,10,200)));
     mesh->init(getCurrentChunk().entities);
+   // Terrain* t1 = new Terrain(-33,10,10,200);
+   // Terrain* t2 = new Terrain(-73,10,10,200);
+    //addUnit(*(t));
+  //  mesh->smartAddNode(t1->getRect().getRect());
+   // mesh->smartAddNode(t2->getRect().getRect());
 }
 
 std::shared_ptr<Object> Map::addUnit(Object& entity)
@@ -90,7 +95,7 @@ std::shared_ptr<Object> Map::addUnit(Object& entity)
     //obj.reset();
     chunk->entities[&entity] = ptr;
     chunk->tree->add(entity.getRect());
-    //mesh->add(entity.getRect().getRect());
+    mesh->smartAddNode(entity.getRect().getRect());
     //ptr.reset();
    // remove(entity);
 

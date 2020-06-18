@@ -46,15 +46,14 @@ class NavMesh //a navigation mesh of rectangle
     void addNode(const glm::vec4& rect); //adds a node to the mesh assuming it doesn't collide with a preexisting node
     void addNode(NavMeshNode& node);
 
-    void smartAddNodeHelper(const glm::vec4& rect, NavMeshNode& node);
-    void smartAddNode(const glm::vec4& rect); //adds a node assuming it may collide with a preexisting node
-
     void removeNode(NavMeshNode& node); //deletes node from both the vector and the nodeTree
 
     void splitNode(NavMeshNode& node, const glm::vec4& overlap); //creates new nodes and adds them to neighbors based on how overlap splits node. Does NOT delete node
 public:
     NavMesh(const glm::vec4& bounds_, RawQuadTree& tree_);
     void init(ObjectStorage& storage); //initialize the mesh with given the vector of objects
+    void smartAddNode(const glm::vec4& rect); //adds a node assuming it may collide with a preexisting node
+
     //void add(const glm::vec4& rect); //adds a rect to the navmesh. UNFINISHED!!!!
     //void render();
     Path getPath(const glm::vec2& start, const glm::vec2& end); //returns a path from start to end using A*. Not guaranteed to be the shortest path

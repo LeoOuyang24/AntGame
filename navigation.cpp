@@ -21,12 +21,16 @@ NavMesh::NavMeshNode::NavMeshNode(const glm::vec4& rect) : RectPositional(rect)
 void NavMesh::NavMeshNode::addNode(NavMeshNode& n)
 {
     const glm::vec4* otherArea = &(n.getRect());
-    glm::vec4 intersect = vecIntersectRegion(*otherArea,rect);
-    nextTo.insert({&n,{intersect.x,intersect.y, intersect.x + intersect.z, intersect.y + intersect.a}});
-    if (n.getNextTo().count(this) == 0) //if the other node hasn't added us, add it!
+    if (vecIntersect(*otherArea,rect))
     {
-        n.addNode(*this);
+        glm::vec4 intersect = vecIntersectRegion(*otherArea,rect);
+        nextTo.insert({&n,{intersect.x,intersect.y, intersect.x + intersect.z, intersect.y + intersect.a}});
+        if (n.getNextTo().count(this) == 0) //if the other node hasn't added us, add it!
+        {
+            n.addNode(*this);
+        }
     }
+
 }
 
 void NavMesh::NavMeshNode::removeNode(NavMeshNode& n)
@@ -58,7 +62,6 @@ void NavMesh::NavMeshNode::render() const
     Camera* cam = &(GameWindow::getCamera());
     for (auto it = nextTo.begin(); it != nextTo.end(); ++it)
     {
-        GameWindow::requestNGon(4,{(it->second.x + it->second.z)/2,(it->second.y + it->second.a)/2},10,{0,1,0,1},0,true,1,false);
         glm::vec2 center = cam->toScreen({rect.x + rect.z/2, rect.y + rect.a/2});
         glm::vec2 otherCenter = cam->toScreen({it->first->getRect().x + it->first->getRect().z/2, it->first->getRect().y + it->first->getRect().a/2});
         PolyRender::requestLine({center.x,center.y,otherCenter.x,otherCenter.y},{center.x,0,otherCenter.x,1},1);
@@ -67,6 +70,7 @@ void NavMesh::NavMeshNode::render() const
 
 NavMesh::NavMeshNode::~NavMeshNode()
 {
+    std::cout << "DESTRUCTOR" << std::endl;
     for (auto j = nextTo.begin(); j != nextTo.end(); ++j)
     {
         if (j->first)
@@ -103,39 +107,6 @@ void NavMesh::addNode(NavMeshNode& node)
     nodeTree.add(node);
 }
 
-void NavMesh::smartAddNodeHelper(const glm::vec4& rect, NavMeshNode& node)
-{
-    splitNode(node,rect);
-    if (!vecContains(rect,node.getRect())) //if the rect is completely encompassed by node, there is no reason to check neighbors as it is impossible for them to intersect with the rect
-    {
-        auto neigh = &(node.getNextTo());
-        auto end = neigh->end();
-        for (auto i = neigh->begin(); i != end; ++i)
-        {
-            if (i->first->collides(rect))
-            {
-                smartAddNodeHelper(rect,*(i->first));
-            }
-        }
-    }
-    removeNode(node);
-
-}
-
-void NavMesh::smartAddNode(const glm::vec4& rect)
-{
-    std::vector<Positional*> vec = nodeTree.getNearest(rect);
-    for (int i = vec.size() - 1; i >= 0 ; i--) //find the first node that collides with rect. Once we've found it, we use the helper to finish the job. This is slightly more efficient since we only have to process nodes that are guaranteed to collide with the rect
-    {
-        if (vec[i]->collides(rect))
-        {
-            NavMeshNode* ptr = static_cast<NavMeshNode*>(vec[i]);
-            smartAddNodeHelper(rect,*ptr);
-            break;
-        }
-    }
-}
-
 void NavMesh::removeNode(NavMeshNode& node)
 {
     nodeTree.remove(node);
@@ -149,20 +120,62 @@ void NavMesh::splitNode(NavMeshNode& node, const glm::vec4& overlap)
         {nodeRect->x, nodeRect->y, region.x - nodeRect->x, nodeRect->a}, //left
         {region.x, nodeRect->y,region.z, region.y - nodeRect->y }, //top
         {region.x + region.z, nodeRect->y,nodeRect->x + nodeRect->z - region.x - region.z, nodeRect->a}, //right
-        {region.x, region.y + region.a, region.z, nodeRect->y + nodeRect->a - region.y + region.a} //bottom
+        {region.x, region.y + region.a, region.z, nodeRect->y + nodeRect->a - region.y - region.a} //bottom
         };
+    NavMeshNode* left = nullptr, *right = nullptr, *top = nullptr, *bottom = nullptr;
     for (int i = 0; i < 4; ++i)
     {
         if (borders[i].z != 0 && borders[i].a != 0)
         {
-            NavMeshNode* node = new NavMeshNode(borders[i]);
-            addNode(*node); //add each node if they have non-0 dimensions and add them to neighbors
-            auto neigh = &(node->getNextTo());
+            NavMeshNode* newNode = new NavMeshNode(borders[i]);
+            addNode(*newNode); //add each node if they have non-0 dimensions and add them to neighbors
+            auto neigh = &(node.getNextTo());
             auto end = neigh->end();
             for (auto j = neigh->begin(); j != end; ++ j)
             {
-                j->first->addNode(*node);
+                if (j->first != newNode)
+                {
+                    j->first->addNode(*newNode);
+                }
             }
+            switch (i)
+            {
+            case 0:
+                left = newNode;
+                break;
+            case 1:
+                top = newNode;
+                break;
+            case 2:
+                right = newNode;
+                break;
+            case 3:
+                bottom = newNode;
+                break;
+            }
+
+        }
+    }
+    if (left)
+    {
+        if (top)
+        {
+            left->addNode(*top);
+        }
+        if (bottom)
+        {
+            left->addNode(*bottom);
+        }
+    }
+    if (right)
+    {
+        if (top)
+        {
+            right->addNode(*top);
+        }
+        if (bottom)
+        {
+            right->addNode(*bottom);
         }
     }
 }
@@ -262,9 +275,28 @@ void NavMesh::init(ObjectStorage& storage)
         }
         std::cout << "\n";*/
     }
+    //removeNode(*(getNode({0,0})));
 
 }
 
+void NavMesh::smartAddNode(const glm::vec4& rect)
+{
+    std::vector<Positional*> vec = nodeTree.getNearest(rect);
+    for (int i = vec.size() - 1; i >= 0 ; i--) //find the first node that collides with rect. Once we've found it, we use the helper to finish the job. This is slightly more efficient since we only have to process nodes that are guaranteed to collide with the rect
+    {
+        printRect(((RectPositional*)vec[i])->getRect());
+        if (vec[i]->collides(rect))
+        {
+            NavMeshNode* ptr = static_cast<NavMeshNode*>(vec[i]);
+            splitNode(*ptr,rect);
+            if (vecContains(ptr->getRect(),rect))
+            {
+                i = 0; //we use i = 0 rather than break because we want to removeNode. We can't remove node earlier as then vecContains may be undefined
+            }
+            removeNode(*ptr);
+        }
+    }
+}
 
 Path NavMesh::getPath(const glm::vec2& start, const glm::vec2& end)
 {
@@ -311,8 +343,11 @@ Path NavMesh::getPath(const glm::vec2& start, const glm::vec2& end)
 
             Neighbors* nextTo = &(curNode->getNextTo());
             auto endIt = nextTo->end(); //get the end iterator
+            int num = 0;
             for (auto it = nextTo->begin(); it != endIt; ++it)
             {
+                num++;
+                auto ptr = it->first;
                 if ((curPoint.x >= it->second.x && curPoint.x <= it->second.z) && (curPoint.y >= it->second.y && curPoint.y <= it->second.a)) //since all lines are horizontal or vertical, this tests to see if the our current point is on the intersection of our neighbor.
                 {                    //We don't want to process this as it makes no progress
                     continue;
@@ -359,14 +394,21 @@ Path NavMesh::getPath(const glm::vec2& start, const glm::vec2& end)
 
         Path finalPath;
         curPoint = end;
-        while (curPoint != start )
+        if (heap.size() != 0) //the end node is always guaranteed to be still in the heap if a path was found.
         {
+            while (curPoint != start )
+            {
 
-            finalPath.push_front(curPoint);
-            curPoint = paths[curPoint].second;
+                finalPath.push_front(curPoint);
+                curPoint = paths[curPoint].second;
+            }
+            finalPath.push_back(end); //we always have to add the start and end so we just do it at the very end.
+            finalPath.push_front(start);
         }
-        finalPath.push_back(end); //we always have to add the start and end so we just do it at the very end.
-        finalPath.push_front(start);
+        else
+        {
+            std::cout << "No path" << std::endl;
+        }
         return finalPath;
     }
     else
