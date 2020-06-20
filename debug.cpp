@@ -33,12 +33,28 @@ void Debug::DebugNavMesh::DebugNavMesh::update()
        {
 
            auto path = mesh->getPath(left,right);
-           auto end = path.end();
-           glm::vec2* prev = &left, *next;
-           for (auto it = path.begin(); it != end; ++it)
+            showPath(path);
+          // GameWindow::requestNGon(10,right,2,{0,1,0,1},0,true,0,false);
+       }
+    }
+}
+
+void Debug::DebugNavMesh::showPath(Path& path)
+{
+    if (path.size() >= 1)
+    {
+        Camera* cam = &(GameWindow::getCamera());
+
+        auto end = path.end();
+        glm::vec2* prev = &(*path.begin()), *next;
+
+        GameWindow::requestNGon(10,*prev,2,{1,0,0,1},0,true,0,false);
+        if( path.size() > 1)
+        {
+            for (auto it = path.begin() + 1; it != end; ++it)
            {
                 next = &(*it);
-                GameWindow::requestNGon(10,*prev,2,{1,0,0,1},0,true,0,false);
+               // GameWindow::requestNGon(10,*prev,2,{1,0,0,1},0,true,0,false);
                 GameWindow::requestNGon(10,*next,2,{1,0,0,1},0,true,0,false);
                 glm::vec2 p1 = cam->toScreen(*prev);
                 glm::vec2 p2 = cam->toScreen(*next);
@@ -46,8 +62,7 @@ void Debug::DebugNavMesh::DebugNavMesh::update()
                 prev = next;
                // std::cout << p1.x << " " << p1.y << " " << p2.x << " " << p2.y << std::endl;
            }
-          // GameWindow::requestNGon(10,right,2,{0,1,0,1},0,true,0,false);
-       }
+        }
     }
 }
 

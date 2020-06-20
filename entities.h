@@ -43,17 +43,19 @@ class Object : public Entity//environment objects. Can be seen, have a hitbox, a
 {
 protected:
     bool dead = false;
+    const bool movable = false; //whether or not the object moves when pushed by another unit. True for structures, false for units
     ClickableComponent* clickable = nullptr;
     RectComponent* rect = nullptr;
     RenderComponent* render = nullptr;
 public:
-    Object(ClickableComponent& click, RectComponent& rect, RenderComponent& render);
+    Object(ClickableComponent& click, RectComponent& rect, RenderComponent& render, bool mov = false);
     RectComponent& getRect() const;
     glm::vec2 getCenter();
     ClickableComponent& getClickable();
     RenderComponent& getRender();
     bool clicked();
     bool getDead();
+    bool getMovable();
     void setDead(bool isDead);
     virtual ~Object();
 };
@@ -98,7 +100,7 @@ protected:
     HealthComponent* health = nullptr;
     Manager* manager = nullptr;
 public:
-    Unit(ClickableComponent& click, RectComponent& rect, RenderComponent& render, HealthComponent& health);
+    Unit(ClickableComponent& click, RectComponent& rect, RenderComponent& render, HealthComponent& health, bool mov = true);
 
     HealthComponent& getHealth();
     bool clicked();
@@ -108,6 +110,18 @@ public:
 
 };
 
+class RepelComponent : public Component, public ComponentContainer<RepelComponent> //component that repels objects on collision
+{
+public:
+    RepelComponent(Object& unit);
+    void collide(Entity& other);
+};
+
+class Structure : public Unit
+{
+public:
+    Structure(ClickableComponent& click, RectComponent& rect, RenderComponent& render, HealthComponent& health);
+};
 
 class AttackComponent : public Component, public ComponentContainer<AttackComponent>
 {
@@ -158,6 +172,7 @@ class PathComponent : public MoveComponent, public ComponentContainer<PathCompon
 public:
     PathComponent(double speed, const glm::vec4& rect, Entity& unit);
     virtual void setTarget(const glm::vec2& point);
+    const glm::vec2& getTarget();
     void addPoint(const glm::vec2& point); //add a point to the path
     virtual void update();
 };

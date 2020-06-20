@@ -236,11 +236,13 @@ void Anthill::StartSignal::press()
     }
 }
 
-Anthill::Anthill(const glm::vec2& pos) : Unit(*(new ClickableComponent("Anthill",*this)), *(new RectComponent({pos.x,pos.y,64,64}, *this)), *(new AntHillRender(*this)), *(new HealthComponent(*this, 100)))
+Anthill::Anthill(const glm::vec2& pos) : Unit(*(new ClickableComponent("Anthill",*this)), *(new RectComponent({pos.x,pos.y,64,64}, *this)),
+                                                *(new AntHillRender(*this)), *(new HealthComponent(*this, 100)), false)
 {
     getClickable().addButton(*(new CreateAnt(*this)));
     getClickable().addButton(*(new StartSignal(*this)));
     addComponent(*(new ResourceComponent(1000,*this)));
+    addComponent(*(new RepelComponent(*this)));
 }
 
 void Anthill::createAnt()
@@ -248,7 +250,8 @@ void Anthill::createAnt()
     ResourceComponent* counter = getComponent<ResourceComponent>();
     if (counter->getResource() >= 1)
     {
-        glm::vec2 center = getCenter();
+        auto vec4 = getRect().getRect();
+        glm::vec2 center = {vec4.x + vec4.z + 10, vec4.y + vec4.a + 10};
         counter->setResource(-1);
         /*std::shared_ptr<Ant> ptr = ;
         std::cout << ptr.use_count() << std::endl;

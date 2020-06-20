@@ -109,7 +109,7 @@ RectRenderComponent::~RectRenderComponent()
 
 }
 
-Object::Object(ClickableComponent& click, RectComponent& rect_, RenderComponent& render_) : Entity(), clickable(&click), rect(&rect_), render(&render_)
+Object::Object(ClickableComponent& click, RectComponent& rect_, RenderComponent& render_, bool mov) : Entity(),movable(mov), clickable(&click), rect(&rect_), render(&render_)
 {
     addComponent(click);
     addComponent(rect_);
@@ -140,6 +140,12 @@ bool Object::getDead()
 {
     return dead;
 }
+
+bool Object::getMovable()
+{
+    return movable;
+}
+
 void Object::setDead(bool isDead)
 {
     dead = isDead;
@@ -245,7 +251,7 @@ void RectRenderComponent::render(const SpriteParameter& param)
 }
 
 
-Unit::Unit(ClickableComponent& click, RectComponent& rect, RenderComponent& render, HealthComponent& health) : Object(click,rect,render), health(&health)
+Unit::Unit(ClickableComponent& click, RectComponent& rect, RenderComponent& render, HealthComponent& health, bool mov) : Object(click,rect,render, mov), health(&health)
 {
     addComponent(health);
 }
@@ -253,6 +259,28 @@ Unit::Unit(ClickableComponent& click, RectComponent& rect, RenderComponent& rend
 void Unit::setManager(Manager& manager)
 {
     this->manager = &manager;
+}
+
+RepelComponent::RepelComponent(Object& unit) : Component(unit), ComponentContainer<RepelComponent>(unit)
+{
+
+}
+
+void RepelComponent::collide(Entity& unit)
+{
+    Object* ptr = static_cast<Object*>(&unit);
+    if (ptr->getMovable())
+    {
+        auto otherMove = ptr->getComponent<MoveComponent>();
+        auto ourMove = entity->getComponent<RectComponent>();
+        if (otherMove && ourMove)
+        {
+            const glm::vec4* otherRect = &otherMove->getRect();
+            const glm::vec4* ourRect = &ourMove->getRect();
+            double angle = atan2((otherRect->y + otherRect->a/2) - (ourRect->y + ourRect->a/2),(otherRect->x + otherRect->z/2) - (ourRect->x + ourRect->z/2));
+            otherMove->teleport({otherRect->x + otherRect->z/2 + 1*(cos(angle)), otherRect->y + otherRect->a/2 + 1*(sin(angle))});
+        }
+    }
 }
 
 HealthComponent& Unit::getHealth()
@@ -268,6 +296,11 @@ void Unit::interact(Ant& ant)
 Manager* Unit::getManager()
 {
     return manager;
+}
+
+Structure::Structure(ClickableComponent& click, RectComponent& rect, RenderComponent& render, HealthComponent& health) : Unit(click,rect,render,health,false)
+{
+
 }
 
 AttackComponent::AttackComponent(float damage_, int endLag_, Unit& unit) : Component(unit), ComponentContainer<AttackComponent>(&unit),  damage(damage_), endLag(endLag_)
@@ -375,9 +408,25 @@ void PathComponent::setTarget(const glm::vec2& point)
 {
     path.clear();
     NavMesh* mesh = &(GameWindow::getLevel().getMesh());
-    path = mesh->getPath(getCenter(),point);
-    target = path.front();
+    try
+    {
+        path = mesh->getPath(getCenter(),point);
+        target = path.front();
+    }
+    catch (...)
+    {
+        target = point;
+    }
     //MoveComponent::setTarget(point);
+}
+
+const glm::vec2& PathComponent::getTarget()
+{
+    if (path.size() == 0)
+    {
+        return target;
+    }
+    return path.back();
 }
 
 void PathComponent::addPoint(const glm::vec2& point)
@@ -387,6 +436,7 @@ void PathComponent::addPoint(const glm::vec2& point)
 
 void PathComponent::update()
 {
+  //  Debug::DebugNavMesh::showPath(path);
     MoveComponent::update();
     if (atTarget())
     {

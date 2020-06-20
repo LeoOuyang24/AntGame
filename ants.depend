@@ -988,20 +988,20 @@
 1564186026 c:\users\leoou\onedrive\desktop\projects\ants\sprites.h
 	"render.h"
 
-1592114883 source:c:\users\leoou\onedrive\desktop\projects\ants\components.cpp
+1592615158 source:c:\users\leoou\onedrive\desktop\projects\ants\components.cpp
 	<iostream>
 	"vanilla.h"
 	"SDLHelper.h"
 	"render.h"
 	"components.h"
 
-1592115794 c:\users\leoou\onedrive\desktop\projects\ants\components.h
+1592604958 c:\users\leoou\onedrive\desktop\projects\ants\components.h
 	<memory.h>
 	<unordered_map>
 	<typeinfo>
 	"glGame.h"
 
-1592154901 source:c:\users\leoou\onedrive\desktop\projects\ants\ants.cpp
+1592615860 source:c:\users\leoou\onedrive\desktop\projects\ants\ants.cpp
 	<cmath>
 	"render.h"
 	"vanilla.h"
@@ -1031,13 +1031,13 @@
 	"antManager.h"
 	"debug.h"
 
-1592115809 c:\users\leoou\onedrive\desktop\projects\ants\entities.h
+1592614591 c:\users\leoou\onedrive\desktop\projects\ants\entities.h
 	<deque>
 	"glInterface.h"
 	"SDLhelper.h"
 	"components.h"
 
-1592159363 source:c:\users\leoou\onedrive\desktop\projects\ants\entities.cpp
+1592615860 source:c:\users\leoou\onedrive\desktop\projects\ants\entities.cpp
 	"SDLHelper.h"
 	"render.h"
 	"entities.h"
@@ -1051,7 +1051,7 @@
 	"components.h"
 	"entities.h"
 
-1592458721 source:c:\users\leoou\onedrive\desktop\projects\ants\world.cpp
+1592601993 source:c:\users\leoou\onedrive\desktop\projects\ants\world.cpp
 	"world.h"
 	"entities.h"
 	"ants.h"
@@ -1069,14 +1069,14 @@
 	<memory>
 	"entities.h"
 
-1590540173 source:c:\users\leoou\onedrive\desktop\projects\ants\antmanager.cpp
+1592615473 source:c:\users\leoou\onedrive\desktop\projects\ants\antmanager.cpp
 	"antManager.h"
 	"game.h"
 
 1589135255 c:\users\leoou\onedrive\desktop\projects\ants\asciartvromvrom.h
 	<iostream>
 
-1592464813 source:c:\users\leoou\onedrive\desktop\projects\ants\navigation.cpp
+1592615258 source:c:\users\leoou\onedrive\desktop\projects\ants\navigation.cpp
 	<algorithm>
 	"navigation.h"
 	"game.h"
@@ -1088,10 +1088,11 @@
 	"world.h"
 	"debug.h"
 
-1592243635 c:\users\leoou\onedrive\desktop\projects\ants\debug.h
+1592612500 c:\users\leoou\onedrive\desktop\projects\ants\debug.h
 	"render.h"
+	"entities.h"
 
-1592413928 source:c:\users\leoou\onedrive\desktop\projects\ants\debug.cpp
+1592615258 source:c:\users\leoou\onedrive\desktop\projects\ants\debug.cpp
 	"SDLhelper.h"
 	"debug.h"
 	"world.h"

@@ -3,6 +3,8 @@
 
 #include "render.h"
 
+#include "entities.h"
+
 class NavMesh;
 struct Debug //class to hold all debug controls
 {
@@ -13,6 +15,7 @@ struct Debug //class to hold all debug controls
         glm::vec2 left = {0,0}, right = {0,0};
         NavMesh* mesh = nullptr;
         void update();
+        static void showPath(Path& p);
     };
     struct DebugGameWindow
     {

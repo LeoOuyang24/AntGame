@@ -70,7 +70,6 @@ void NavMesh::NavMeshNode::render() const
 
 NavMesh::NavMeshNode::~NavMeshNode()
 {
-    std::cout << "DESTRUCTOR" << std::endl;
     for (auto j = nextTo.begin(); j != nextTo.end(); ++j)
     {
         if (j->first)
@@ -284,7 +283,6 @@ void NavMesh::smartAddNode(const glm::vec4& rect)
     std::vector<Positional*> vec = nodeTree.getNearest(rect);
     for (int i = vec.size() - 1; i >= 0 ; i--) //find the first node that collides with rect. Once we've found it, we use the helper to finish the job. This is slightly more efficient since we only have to process nodes that are guaranteed to collide with the rect
     {
-        printRect(((RectPositional*)vec[i])->getRect());
         if (vec[i]->collides(rect))
         {
             NavMeshNode* ptr = static_cast<NavMeshNode*>(vec[i]);
@@ -402,8 +400,7 @@ Path NavMesh::getPath(const glm::vec2& start, const glm::vec2& end)
                 finalPath.push_front(curPoint);
                 curPoint = paths[curPoint].second;
             }
-            finalPath.push_back(end); //we always have to add the start and end so we just do it at the very end.
-            finalPath.push_front(start);
+           // finalPath.push_front(start);
         }
         else
         {

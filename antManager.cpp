@@ -249,7 +249,7 @@ void AntManager::updateAnts()
                               //  std::cout << scale << std::endl;
                                 moveTo.y = (moveTo.y-  (clumpDimen.y-1)/2.0)*(Ant::dimen + space.y) + targetPoint.y;
                             }
-                            if (current->getCenter() != moveTo)
+                            if (current->getComponent<MoveComponent>()->getTarget() != moveTo)
                             {
                                 //atTarget = false;
                                 if (unitPtr)

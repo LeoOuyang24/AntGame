@@ -36,7 +36,7 @@ private:
           //  std::cout <<  typeid(C).name() << " Inserting2: " << components.size() << " " << entities.size() << std::endl;
 
     }
-    void remove()
+    void remove() //this only removes the pointers; it is expected that whatever actually owned the Component will delete it
     {
         //std::cout << typeid(C).name() << " Deleting: " << components.size() << " " << entities.size()   << std::endl;
         if (entities.count(this) > 0)

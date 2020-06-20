@@ -72,7 +72,6 @@ void MoveComponent::update()
     angle = atan2((target.y - (center.y)),(target.x - (center.x)));
     if (!atTarget())
     {
-
         rect.x += absMin(cos(angle)*speed*DeltaTime::deltaTime,target.x - center.x);
         rect.y += absMin(sin(angle)*speed*DeltaTime::deltaTime, target.y - center.y);
     }
@@ -80,7 +79,7 @@ void MoveComponent::update()
 
 bool MoveComponent::atTarget()
 {
-    return pointDistance(getCenter(),getTarget()) == 0;
+    return pointDistance(getCenter(),target) <= 0.001;
 }
 
 void MoveComponent::teleport(const glm::vec2& point)
