@@ -102,16 +102,15 @@ void AntManager::getInput()
         if (newTarget) //if we clicked on a unit
         {
             const glm::vec4* targetRect = &(newTarget->get()->getRect().getRect());
-            targetPoint = {targetRect->x + Ant::dimen/2, targetRect->y + Ant::dimen/2}; //the starting point at which we can place an ant
             clumpDimen.y = sqrt(chosen/(targetRect->z/targetRect->a)); //#of ants per dimension
-            clumpDimen.x = chosen/clumpDimen.y;
+            clumpDimen.x = std::max(chosen/clumpDimen.y,1.0f);
             space = {std::min(spacing, (int)((targetRect->z - clumpDimen.x*Ant::dimen)/clumpDimen.x)),
                     std::min(spacing, (int)((targetRect->a - clumpDimen.y*Ant::dimen)/clumpDimen.y))};
             HealthComponent* health = newTarget->get()->getComponent<HealthComponent>();
 
             if (newTarget->get()->getComponent<ResourceComponent>() )
             {
-                setTask(COLLECT);
+                setTask(MOVE);
             }
             else if (health && health->getHealth() > 0)
             {
@@ -131,10 +130,9 @@ void AntManager::getInput()
              clumpDimen.x = floor(sqrt(chosen));
              clumpDimen.y = chosen/clumpDimen.x;
              space = {spacing,spacing};
-            targetPoint = {mouseClick.x, mouseClick.y - clumpDimen.y};
             setTask(MOVE);
         }
-
+        targetPoint = {mouseClick.x, mouseClick.y - clumpDimen.y};
        /* if (KeyManager::getJustPressed() == SDLK_TAB && !parent.lock().get())
         {
             split(AntManager::maxChildren);
@@ -147,21 +145,59 @@ void AntManager::getInput()
             {
             //    ptr->getClickable().click(true);
                 GameWindow::requestRect(ptr->getRect().getRect(),selectColor,true,0,GameWindow::interfaceZ);
-                if (justClicked && ptr->getCurrentTask() != this) //if we've recieved a new task
+                if (justClicked) //if we've recieved a new task
                 {
+                     if( ptr->getCurrentTask() != this)
+                     {
+                        ptr->setCurrentTask(*this);
+                     }
                    // std::cout << this << " " << currentTask << std::endl;
-                    ptr->setCurrentTask(*this);
+                    if (clumpDimen.x >= 1) //moving to target. Decimals can still be rounded to 0
+                    {
+                        glm::vec2 moveTo;
+                        /*if (repel)
+                        {
+                            double angle = atan2(targetPoint.y - currentRect.y - currentRect.a/2,targetPoint.x-currentRect.x - currentRect.z/2);
+                            moveTo = {currentRect.x + currentRect.z/2 + -1*(cos(angle)), currentRect.y + currentRect.a/2 + -1*sin(angle)};
+                        }
+                        else*/
+                        {
+                           // std::cout << scale << std::endl;
+                            moveTo = {targetPoint.x + ((i%((int)clumpDimen.x)) - (clumpDimen.x-1)/2)*(Ant::dimen + space.x),
+                            i/((int)(clumpDimen.x))};
+                            if (newTarget)
+                            {
+                                moveTo.y = fmod(moveTo.y,clumpDimen.y);
+                            }
+                          //  std::cout << scale << std::endl;
+                            moveTo.y = (moveTo.y-  (clumpDimen.y-1)/2.0)*(Ant::dimen + space.y) + targetPoint.y;
+                        }
+                        auto otherTarg = ptr->getComponent<MoveComponent>()->getTarget();
+                        if (otherTarg.x != moveTo.x || otherTarg.y != moveTo.y)
+                        {
+                            //atTarget = false;
+                          //  std::cout << "Move: " << i << " " << moveTo.x << " " << moveTo.y<< "\n";
+                            // current->getComponent<MoveComponent>()->getTarget().x << " " << current->getComponent<MoveComponent>()->getTarget().y << std::endl;
+                            if (newTarget)
+                            {
+                                ptr->setTarget(moveTo,&(map->getUnit(newTarget->get())));
+                            }
+                            else
+                            {
+                                ptr->setTarget(moveTo,nullptr);
+                            }
+                        }
+                    }
                 }
-            }
-            else
-            {
-                chosen--;
-                i--;
-                selected.erase(selected.begin() + i);
+              /*  else if ()
+                {
+                    chosen--;
+                    i--;
+                    selected.erase(selected.begin() + i);
+                }*/
             }
         }
     }
-
 }
 
 void AntManager::updateAnts()
@@ -174,10 +210,10 @@ void AntManager::updateAnts()
         HealthComponent* health = nullptr;
         InteractionComponent* interact = nullptr;
         ResourceComponent* resource = nullptr;
-        if (unitPtr)
+        if (unitPtr && unitPtr->getCenter() != targetPoint)
         {
             targetRect = &(unitPtr->getRect().getRect());
-            targetPoint = {targetRect->x + targetRect->z/2, targetRect->y + targetRect->a/2};
+           // targetPoint = {targetRect->x + targetRect->z/2, targetRect->y + targetRect->a/2};
             health = unitPtr->getComponent<HealthComponent>();
             resource = unitPtr->getComponent<ResourceComponent>();
             interact = unitPtr->getComponent<InteractionComponent>();
@@ -211,7 +247,7 @@ void AntManager::updateAnts()
                         {
                             if (currentTask == ATTACK)
                             {
-                                current->getComponent<AttackComponent>()->attack(health);
+                               // current->getComponent<AttackComponent>()->attack(health);
                             }
                             else if (currentTask == COLLECT)
                             {
@@ -227,39 +263,6 @@ void AntManager::updateAnts()
                                 setTask(IDLE);
                                 targetUnit.reset();
                                 break;
-                            }
-                        }
-                        else if (clumpDimen.x != 0) //moving to target
-                        {
-                            glm::vec2 moveTo;
-                            /*if (repel)
-                            {
-                                double angle = atan2(targetPoint.y - currentRect.y - currentRect.a/2,targetPoint.x-currentRect.x - currentRect.z/2);
-                                moveTo = {currentRect.x + currentRect.z/2 + -1*(cos(angle)), currentRect.y + currentRect.a/2 + -1*sin(angle)};
-                            }
-                            else*/
-                            {
-                               // std::cout << scale << std::endl;
-                                moveTo = {targetPoint.x + ((i%((int)clumpDimen.x)) - (clumpDimen.x-1)/2)*(Ant::dimen + space.x),
-                                i/((int)(clumpDimen.x))};
-                                if (unitPtr)
-                                {
-                                    moveTo.y = fmod(moveTo.y,clumpDimen.y);
-                                }
-                              //  std::cout << scale << std::endl;
-                                moveTo.y = (moveTo.y-  (clumpDimen.y-1)/2.0)*(Ant::dimen + space.y) + targetPoint.y;
-                            }
-                            if (current->getComponent<MoveComponent>()->getTarget() != moveTo)
-                            {
-                                //atTarget = false;
-                                if (unitPtr)
-                                {
-                                    current->setTarget(moveTo,&(map->getUnit(unitPtr)));
-                                }
-                                else
-                                {
-                                    current->setTarget(moveTo,nullptr);
-                                }
                             }
                         }
                         if (currentTask == MOVE && atTarget && !current->getComponent<MoveComponent>()->atTarget())

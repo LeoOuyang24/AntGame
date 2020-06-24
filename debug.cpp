@@ -60,7 +60,7 @@ void Debug::DebugNavMesh::showPath(Path& path)
                 glm::vec2 p2 = cam->toScreen(*next);
                 PolyRender::requestLine({p1.x,p1.y,p2.x,p2.y},{1,1,1,1},1);
                 prev = next;
-               // std::cout << p1.x << " " << p1.y << " " << p2.x << " " << p2.y << std::endl;
+                //std::cout << p1.x << " " << p1.y << " " << p2.x << " " << p2.y << std::endl;
            }
         }
     }
@@ -97,6 +97,7 @@ void Debug::update()
         meshDB.renderPath = !meshDB.renderPath;
         break;
     case SDLK_F3:
+        std::cout << "Generating Terrain" << "\n";
         gameDB.addTerrain = !gameDB.addTerrain;
         break;
     }

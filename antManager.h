@@ -40,7 +40,7 @@ public:
     const std::vector<std::weak_ptr<Ant>>& getAnts() const;
     void clear();
     const Object* getTargetUnit() const;
-    void getInput(); //handles input, such as clicks
+    void getInput(); //handles input, such as clicks. Sets targetPoint and targetUnit
     void updateAnts(); //updates ants. The key distinction between this and getInput is that this runs regardless of whether this is the current AntManager
     void remove(Unit& unit);
     void addAnt(const std::shared_ptr<Ant>& ant);

@@ -41,7 +41,8 @@ class NavMesh //a navigation mesh of rectangle
     QuadTree nodeTree; // a quadtree of all the nodes. Makes insertion and finding nodes faster
     RawQuadTree* tree = nullptr;
   //  void addHelper(const glm::vec4& rect, NavMeshNode* current);
-    NavMeshNode* getNode(const glm::vec2 point); //returns the node at the given position. Null if none
+    NavMeshNode* getNode(const glm::vec2& point); //returns the node at the given position. Null if none
+    NavMeshNode* getNearestNode(const glm::vec2& point); //returns the nearest node at the given position. The same as getNode if the point is in a node. Returns null if there are no nearby nodes
 
     void addNode(const glm::vec4& rect); //adds a node to the mesh assuming it doesn't collide with a preexisting node
     void addNode(NavMeshNode& node);

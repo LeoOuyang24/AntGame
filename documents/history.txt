@@ -1,5 +1,7 @@
 This document keeps track of all changes as well as considered changes made to the resources as well as why they were made. Consider this a "learning from the past" kind of document. 
 
+6/20/2020:
+	AttackComponents are now now children of ApproachComponents because they share very similar properties: both attempt to move towards a target if it is nearby and both do nothing if there are no targets. In fact, attackcomponents are effictively ApproachComponents that also deal damage while in range and can only target objects with health bars.
 
 5/31/2020:
 	NavMeshNodes originally had a vector of all of its neighbors and then a vector of vectors for neighbors from each direction. This was an organization technique to make finding a specific neighbor faster. This has now been replaced with a unordered_map<NavMeshNode*, glm::vec4> where the pointer is the neighbor and the vec4 is the intersecting line. This map finds neighbors in logarithmic time which will always be generally faster than a vector. We could combine the two solutions to have a vector of maps to further organize the maps based on position. I feel like this is unncessary especially that means that something like searching for a certain neighbor will have to be done with a for loop through all the maps. This creates unnecessarily long code for a marginally faster computation time. Keep in mind that this also means that adding a node will take longer.

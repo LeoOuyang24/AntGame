@@ -4,9 +4,9 @@
 #include "game.h"
 #include "navigation.h"
 
-Terrain::Terrain(int x, int y, int w, int h) : Object(*(new ClickableComponent("Terrain", *this)), *(new RectComponent({x,y,w,h},*this)), *(new RectRenderComponent({.5,.5,.5,1},*this)))
+Terrain::Terrain(int x, int y, int w, int h) : Object(*(new ClickableComponent("Terrain", *this)), *(new RectComponent({x,y,w,h},*this)), *(new RectRenderComponent({.5,.5,.5,.1},*this)))
 {
-
+    addComponent(*(new RepelComponent(*this)));
 }
 
 Map::Chunk::Chunk(const glm::vec4& rect_)

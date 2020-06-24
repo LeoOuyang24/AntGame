@@ -22,7 +22,7 @@ void Ant::AntMoveComponent::collide(Entity& other)
         home->getComponent<ResourceComponent>()->setResource(carrying);
         carrying = 0;
     }
-    else if (move && move->atTarget() && atTarget())
+    else if (move && move->getVelocity() == 0 && velocity == 0)
     {
         glm::vec2 otherPos = move->getPos();
         glm::vec2 center = getCenter();
@@ -33,8 +33,6 @@ void Ant::AntMoveComponent::collide(Entity& other)
         }
 
         glm::vec2 targetPoint = {center.x + convertTo1(rect.x-otherPos.x)*.05, center.y + convertTo1(rect.y-otherPos.y)*.05};
-        //std::cout << targetPoint.x << " " << targetPoint.y << std::endl;
-        //std::cout << "ASDF" << std::endl;
        teleport(targetPoint);
         //setTarget(targetPoint);//, rect.z, rect.a});
     }
@@ -132,7 +130,6 @@ Ant::Ant(const glm::vec4& rect, Anthill& home) : Unit(*(new ClickableComponent("
 {
     health->setVisible(false);
     addComponent(*(new AttackComponent(1,100,*this)));
-    addComponent(*(new ApproachComponent(*this)));
 }
 
 void Ant::setTarget(const glm::vec2& target, std::shared_ptr<Object>* unit)
@@ -236,13 +233,13 @@ void Anthill::StartSignal::press()
     }
 }
 
-Anthill::Anthill(const glm::vec2& pos) : Unit(*(new ClickableComponent("Anthill",*this)), *(new RectComponent({pos.x,pos.y,64,64}, *this)),
-                                                *(new AntHillRender(*this)), *(new HealthComponent(*this, 100)), false)
+Anthill::Anthill(const glm::vec2& pos) : Structure(*(new ClickableComponent("Anthill",*this)), *(new RectComponent({pos.x,pos.y,64,64}, *this)),
+                                                *(new AntHillRender(*this)), *(new HealthComponent(*this, 100)))
 {
     getClickable().addButton(*(new CreateAnt(*this)));
     getClickable().addButton(*(new StartSignal(*this)));
     addComponent(*(new ResourceComponent(1000,*this)));
-    addComponent(*(new RepelComponent(*this)));
+
 }
 
 void Anthill::createAnt()

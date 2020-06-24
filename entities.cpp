@@ -104,6 +104,16 @@ RectRenderComponent::RectRenderComponent(const glm::vec4& color, Entity& unit) :
 
 }
 
+void RectRenderComponent::update()
+{
+    GameWindow::requestRect(((Object*)entity)->getRect().getRect(),color,true,0,0);
+}
+
+void RectRenderComponent::render(const SpriteParameter& param)
+{
+    GameWindow::requestRect(param.rect,color*param.tint,true,param.radians,param.z,true);
+}
+
 RectRenderComponent::~RectRenderComponent()
 {
 
@@ -114,6 +124,7 @@ Object::Object(ClickableComponent& click, RectComponent& rect_, RenderComponent&
     addComponent(click);
     addComponent(rect_);
     addComponent(render_);
+
 
 }
 RectComponent& Object::getRect() const
@@ -240,16 +251,6 @@ HealthComponent::~HealthComponent()
 
 }
 
-void RectRenderComponent::update()
-{
-    GameWindow::requestRect(((Object*)entity)->getRect().getRect(),color,true,0,0);
-}
-
-void RectRenderComponent::render(const SpriteParameter& param)
-{
-    GameWindow::requestRect(param.rect,color*param.tint,true,param.radians,param.z,true);
-}
-
 
 Unit::Unit(ClickableComponent& click, RectComponent& rect, RenderComponent& render, HealthComponent& health, bool mov) : Object(click,rect,render, mov), health(&health)
 {
@@ -269,17 +270,17 @@ RepelComponent::RepelComponent(Object& unit) : Component(unit), ComponentContain
 void RepelComponent::collide(Entity& unit)
 {
     Object* ptr = static_cast<Object*>(&unit);
-    if (ptr->getMovable())
+    auto otherMove = ptr->getComponent<MoveComponent>();
+    if (ptr->getMovable() && (!otherMove || otherMove->getVelocity() == 0)) //if the unit can be moved and isn't currently moving.
     {
-        auto otherMove = ptr->getComponent<MoveComponent>();
         auto ourMove = entity->getComponent<RectComponent>();
         if (otherMove && ourMove)
         {
             const glm::vec4* otherRect = &otherMove->getRect();
             const glm::vec4* ourRect = &ourMove->getRect();
-            double angle = atan2((otherRect->y + otherRect->a/2) - (ourRect->y + ourRect->a/2),(otherRect->x + otherRect->z/2) - (ourRect->x + ourRect->z/2));
-            otherMove->teleport({otherRect->x + otherRect->z/2 + 1*(cos(angle)), otherRect->y + otherRect->a/2 + 1*(sin(angle))});
+            otherMove->teleport({otherRect->x + otherRect->z/2 + convertTo1(otherRect->x - ourRect->x)*1, otherRect->y + otherRect->a/2 + convertTo1(otherRect->y - ourRect->y)*1});
         }
+
     }
 }
 
@@ -300,26 +301,7 @@ Manager* Unit::getManager()
 
 Structure::Structure(ClickableComponent& click, RectComponent& rect, RenderComponent& render, HealthComponent& health) : Unit(click,rect,render,health,false)
 {
-
-}
-
-AttackComponent::AttackComponent(float damage_, int endLag_, Unit& unit) : Component(unit), ComponentContainer<AttackComponent>(&unit),  damage(damage_), endLag(endLag_)
-{
-
-}
-
-void AttackComponent::attack(HealthComponent* health)
-{
-    if (entity && health && (attackTimer.timePassed(endLag) || !attackTimer.isSet()))
-    {
-        health->takeDamage(damage,*static_cast<Unit*>(entity));
-        attackTimer.set();
-    }
-}
-
-AttackComponent::~AttackComponent()
-{
-
+    addComponent(*(new RepelComponent(*this)));
 }
 
 ResourceComponent::ResourceComponent(int amount, Entity& entity) : Component(entity), ComponentContainer<ResourceComponent>(entity), resource(amount), maxResource(amount)
@@ -406,16 +388,19 @@ PathComponent::PathComponent(double speed, const glm::vec4& rect, Entity& unit) 
 
 void PathComponent::setTarget(const glm::vec2& point)
 {
-    path.clear();
-    NavMesh* mesh = &(GameWindow::getLevel().getMesh());
-    try
+    if (getTarget() != point)
     {
-        path = mesh->getPath(getCenter(),point);
-        target = path.front();
-    }
-    catch (...)
-    {
-        target = point;
+        path.clear();
+        NavMesh* mesh = &(GameWindow::getLevel().getMesh());
+        try
+        {
+            path = mesh->getPath(getCenter(),point);
+            target = path.front();
+        }
+        catch (...)
+        {
+            target = point;
+        }
     }
     //MoveComponent::setTarget(point);
 }
@@ -436,16 +421,19 @@ void PathComponent::addPoint(const glm::vec2& point)
 
 void PathComponent::update()
 {
-  //  Debug::DebugNavMesh::showPath(path);
-    MoveComponent::update();
+    Debug::DebugNavMesh::showPath(path);
+        //std::cout << target.x << " " << target.y << std::endl;
     if (atTarget())
     {
         if (path.size() > 1) //if we haven't reached the end of the path, select the next point
         {
             path.pop_front();
             target = path.front();
+           // std::cout << "New: " << target.x << " " << target.y << std::endl;
         } //otherwise, we're done
     }
+    MoveComponent::update();
+
 }
 
 WanderMove::WanderMove(double speed, const glm::vec4& rect, Entity& unit) : MoveComponent(speed, rect, unit), ComponentContainer<WanderMove>(unit)
@@ -552,14 +540,15 @@ void ApproachComponent::update()
         Object* ptr = targetUnit.lock().get();
         if (ptr) //if we have a target...
         {
-            glm::vec2 center = ptr->getRect().getCenter() + displacement;
+            //glm::vec2 center = ptr->getRect().getCenter() + displacement;
             if (move->collides(ptr->getRect().getRect())) //if at the target, stop moving
             {
-                move->setTarget(entity->getComponent<RectComponent>()->getCenter());
+                move->setTarget(move->getCenter());
             }
-            else //otherwise, approach
+            else if (!pointInVec(ptr->getRect().getRect(),move->getTarget().x,move->getTarget().y,0)) //otherwise, approach
             {
-                move->setTarget(center);
+                move->setTarget(closestPointOnVec(ptr->getRect().getRect(),move->getTarget()));
+                displacement = move->getTarget() - ptr->getRect().getCenter(); //sometimes, the point can't be reached. Set the target to the point returned by getPath.
             }
         }
        // move->update();
@@ -570,6 +559,47 @@ ApproachComponent::~ApproachComponent()
 {
 
 }
+
+
+AttackComponent::AttackComponent(float damage_, int endLag_, Unit& unit) : ApproachComponent(unit), ComponentContainer<AttackComponent>(&unit),  damage(damage_), endLag(endLag_)
+{
+
+}
+
+void AttackComponent::attack(HealthComponent* health)
+{
+    if (entity && health && (attackTimer.timePassed(endLag) || !attackTimer.isSet()))
+    {
+        health->takeDamage(damage,*static_cast<Unit*>(entity));
+        attackTimer.set();
+    }
+}
+
+void AttackComponent::update()
+{
+    ApproachComponent::update();
+    Object* ptr = targetUnit.lock().get();
+    if (move && ptr && ptr->getComponent<HealthComponent>() && vecIntersect(move->getRect(),ptr->getRect().getRect()))
+    {
+        attack(ptr->getComponent<HealthComponent>());
+    }
+}
+
+AttackComponent::~AttackComponent()
+{
+
+}
+
+ShootComponent::ShootComponent(float damage_, int endLag_, double range_, Unit& unit) : range(range_), AttackComponent(damage_,endLag_, unit), ComponentContainer<ShootComponent>(unit)
+{
+
+}
+
+void ShootComponent::attack(HealthComponent* health)
+{
+
+}
+
 
 SeigeComponent::SeigeComponent(Unit& entity, Anthill& hill) : ApproachComponent(entity), ComponentContainer<SeigeComponent>(entity),
  targetHill(std::dynamic_pointer_cast<Anthill>(GameWindow::getLevel().getUnit(&hill)))
@@ -604,6 +634,12 @@ Mushroom::Mushroom(int x, int y) : Unit(*(new ClickableComponent("Mushroom", *th
 {
     addComponent(*(new ResourceComponent(rand()%5,*this)));
     health->setVisible(false);
+}
+
+Dummy::Dummy(int x, int y) : Unit(*(new ClickableComponent("Dummy", *this)), *(new RectComponent({x,y,32,32},*this)), *(new RectRenderComponent({1,.5,1,1},*this)),
+                                  *(new HealthComponent(*this, 50)))
+{
+
 }
 
 Bug::Bug(int x, int y) : Unit(*(new ClickableComponent("Bug", *this)), *(new WanderMove(.02,{x,y,64,64},*this)), *(new RectRenderComponent({1,.5,1,1},*this)),*(new HealthComponent(*this, 100)))

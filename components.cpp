@@ -75,11 +75,12 @@ void MoveComponent::update()
         rect.x += absMin(cos(angle)*speed*DeltaTime::deltaTime,target.x - center.x);
         rect.y += absMin(sin(angle)*speed*DeltaTime::deltaTime, target.y - center.y);
     }
+    velocity = pointDistance({rect.x + rect.z/2, rect.y + rect.a/2}, center);
 }
 
 bool MoveComponent::atTarget()
 {
-    return pointDistance(getCenter(),target) <= 0.001;
+    return pointDistance(getCenter(),target) <= 0.0001;
 }
 
 void MoveComponent::teleport(const glm::vec2& point)
@@ -87,13 +88,18 @@ void MoveComponent::teleport(const glm::vec2& point)
     rect.x = point.x - rect.z/2; //rect.x += point.x - (rect.x + rect.z/2) -> rect.x = point.x - rect.z/2
     rect.y = point.y - rect.a/2;
     setTarget(point);
-
 }
 
 const glm::vec2& MoveComponent::getTarget()
 {
     return target;
 }
+
+double MoveComponent::getVelocity()
+{
+    return velocity;
+}
+
 void MoveComponent::setTarget(const glm::vec2& point)
 {
     target = point;

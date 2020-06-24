@@ -114,6 +114,7 @@ class MoveComponent : public RectComponent, public ComponentContainer<MoveCompon
     double angle = 0; //Direction we are moving in. This would be calculated every update call if this wasn't a member variable
 protected:
     double speed = 0;
+    double velocity = 0; //the actual amount moved this frame.
     glm::vec2 target; //point to move towards
 public:
     MoveComponent(double speed, const glm::vec4& rect, Entity& entity);
@@ -122,6 +123,7 @@ public:
     bool atTarget(); //returns whether or not we have arrived at the target
     virtual void setTarget(const glm::vec2& point);
     virtual const glm::vec2& getTarget();
+    double getVelocity();
     void setSpeed(double newSpeed);
     virtual ~MoveComponent();
 

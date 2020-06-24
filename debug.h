@@ -12,7 +12,7 @@ struct Debug //class to hold all debug controls
     {
         bool renderNodes = false; //whether or not to render all the NavMesh nodes
         bool renderPath = false; //whether or not to render left and right and their path
-        glm::vec2 left = {0,0}, right = {0,0};
+        glm::vec2 left = {1,1}, right = {1,1};
         NavMesh* mesh = nullptr;
         void update();
         static void showPath(Path& p);

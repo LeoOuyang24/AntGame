@@ -6,3 +6,25 @@ Make the game seem like a tower defense and the world is smaller than it actuall
 
 Maybe have an evolution tree and pheromones that buff ants.
 
+RTS IDEA:
+
+Basics: 
+	Start with small base and a couple workers like in Starcraft.
+	Have to find five pieces to fix teleporter to advance to next level.
+	Difficulty increases as time passes, rewarding good macro.
+	Can create workers to harvest more resources or soldiers to explore the map and defend the base.
+	Monsters spawn randomly and attack soldiers and may wander into and attack base. 
+	Items can be found throughout the map such as:
+		Additional units
+		Additional Structures
+		Structure upgrades
+		One-time temporary buffs to units
+
+Extras:
+	NPCs and various structures may have a chance to generate, allowing players to do things like fight a boss for rewards.
+	Create map system like in Slay the Spire. Beating a level provides an upgrade to adjacent levels on the map, encouraging players to beat easier levels first before tackling a hard level. Beating a certain "boss" level on a map finishes the map and generates a new map.
+	Different civilizations with different units.
+	
+		
+	
+

@@ -103,6 +103,7 @@ int main(int args, char* argsc[])
    SpriteWrapper spr;
     spr.init("image.png",true);
 
+
   //  Font comic = Font("betterComicSans.ttf");
   //  FontManager::addFont(comic);
 

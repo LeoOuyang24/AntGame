@@ -70,7 +70,7 @@ public:
 
 
 
-class Anthill : public Unit
+class Anthill : public Structure
 {
     class CreateAnt : public Button
     {
