@@ -340,7 +340,7 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint)
         {
             return {start,end}; //if both the start and end is in the same node then just move lol
         }
-        std::unordered_map<glm::vec2,std::tuple<double,glm::vec2,std::vector<NavMeshNode*>>,HashPoint> paths; //shortest distance from start to paths as well as the closest point that leads to it. Used for backtracking
+        std::unordered_map<glm::vec2,std::tuple<double,glm::vec2,std::vector<NavMeshNode*>>,HashPoint> paths; //shortest distance from start to paths as well as the closest point that leads to it. Used for backtracking. A node can lie on many nodes so we also keep track the nodes we've visited
         MinHeap<std::pair<glm::vec2,NavMeshNode*>> heap; //finds the next node to process. We have to also store what node the point is associated with since the points all lie on the border of two nodes.
         heap.add({start,startNode},0);
         //double bestDist = -1; //the distance of the best path found so far. -1 until one path is found
@@ -354,6 +354,7 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint)
             //curPoint.x = floor(curPoint.x);
             curNode = heap.peak().second;
           //  GameWindow::requestRect(curNode->getRect(),{0,0,1,1},true,0,.1,false);
+         // GameWindow::requestNGon(10,curPoint,10,{0,1,0,1},0,true,.9,false);
             heap.pop();
             if (curNode == endNode ) //if we are in the endNode, we can go directly to the end. This may not be the shortest path, so we keep searching
             {
@@ -373,7 +374,7 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint)
 
                 continue;
             }
-            Font::tnr.requestWrite({convert(num),GameWindow::getCamera().toScreen({curPoint.x,curPoint.y,10,10}),0,{1,1,1,1},1});
+            Font::tnr.requestWrite({convert(num),GameWindow::getCamera().toScreen({curPoint.x,curPoint.y,10,10}),0,{1,1,1,1},2});
             Neighbors* nextTo = &(curNode->getNextTo());
             auto endIt = nextTo->end(); //get the end iterator
             for (auto it = nextTo->begin(); it != endIt; ++it)
@@ -385,23 +386,37 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint)
                 }
 
                 glm::vec2 midpoint;  //this is not actually the midpoint, but rather the point on the intersection line we think will be closest to the goal
+                midpoint = lineLineIntersectExtend(curPoint,end,{it->second.x,it->second.y},{it->second.z,it->second.a});//this ensures that if there is a direct path to the end, we work towards it.
+                glm::vec2 a = {it->second.x, it->second.y}, b = {it->second.z, it->second.a}; //the endpoints of the intersection line segment.
 
-                if (lineInLine(curPoint,end,{it->second.x,it->second.y},{it->second.z,it->second.a})) //this ensures that if there is a direct path to the end, we work towards it.
+                if (!lineInLine(midpoint,end,a,b)) //if the midpoint isn't on the intersection, choose one of the endpoints
                 {
-                     midpoint = lineLineIntersect(curPoint,end,{it->second.x,it->second.y},{it->second.z,it->second.a});
-                }
-                else //otherwise, try to estimate the best point to go to using the distance from the curpoint and the distance to the end
-                {
-                    if (it->second.y == it->second.a) //if the intersection is horizontal
+                    double aDist = pointDistance(end,a) + pointDistance(start,a);
+                    double bDist = pointDistance(end,b) + pointDistance(start,b);
+                    if (aDist <= bDist)
                     {
-                        midpoint = {std::max(std::min(it->second.z,end.x),it->second.x), it->second.y}; //find the best edge point
+                        midpoint = a;
                     }
-                    else //if the intersection is vertical
+                    else
                     {
-                       midpoint = {it->second.x, std::max(std::min(it->second.a,end.y),it->second.y)};
+                        midpoint = b;
                     }
                 }
-               // GameWindow::requestNGon(10,midpoint,10,{0,1,0,1},0,true,1,false);
+                else //of the midpoint and the endpoints of the intersection, find which is the best point to move to
+                {
+                    double midDist = pointDistance(end,midpoint) + pointDistance(start,midpoint);
+                    double aDist = pointDistance(end,a) + pointDistance(start,a);
+                    double bDist = pointDistance(end,b) + pointDistance(start,b);
+                    if (aDist <= bDist && aDist <= midDist)
+                    {
+                        midpoint = a;
+                    }
+                    else if (bDist <= aDist && bDist <= midDist)
+                    {
+                        midpoint = b;
+                    }
+                    //else, use midpoint
+                }
                 double newDistance = pointDistance(curPoint,midpoint) + std::get<0>(paths[curPoint]);
                 double score = newDistance + pointDistance(midpoint,end); //the final score that also uses the heuristic
                 bool newPoint = paths.count(midpoint) == 0;

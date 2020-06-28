@@ -62,6 +62,9 @@ void Debug::DebugNavMesh::showPath(Path& path)
                 prev = next;
                 //std::cout << p1.x << " " << p1.y << " " << p2.x << " " << p2.y << std::endl;
            }
+           glm::vec2 startP = cam->toScreen(path.front());
+           glm::vec2 endP = cam->toScreen(path.back());
+            PolyRender::requestLine({startP.x, startP.y, endP.x, endP.y},{.5,0,.5,1},1);
         }
     }
 }

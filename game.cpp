@@ -635,7 +635,7 @@ GameWindow::GameWindow() : Window({0,0},nullptr,{0,0,0,0})
     anthill = level.addUnit(*hill, true);
     hill->setManager(manager);
     level.addUnit(*(new Dummy(0,0)));
-    level.addUnit(*(new Bug(-100,0)));
+    level.addUnit(*(new Bug(-100,0)), true);
     //level.remove(*hill);
    // level.addUnit(*(new Beetle(320,320)));
 

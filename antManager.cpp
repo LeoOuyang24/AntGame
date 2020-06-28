@@ -73,7 +73,8 @@ void AntManager::getInput()
                 for (int i = 0; i < nearSize; ++i)
                 {
                     RectComponent* ptr = static_cast<RectComponent*>(nearest[i]);
-                    if (ptr->getEntity().getComponent<Ant::AntMoveComponent>() == nullptr && ptr->collides(mouseClick))
+                    if (ptr->getEntity().getComponent<Ant::AntMoveComponent>() == nullptr && ptr->collides(mouseClick) &&
+                        !static_cast<Object*>(&(ptr->getEntity()))->getFriendly())
                         {
                             newTarget = &(map->getUnit((Object*)(&(ptr->getEntity()))));
                             break;
@@ -105,14 +106,7 @@ void AntManager::getInput()
             }
             else if (health && health->getHealth() > 0)
             {
-                if (newTarget->get()->getFriendly())
-                {
-                    setTask(MOVE);
-                }
-                else
-                {
-                        setTask(ATTACK);
-                }
+                setTask(ATTACK);
             }
             else if (newTarget->get()->getComponent<InteractionComponent>())
             {
@@ -130,7 +124,6 @@ void AntManager::getInput()
              space = {spacing,spacing};
             setTask(MOVE);
         }
-        bool gotTarget = newTarget && currentTask == ATTACK; //only set newTarget as the new target if it exists and we intend to attack (we don't want to attack friendly units)
 
         targetPoint = {mouseClick.x, mouseClick.y - clumpDimen.y};
        /* if (KeyManager::getJustPressed() == SDLK_TAB && !parent.lock().get())
@@ -165,7 +158,7 @@ void AntManager::getInput()
                            // std::cout << scale << std::endl;
                             moveTo = {targetPoint.x + ((i%((int)clumpDimen.x)) - (clumpDimen.x-1)/2)*(Ant::dimen + space.x),
                             i/((int)(clumpDimen.x))};
-                            if (gotTarget)
+                            if (newTarget)
                             {
                                 moveTo.y = fmod(moveTo.y,clumpDimen.y);
                             }
@@ -178,7 +171,7 @@ void AntManager::getInput()
                             //atTarget = false;
                           //  std::cout << "Move: " << i << " " << moveTo.x << " " << moveTo.y<< "\n";
                             // current->getComponent<MoveComponent>()->getTarget().x << " " << current->getComponent<MoveComponent>()->getTarget().y << std::endl;
-                            if (gotTarget)
+                            if (newTarget)
                             {
                                 ptr->setTarget(moveTo,&(map->getUnit(newTarget->get())));
                             }
