@@ -44,6 +44,7 @@ class Object : public Entity//environment objects. Can be seen, have a hitbox, a
 protected:
     bool dead = false;
     const bool movable = false; //whether or not the object moves when pushed by another unit. True for structures, false for units
+    bool friendly = false; //whether or not the player can target the unit
     ClickableComponent* clickable = nullptr;
     RectComponent* rect = nullptr;
     RenderComponent* render = nullptr;
@@ -56,6 +57,8 @@ public:
     bool clicked();
     bool getDead();
     bool getMovable();
+    bool getFriendly();
+    void setFriendly(bool val);
     void setDead(bool isDead);
     virtual ~Object();
 };
@@ -198,6 +201,7 @@ class AttackComponent : public ApproachComponent, public ComponentContainer<Atta
     float damage = 0;
     int endLag = 0; //how much time must pass before the attack can be reused.
     DeltaTime attackTimer;
+    virtual bool canAttack(Object* ptr); //returns true if we can attack the target.
 public:
     AttackComponent(float damage_, int endLag_, Unit& unit);
     virtual void attack(HealthComponent* health); //this is a pointer so you can legally pass in a null pointer. This function will make sure it's not null
@@ -208,9 +212,11 @@ public:
 class ShootComponent : public AttackComponent, public ComponentContainer<ShootComponent>
 {
     double range = 0;
+    bool canAttack(Object* ptr);
 public:
     ShootComponent(float damage_, int endLag_, double range_, Unit& unit);
-    void attack(HealthComponent* health);
+//    void attack(HealthComponent* health);
+    void update();
 };
 
 class Anthill;

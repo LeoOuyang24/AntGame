@@ -39,7 +39,7 @@ class NavMesh //a navigation mesh of rectangle
 
     glm::vec4 bounds; //rect of the entire mesh
     QuadTree nodeTree; // a quadtree of all the nodes. Makes insertion and finding nodes faster
-    RawQuadTree* tree = nullptr;
+    QuadTree negativeTree ; //tree of RectPositionals that are not nodes. Essentially, tree of areas where objects can't move to.
   //  void addHelper(const glm::vec4& rect, NavMeshNode* current);
     NavMeshNode* getNode(const glm::vec2& point); //returns the node at the given position. Null if none
     NavMeshNode* getNearestNode(const glm::vec2& point); //returns the nearest node at the given position. The same as getNode if the point is in a node. Returns null if there are no nearby nodes
@@ -53,11 +53,13 @@ class NavMesh //a navigation mesh of rectangle
 public:
     NavMesh(const glm::vec4& bounds_, RawQuadTree& tree_);
     void init(ObjectStorage& storage); //initialize the mesh with given the vector of objects
-    void smartAddNode(const glm::vec4& rect); //adds a node assuming it may collide with a preexisting node
+    void smartAddNode(const glm::vec4& rect); //adds a negative space
 
     //void add(const glm::vec4& rect); //adds a rect to the navmesh. UNFINISHED!!!!
     //void render();
     Path getPath(const glm::vec2& start, const glm::vec2& end); //returns a path from start to end using A*. Not guaranteed to be the shortest path
+    bool straightLine(const glm::vec4& line); //returns true if the line doesn't overlap with any negative space.
+
 };
 
 #endif // NAVIGATION_H_INCLUDED

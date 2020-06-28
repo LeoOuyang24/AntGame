@@ -119,7 +119,8 @@ RectRenderComponent::~RectRenderComponent()
 
 }
 
-Object::Object(ClickableComponent& click, RectComponent& rect_, RenderComponent& render_, bool mov) : Entity(),movable(mov), clickable(&click), rect(&rect_), render(&render_)
+Object::Object(ClickableComponent& click, RectComponent& rect_, RenderComponent& render_, bool mov) : Entity(),movable(mov),
+ clickable(&click), rect(&rect_), render(&render_)
 {
     addComponent(click);
     addComponent(rect_);
@@ -155,6 +156,16 @@ bool Object::getDead()
 bool Object::getMovable()
 {
     return movable;
+}
+
+bool Object::getFriendly()
+{
+    return friendly;
+}
+
+void Object::setFriendly(bool val)
+{
+    friendly = val;
 }
 
 void Object::setDead(bool isDead)
@@ -366,7 +377,7 @@ void CorpseComponent::onDeath()
     if (entity)
     {
         ResourceUnit* resource = new ResourceUnit(amount,entity->getComponent<RectComponent>()->getRect());
-        GameWindow::getLevel().addUnit(*(resource));
+        GameWindow::getLevel().addUnit(*(resource), false);
     }
 }
 
@@ -390,6 +401,10 @@ void PathComponent::setTarget(const glm::vec2& point)
 {
     if (getTarget() != point)
     {
+       /* if (MouseManager::getJustClicked() != SDL_BUTTON_RIGHT)
+        {
+            std::cout << point.x << " " << point.y << std::endl;
+        }*/
         path.clear();
         NavMesh* mesh = &(GameWindow::getLevel().getMesh());
         try
@@ -548,10 +563,9 @@ void ApproachComponent::update()
             else if (!pointInVec(ptr->getRect().getRect(),move->getTarget().x,move->getTarget().y,0)) //otherwise, approach
             {
                 move->setTarget(closestPointOnVec(ptr->getRect().getRect(),move->getTarget()));
-                displacement = move->getTarget() - ptr->getRect().getCenter(); //sometimes, the point can't be reached. Set the target to the point returned by getPath.
+                //displacement = move->getTarget() - ptr->getRect().getCenter(); //sometimes, the point can't be reached. Set the target to the point returned by getPath.
             }
         }
-       // move->update();
     }
 }
 
@@ -560,6 +574,11 @@ ApproachComponent::~ApproachComponent()
 
 }
 
+
+bool AttackComponent::canAttack(Object* ptr)
+{
+    return move && ptr && ptr->getComponent<HealthComponent>() && vecIntersect(move->getRect(),ptr->getRect().getRect());
+}
 
 AttackComponent::AttackComponent(float damage_, int endLag_, Unit& unit) : ApproachComponent(unit), ComponentContainer<AttackComponent>(&unit),  damage(damage_), endLag(endLag_)
 {
@@ -579,7 +598,7 @@ void AttackComponent::update()
 {
     ApproachComponent::update();
     Object* ptr = targetUnit.lock().get();
-    if (move && ptr && ptr->getComponent<HealthComponent>() && vecIntersect(move->getRect(),ptr->getRect().getRect()))
+    if (canAttack(ptr))
     {
         attack(ptr->getComponent<HealthComponent>());
     }
@@ -590,14 +609,38 @@ AttackComponent::~AttackComponent()
 
 }
 
+bool ShootComponent::canAttack(Object* ptr)
+{
+    if (ptr)
+    {
+        auto otherRect = &(ptr->getRect());
+        return  ptr->getComponent<HealthComponent>() && move && vecDistance(otherRect->getRect(),move->getRect()) <= range
+        && GameWindow::getLevel().getMesh().straightLine(glm::vec4(otherRect->getCenter(), move->getCenter())) ;
+    }
+    return false;
+
+}
+
 ShootComponent::ShootComponent(float damage_, int endLag_, double range_, Unit& unit) : range(range_), AttackComponent(damage_,endLag_, unit), ComponentContainer<ShootComponent>(unit)
 {
 
 }
 
-void ShootComponent::attack(HealthComponent* health)
+void ShootComponent::update()
 {
-
+    Object* ptr = targetUnit.lock().get();
+    if (canAttack(ptr)) //attack if we are able to.
+    {
+        attack(ptr->getComponent<HealthComponent>());
+        if (move)
+        {
+            move->setTarget(move->getCenter());
+        }
+    }
+    else //otherwise, move
+    {
+        ApproachComponent::update();
+    }
 }
 
 

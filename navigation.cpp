@@ -205,7 +205,7 @@ void NavMesh::splitNode(NavMeshNode& node, const glm::vec4& overlap)
     }
 }
 
-NavMesh::NavMesh(const glm::vec4& bounds_, RawQuadTree& tree_) : bounds(bounds_), tree(&tree_), nodeTree(bounds)
+NavMesh::NavMesh(const glm::vec4& bounds_, RawQuadTree& tree_) : bounds(bounds_), negativeTree(bounds), nodeTree(bounds)
 {
 
 }
@@ -216,6 +216,7 @@ void NavMesh::init(ObjectStorage& storage)
     std::vector<const glm::vec4*> vec;
     for (auto it = storage.begin(); it != storage.end(); ++it)
     {
+        negativeTree.add(*(new RectPositional(it->first->getRect().getRect())));
         vec.push_back(&(it->first->getRect().getRect()));
     }
     glm::vec4* edge = new glm::vec4({bounds.x + bounds.z, bounds.y, 1, bounds.a});
@@ -306,19 +307,23 @@ void NavMesh::init(ObjectStorage& storage)
 
 void NavMesh::smartAddNode(const glm::vec4& rect)
 {
-    std::vector<Positional*> vec = nodeTree.getNearest(rect);
-    for (int i = vec.size() - 1; i >= 0 ; i--) //find the first node that collides with rect. Once we've found it, we use the helper to finish the job. This is slightly more efficient since we only have to process nodes that are guaranteed to collide with the rect
+    if (vecContains(rect,bounds))
     {
-        if (vec[i]->collides(rect))
+        std::vector<Positional*> vec = nodeTree.getNearest(rect);
+        for (int i = vec.size() - 1; i >= 0 ; i--) //find the first node that collides with rect. Once we've found it, we use the helper to finish the job. This is slightly more efficient since we only have to process nodes that are guaranteed to collide with the rect
         {
-            NavMeshNode* ptr = static_cast<NavMeshNode*>(vec[i]);
-            splitNode(*ptr,rect);
-            if (vecContains(ptr->getRect(),rect))
+            if (vec[i]->collides(rect))
             {
-                i = 0; //we use i = 0 rather than break because we want to removeNode. We can't remove node earlier as then vecContains may be undefined
+                NavMeshNode* ptr = static_cast<NavMeshNode*>(vec[i]);
+                splitNode(*ptr,rect);
+                if (vecContains(ptr->getRect(),rect))
+                {
+                    i = 0; //we use i = 0 rather than break because we want to removeNode. We can't remove node earlier as then vecContains may be undefined
+                }
+                removeNode(*ptr);
             }
-            removeNode(*ptr);
         }
+        negativeTree.add(*(new RectPositional(rect)));
     }
 }
 
@@ -455,3 +460,19 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint)
         throw std::logic_error("Can't get path with no starting or ending node!");
     }
 }
+
+bool NavMesh::straightLine(const glm::vec4& line)
+{
+    auto vec = negativeTree.getNearest({line.x,line.y,line.z - line.x, line.a - line.y});
+    int size = vec.size();
+    glm::vec2 a = {line.x, line.y}, b = {line.z, line.a};
+    for (int i = 0; i < size; ++i)
+    {
+        if (lineInVec(a,b,(static_cast<RectPositional*>(vec[i]))->getRect(),0))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+

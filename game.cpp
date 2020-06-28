@@ -632,7 +632,7 @@ GameWindow::GameWindow() : Window({0,0},nullptr,{0,0,0,0})
     manager.init(level.getRect(level.getCurrentChunk()));
     debug.init();
     Anthill* hill = (new Anthill({320,320}));
-    anthill = level.addUnit(*hill);
+    anthill = level.addUnit(*hill, true);
     hill->setManager(manager);
     level.addUnit(*(new Dummy(0,0)));
     level.addUnit(*(new Bug(-100,0)));

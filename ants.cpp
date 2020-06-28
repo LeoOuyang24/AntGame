@@ -129,7 +129,7 @@ Ant::Ant(const glm::vec4& rect, Anthill& home) : Unit(*(new ClickableComponent("
                                                       *(new HealthComponent(*this, 10)))
 {
     health->setVisible(false);
-    addComponent(*(new AttackComponent(1,100,*this)));
+    addComponent(*(new ShootComponent(1,100,100,*this)));
 }
 
 void Ant::setTarget(const glm::vec2& target, std::shared_ptr<Object>* unit)
@@ -253,7 +253,7 @@ void Anthill::createAnt()
         /*std::shared_ptr<Ant> ptr = ;
         std::cout << ptr.use_count() << std::endl;
         std::weak_ptr<Ant> weak = ptr;*/
-        (GameWindow::getLevel().addUnit( *(new Ant({center.x +5*cos(rand()%360/180.0*M_PI),center.y +5*sin(rand()%360/180.0*M_PI),10,10},*this))));
+        GameWindow::getLevel().addUnit( *(new Ant({center.x +5*cos(rand()%360/180.0*M_PI),center.y +5*sin(rand()%360/180.0*M_PI),10,10},*this)), true);
         //std::cout << ants.size() << std::endl;
     }
 }

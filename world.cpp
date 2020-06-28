@@ -83,7 +83,7 @@ void Map::init(const glm::vec4& region)
    // mesh->smartAddNode(t2->getRect().getRect());
 }
 
-std::shared_ptr<Object> Map::addUnit(Object& entity)
+std::shared_ptr<Object> Map::addUnit(Object& entity, bool friendly)
 {
     Chunk* chunk = &(getChunk(entity));
     if (chunk == nullptr)
@@ -93,6 +93,7 @@ std::shared_ptr<Object> Map::addUnit(Object& entity)
     std::shared_ptr<Object> ptr = std::shared_ptr<Object>(&entity);
     //std::shared_ptr<Object> obj = std::shared_ptr<Object>((new Bug(200,200)));
     //obj.reset();
+    entity.setFriendly(friendly);
     chunk->entities[&entity] = ptr;
     chunk->tree->add(entity.getRect());
     if (!entity.getMovable())

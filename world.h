@@ -46,7 +46,7 @@ class Map
 public:
     Map();
     void init(const glm::vec4& region);
-    std::shared_ptr<Object> addUnit(Object& entity);//this method returns the shared_ptr in case any other class wants to share ownership.
+    std::shared_ptr<Object> addUnit(Object& entity, bool friendly = false);//this method returns the shared_ptr in case any other class wants to share ownership. friendly determines if the unit is an enemy or not
     std::shared_ptr<Object>& getUnit(Object* unit);
     void moveObject(Object& obj, double x, double y); //can move either ants or objects
     Chunk& getChunk(int x, int y); //assumes 0,0 = [5][5]
