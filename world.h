@@ -23,31 +23,14 @@ public:
 
 class Map
 {
-    constexpr static int levels = 11;
-    constexpr static int chunkDimen = 2000;
-    friend class GameWindow;
-  //  glm::vec4 rect = {0,0,0,0};
-    struct Chunk
-    {
-        //friend class Map;
-        glm::vec4 rect = {0,0,0,0};
-        std::map<Object*, std::shared_ptr<Object>> entities;
-      //  std::vector<std::shared_ptr<Label>> labels;
-        std::shared_ptr<RawQuadTree> tree;
-        void clear();
-        Chunk(const glm::vec4& rect_);
-        ~Chunk();
-    };
-    std::shared_ptr<Chunk> chunks[levels][levels];
-    Chunk* currentChunk = nullptr;
-    void addGatePair(int x1, int y1, int x2, int y2);
-    std::shared_ptr<NavMesh> mesh;
 
 public:
+    class Chunk;
     Map();
     void init(const glm::vec4& region);
     std::shared_ptr<Object> addUnit(Object& entity, bool friendly = false);//this method returns the shared_ptr in case any other class wants to share ownership. friendly determines if the unit is an enemy or not
     std::shared_ptr<Object>& getUnit(Object* unit);
+    void addTerrain(const glm::vec4& rect);
     void moveObject(Object& obj, double x, double y); //can move either ants or objects
     Chunk& getChunk(int x, int y); //assumes 0,0 = [5][5]
     Chunk& getChunk(Object& unit);
@@ -89,6 +72,29 @@ public:
         void setDest(const std::shared_ptr<Gate>& other);
         ~Gate();
     };
+    struct Chunk
+    {
+        //friend class Map;
+        glm::vec4 rect = {0,0,0,0};
+        ObjectStorage entities;
+        std::vector<std::shared_ptr<Terrain>> terrain;
+      //  std::vector<std::shared_ptr<Label>> labels;
+        std::shared_ptr<RawQuadTree> tree;
+        void clear();
+        void update();
+        Chunk(const glm::vec4& rect_);
+        ~Chunk();
+    };
+private:
+    constexpr static int levels = 11;
+    constexpr static int chunkDimen = 2000;
+    friend class GameWindow;
+  //  glm::vec4 rect = {0,0,0,0};
+
+    std::shared_ptr<Chunk> chunks[levels][levels];
+    Chunk* currentChunk = nullptr;
+    void addGatePair(int x1, int y1, int x2, int y2);
+    std::shared_ptr<NavMesh> mesh;
 };
 
 

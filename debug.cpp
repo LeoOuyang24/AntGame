@@ -74,7 +74,7 @@ void Debug::DebugGameWindow::update()
     if (addTerrain && MouseManager::getJustReleased() == SDL_BUTTON_LEFT)
     {
         auto rect = GameWindow::getSelection();
-        GameWindow::getLevel().addUnit(*(new Terrain(rect.x,rect.y,rect.z,rect.a)));
+        GameWindow::getLevel().addTerrain(GameWindow::getSelection());
     }
 }
 

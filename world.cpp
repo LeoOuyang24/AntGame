@@ -4,36 +4,11 @@
 #include "game.h"
 #include "navigation.h"
 
-Terrain::Terrain(int x, int y, int w, int h) : Object(*(new ClickableComponent("Terrain", *this)), *(new RectComponent({x,y,w,h},*this)), *(new RectRenderComponent({.5,.5,.5,.1},*this)))
+Terrain::Terrain(int x, int y, int w, int h) : Object(*(new ClickableComponent("Terrain", *this)), *(new RectComponent({x,y,w,h},*this)), *(new RectRenderComponent({.5,.5,.5,1},*this)))
 {
     addComponent(*(new RepelComponent(*this)));
 }
 
-Map::Chunk::Chunk(const glm::vec4& rect_)
-{
-    this->rect = rect_;
-    tree.reset(new RawQuadTree(rect_));
-}
-
-void Map::Chunk::clear()
-{
-    entities.clear();
-}
-
-Map::Chunk::~Chunk()
-{
-    clear();
-}
-
-void Map::addGatePair(int x1, int y1, int x2, int y2)
-{
-    Map::Gate* gate1 = (new Gate(x1,y1));
-    Map::Gate* gate2 = (new Gate(x2,y2));
-    gate1->setDest(std::dynamic_pointer_cast<Gate>(addUnit(*gate2)));
-    gate2->setDest(std::dynamic_pointer_cast<Gate>(addUnit(*gate1)));
-    //addUnit(*gate1);
-    //addUnit(*gate2);
-}
 
 Map::Map()
 {
@@ -88,7 +63,7 @@ std::shared_ptr<Object> Map::addUnit(Object& entity, bool friendly)
     Chunk* chunk = &(getChunk(entity));
     if (chunk == nullptr)
     {
-        throw std::logic_error("Tried to add object to non-existing chunk!");
+        throw std::logic_error("Map::addUnit: Tried to add object to non-existing chunk!");
     }
     std::shared_ptr<Object> ptr = std::shared_ptr<Object>(&entity);
     //std::shared_ptr<Object> obj = std::shared_ptr<Object>((new Bug(200,200)));
@@ -104,6 +79,18 @@ std::shared_ptr<Object> Map::addUnit(Object& entity, bool friendly)
    // remove(entity);
 
     return ptr;
+}
+
+void Map::addTerrain(const glm::vec4& rect)
+{
+    Terrain* terr = (new Terrain(rect.x,rect.y,rect.z,rect.a));
+    Chunk* chunk = &getChunk(*terr);
+    if (chunk == nullptr)
+    {
+        throw std::logic_error("Map::addTerrain: Tried to add terrain to non-existing chunk!");
+    }
+    chunk->terrain.emplace_back(terr);
+    mesh->smartAddNode(rect);
 }
 
 std::shared_ptr<Object>& Map::getUnit(Object* unit)
@@ -332,4 +319,39 @@ void Map::Gate::setDest(const std::shared_ptr<Gate>& other)
 Map::Gate::~Gate()
 {
 
+}
+
+Map::Chunk::Chunk(const glm::vec4& rect_)
+{
+    this->rect = rect_;
+    tree.reset(new RawQuadTree(rect_));
+}
+
+void Map::Chunk::clear()
+{
+    entities.clear();
+}
+
+void Map::Chunk::update()
+{
+    int size = terrain.size();
+    for (int i = 0; i < size; ++i)
+    {
+        terrain[i]->update();
+    }
+}
+
+Map::Chunk::~Chunk()
+{
+    clear();
+}
+
+void Map::addGatePair(int x1, int y1, int x2, int y2)
+{
+    Map::Gate* gate1 = (new Gate(x1,y1));
+    Map::Gate* gate2 = (new Gate(x2,y2));
+    gate1->setDest(std::dynamic_pointer_cast<Gate>(addUnit(*gate2)));
+    gate2->setDest(std::dynamic_pointer_cast<Gate>(addUnit(*gate1)));
+    //addUnit(*gate1);
+    //addUnit(*gate2);
 }

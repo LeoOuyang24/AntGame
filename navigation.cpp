@@ -142,10 +142,10 @@ void NavMesh::splitNode(NavMeshNode& node, const glm::vec4& overlap)
     const glm::vec4* nodeRect = &(node.getRect());
     glm::vec4 region = vecIntersectRegion(*nodeRect,overlap);
     glm::vec4 borders[4] = { //the four new nodes of the current node is being split into
-        {nodeRect->x, nodeRect->y, region.x - nodeRect->x, nodeRect->a}, //left
-        {region.x, nodeRect->y,region.z, region.y - nodeRect->y }, //top
-        {region.x + region.z, nodeRect->y,nodeRect->x + nodeRect->z - region.x - region.z, nodeRect->a}, //right
-        {region.x, region.y + region.a, region.z, nodeRect->y + nodeRect->a - region.y - region.a} //bottom
+        {nodeRect->x, region.y, region.x - nodeRect->x, region.a}, //left
+        {nodeRect->x, nodeRect->y,nodeRect->z, region.y - nodeRect->y }, //top
+        {region.x + region.z, region.y,nodeRect->x + nodeRect->z - region.x - region.z, region.a}, //right
+        {nodeRect->x, region.y + region.a, nodeRect->z, nodeRect->y + nodeRect->a - region.y - region.a} //bottom
         };
     NavMeshNode* left = nullptr, *right = nullptr, *top = nullptr, *bottom = nullptr;
     for (int i = 0; i < 4; ++i)
@@ -324,6 +324,7 @@ void NavMesh::smartAddNode(const glm::vec4& rect)
             }
         }
         negativeTree.add(*(new RectPositional(rect)));
+        //std::cout << nodeTree.size() << std::endl;
     }
 }
 
@@ -391,8 +392,8 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint)
 
                 if (!lineInLine(midpoint,end,a,b)) //if the midpoint isn't on the intersection, choose one of the endpoints
                 {
-                    double aDist = pointDistance(end,a) + pointDistance(start,a);
-                    double bDist = pointDistance(end,b) + pointDistance(start,b);
+                    double aDist = pointDistance(end,a) + pointDistance(curPoint,a);
+                    double bDist = pointDistance(end,b) + pointDistance(curPoint,b);
                     if (aDist <= bDist)
                     {
                         midpoint = a;
@@ -404,9 +405,9 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint)
                 }
                 else //of the midpoint and the endpoints of the intersection, find which is the best point to move to
                 {
-                    double midDist = pointDistance(end,midpoint) + pointDistance(start,midpoint);
-                    double aDist = pointDistance(end,a) + pointDistance(start,a);
-                    double bDist = pointDistance(end,b) + pointDistance(start,b);
+                    double midDist = pointDistance(end,midpoint) + pointDistance(curPoint,midpoint);
+                    double aDist = pointDistance(end,a) + pointDistance(curPoint,a);
+                    double bDist = pointDistance(end,b) + pointDistance(curPoint,b);
                     if (aDist <= bDist && aDist <= midDist)
                     {
                         midpoint = a;

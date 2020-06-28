@@ -299,7 +299,9 @@ void Manager::updateAntManagers()
 void Manager::updateEntities()
 {
     Map* level = &(GameWindow::getLevel());
-    ObjectStorage* entities = &(level->getEntities(level->getCurrentChunk()));
+    auto chunk = &(level->getCurrentChunk());
+
+    ObjectStorage* entities = &(level->getEntities(*chunk));
     const glm::vec4* selectRect = &(GameWindow::getSelection());
     RawQuadTree* tree = level->getTree(level->getCurrentChunk());
     AntManager* newTask = nullptr;
@@ -308,6 +310,7 @@ void Manager::updateEntities()
    // const glm::vec4* selectRect = &(GameWindow::getSelection());
     bool clicked = MouseManager::getJustClicked() == SDL_BUTTON_LEFT;
     int released = MouseManager::getJustReleased();
+    chunk->update();
    // std::cout << mousePos.x << " " << mousePos.y << std::endl;
     Object* newSelected = nullptr;
     int index = 0;
