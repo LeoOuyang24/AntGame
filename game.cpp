@@ -110,11 +110,13 @@ void Manager::spawnCreatures(Anthill& hill, double minR, double maxR) //spawn cr
     maxR = std::max(minR, maxR);
     double r = fmod(rand(),(maxR - minR)) + minR;
     double theta = rand()%360*M_PI/180;
-    Unit* toSpawn = generateCreature();
     glm::vec2 point = {rect->x + rect->z/2 + cos(theta)*r,rect->y + rect->a/2 + sin(theta)*r};
-    GameWindow::getLevel().moveObject(*toSpawn,point.x,point.y);
-    SeigeComponent* seige = new SeigeComponent(*toSpawn,hill);
-    toSpawn->addComponent(*seige);
+    Unit* toSpawn = new Bug(point.x,point.y);
+    AttackComponent* attack = (new AttackComponent(1,50,*toSpawn));
+    attack->setTarget(GameWindow::getLevel().getUnit(&hill));
+    toSpawn->addComponent(*attack);
+    //SeigeComponent* seige = new SeigeComponent(*toSpawn,hill);
+    //toSpawn->addComponent(*seige);
     GameWindow::getLevel().addUnit(*toSpawn);
 
    // std::cout << point.x << " " << point.y << std::endl;

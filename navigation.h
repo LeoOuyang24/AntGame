@@ -53,11 +53,12 @@ class NavMesh //a navigation mesh of rectangle
 public:
     NavMesh(const glm::vec4& bounds_, RawQuadTree& tree_);
     void init(ObjectStorage& storage); //initialize the mesh with given the vector of objects
+    void init2(ObjectStorage& storage); //initializes the mesh by calling smartAddNode on every object
     void smartAddNode(const glm::vec4& rect); //adds a negative space
 
     //void add(const glm::vec4& rect); //adds a rect to the navmesh. UNFINISHED!!!!
     //void render();
-    Path getPath(const glm::vec2& start, const glm::vec2& end); //returns a path from start to end using A*. Not guaranteed to be the shortest path
+    Path getPath(const glm::vec2& start, const glm::vec2& end, int width = 0); //returns a path from start to end using A*. Not guaranteed to be the shortest path. Width is the shortest distance we can be from any given negative area. This allows us to find paths for large objects without colliding with walls
     bool straightLine(const glm::vec4& line); //returns true if the line doesn't overlap with any negative space.
 
 };

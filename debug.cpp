@@ -32,7 +32,7 @@ void Debug::DebugNavMesh::DebugNavMesh::update()
        if (left != right)
        {
 
-           auto path = mesh->getPath(left,right);
+           auto path = mesh->getPath(left,right, (KeyManager::findNumber(SDLK_F4) != -1 )*10);
             showPath(path);
           // GameWindow::requestNGon(10,right,2,{0,1,0,1},0,true,0,false);
        }

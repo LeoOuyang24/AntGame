@@ -281,17 +281,20 @@ RepelComponent::RepelComponent(Object& unit) : Component(unit), ComponentContain
 void RepelComponent::collide(Entity& unit)
 {
     Object* ptr = static_cast<Object*>(&unit);
-    auto otherMove = ptr->getComponent<MoveComponent>();
-    if (ptr->getMovable() && (!otherMove || otherMove->getVelocity() == 0)) //if the unit can be moved and isn't currently moving.
+    if (vecContains(ptr->getRect().getRect(), entity->getComponent<RectComponent>()->getRect()))
     {
-        auto ourMove = entity->getComponent<RectComponent>();
-        if (otherMove && ourMove)
+        auto otherMove = ptr->getComponent<MoveComponent>();
+        if (ptr->getMovable() && (!otherMove || otherMove->getVelocity() == 0)) //if the unit can be moved and isn't currently moving.
         {
-            const glm::vec4* otherRect = &otherMove->getRect();
-            const glm::vec4* ourRect = &ourMove->getRect();
-            otherMove->teleport({otherRect->x + otherRect->z/2 + convertTo1(otherRect->x - ourRect->x)*1, otherRect->y + otherRect->a/2 + convertTo1(otherRect->y - ourRect->y)*1});
-        }
+            auto ourMove = entity->getComponent<RectComponent>();
+            if (otherMove && ourMove)
+            {
+                const glm::vec4* otherRect = &otherMove->getRect();
+                const glm::vec4* ourRect = &ourMove->getRect();
+                otherMove->teleport({otherRect->x + otherRect->z/2 + convertTo1(otherRect->x - ourRect->x)*1, otherRect->y + otherRect->a/2 + convertTo1(otherRect->y - ourRect->y)*1});
+            }
 
+        }
     }
 }
 
@@ -409,7 +412,7 @@ void PathComponent::setTarget(const glm::vec2& point)
         NavMesh* mesh = &(GameWindow::getLevel().getMesh());
         try
         {
-            path = mesh->getPath(getCenter(),point);
+            path = mesh->getPath(getCenter(),point, entity->getComponent<RectComponent>()->getRect().z/2);
             target = path.front();
         }
         catch (...)
@@ -685,7 +688,7 @@ Dummy::Dummy(int x, int y) : Unit(*(new ClickableComponent("Dummy", *this)), *(n
 
 }
 
-Bug::Bug(int x, int y) : Unit(*(new ClickableComponent("Bug", *this)), *(new WanderMove(.02,{x,y,64,64},*this)), *(new RectRenderComponent({1,.5,1,1},*this)),*(new HealthComponent(*this, 100)))
+Bug::Bug(int x, int y) : Unit(*(new ClickableComponent("Bug", *this)), *(new PathComponent(.02,{x,y,64,64},*this)), *(new RectRenderComponent({1,.5,1,1},*this)),*(new HealthComponent(*this, 100)))
 {
     //getComponent<MoveComponent>()->setTarget({0,0});
     addComponent(*(new CorpseComponent(*this, 100)));
@@ -697,10 +700,11 @@ Bug::~Bug()
 
 }
 
-Beetle::Beetle(int x, int y) : Unit(*(new ClickableComponent("Beetle", *this)), *(new WanderMove(.02,{x,y,64,64},*this)), *(new RectRenderComponent({1,.5,0,1},*this)),*(new HealthComponent(*this, 100)))
+Beetle::Beetle(int x, int y) : Unit(*(new ClickableComponent("Beetle", *this)), *(new PathComponent(.02,{x,y,64,64},*this)), *(new RectRenderComponent({1,.5,0,1},*this)),*(new HealthComponent(*this, 100)))
 {
-    addComponent(*(new AttackComponent(1,50,*this)));
-    addComponent(*(new BeetleMove(*this)));
+    auto attack = new AttackComponent(1,50,*this);
+    addComponent(*(attack));
+    //addComponent(*(new BeetleMove(*this)));
     addComponent(*(new CorpseComponent(*this,200)));
 }
 
