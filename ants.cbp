@@ -92,6 +92,8 @@
 		<Unit filename="components.cpp" />
 		<Unit filename="components.h" />
 		<Unit filename="creature.h" />
+		<Unit filename="debug.cpp" />
+		<Unit filename="debug.h" />
 		<Unit filename="entities.cpp" />
 		<Unit filename="entities.h" />
 		<Unit filename="game.cpp" />

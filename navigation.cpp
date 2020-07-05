@@ -21,14 +21,11 @@ NavMesh::NavMeshNode::NavMeshNode(const glm::vec4& rect) : RectPositional(rect)
 void NavMesh::NavMeshNode::addNode(NavMeshNode& n)
 {
     const glm::vec4* otherArea = &(n.getRect());
-    if (vecIntersect(*otherArea,rect))
+    glm::vec4 intersect = vecIntersectRegion(*otherArea,rect);
+    nextTo.insert({&n,{intersect.x,intersect.y, intersect.x + intersect.z, intersect.y + intersect.a}});
+    if (n.getNextTo().count(this) == 0) //if the other node hasn't added us, add it!
     {
-        glm::vec4 intersect = vecIntersectRegion(*otherArea,rect);
-        nextTo.insert({&n,{intersect.x,intersect.y, intersect.x + intersect.z, intersect.y + intersect.a}});
-        if (n.getNextTo().count(this) == 0) //if the other node hasn't added us, add it!
-        {
-            n.addNode(*this);
-        }
+        n.addNode(*this);
     }
 
 }
@@ -158,7 +155,8 @@ void NavMesh::splitNode(NavMeshNode& node, const glm::vec4& overlap)
             auto end = neigh->end();
             for (auto j = neigh->begin(); j != end; ++ j)
             {
-                if (j->first != newNode)
+                glm::vec4 intersect = vecIntersectRegion(j->first->getRect(), borders[i]);
+                if (j->first != newNode && (vecIntersect(j->first->getRect(), borders[i]) && (intersect.z != 0 || intersect.a != 0))) //the second statement ensures that rectangles that share a common side will still be neighbors but neighbors touching at the corner won't
                 {
                     j->first->addNode(*newNode);
                 }
@@ -207,7 +205,7 @@ void NavMesh::splitNode(NavMeshNode& node, const glm::vec4& overlap)
 
 NavMesh::NavMesh(const glm::vec4& bounds_, RawQuadTree& tree_) : bounds(bounds_), negativeTree(bounds), nodeTree(bounds)
 {
-
+    addNode(bounds);
 }
 
 void NavMesh::init(ObjectStorage& storage)
@@ -318,25 +316,28 @@ void NavMesh::init2(ObjectStorage& storage)
 
 void NavMesh::smartAddNode(const glm::vec4& rect)
 {
-    if (vecContains(rect,bounds))
+    if (nodeTree.size() == 0)
     {
+        addNode(bounds);
+    }
         std::vector<Positional*> vec = nodeTree.getNearest(rect);
         for (int i = vec.size() - 1; i >= 0 ; i--) //find the first node that collides with rect. Once we've found it, we use the helper to finish the job. This is slightly more efficient since we only have to process nodes that are guaranteed to collide with the rect
         {
-            if (vec[i]->collides(rect))
-            {
-                NavMeshNode* ptr = static_cast<NavMeshNode*>(vec[i]);
-                splitNode(*ptr,rect);
-                if (vecContains(ptr->getRect(),rect))
+            NavMeshNode* ptr = static_cast<NavMeshNode*>(vec[i]);
+            if (vecInside(ptr->getRect(),rect))
                 {
-                    i = 0; //we use i = 0 rather than break because we want to removeNode. We can't remove node earlier as then vecContains may be undefined
+                    splitNode(*ptr,rect);
+                    if (vecContains(ptr->getRect(),rect))
+                    {
+                        i = 0; //we use i = 0 rather than break because we want to removeNode. We can't remove node earlier as then vecContains may be undefined
+                    }
+
+                    removeNode(*ptr);
+                    //std::cout << "Done removing" << std::endl;
                 }
-                removeNode(*ptr);
-            }
         }
-        negativeTree.add(*(new RectPositional(rect)));
-        //std::cout << nodeTree.size() << std::endl;
-    }
+      //  negativeTree.add(*(new RectPositional(rect)));
+       // std::cout << nodeTree.size() << std::endl;
 }
 
 Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, int width)
@@ -345,8 +346,8 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
     NavMeshNode* endNode = getNearestNode(endPoint);
     if (startNode && endNode)
     {
-        glm::vec2 end = closestPointOnVec(endNode->getRect(),endPoint);
         glm::vec2 start = closestPointOnVec(startNode->getRect(),startPoint); //sometimes, our start/end isn't on a node. In that case, move to the closest point possible
+        glm::vec2 end = closestPointOnVec(endNode->getRect(),endPoint);
         //GameWindow::requestRect(endNode->getRect(),{.5,.5,1,1},true,0,0,false);
         if (startNode == endNode)
         {
@@ -387,7 +388,7 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
 
                 continue;
             }
-            Font::tnr.requestWrite({convert(num),GameWindow::getCamera().toScreen({curPoint.x,curPoint.y,10,10}),0,{1,1,1,1},2});
+        //    Font::tnr.requestWrite({convert(num),GameWindow::getCamera().toScreen({curPoint.x,curPoint.y,10,10}),0,{1,1,1,1},2});
             Neighbors* nextTo = &(curNode->getNextTo());
             auto endIt = nextTo->end(); //get the end iterator
             for (auto it = nextTo->begin(); it != endIt; ++it)
@@ -448,7 +449,7 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
                         midpoint.y += width;
                     }
                 }
-                if (midpoint.x == b.x) //on left side of obstacle
+                else if (midpoint.x == b.x) //on left side of obstacle
                 {
                      if ((midpoint.y == curRect->y && curRect->x + curRect->z == it->second.z) || (midpoint.y == nodeRect->y && nodeRect->x + nodeRect->z == it->second.z)) //top left
                      {
@@ -463,18 +464,14 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
                 double score = newDistance + pointDistance(midpoint,end); //the final score that also uses the heuristic
                 bool newPoint = paths.count(midpoint) == 0;
                 bool lowDist = newPoint || paths[midpoint].first > newDistance;
-                bool newNode = false;
-                if ( newPoint || lowDist || newNode )
+                if ( newPoint || lowDist)
                     //if we found the new shortest distance from start to this point, update.
                 { //if we have never reached this point before or if we have never been to this node before, add them to the heap.
-                    if (newPoint || newNode) //add a never before visited point/node to the heap
+                    if (newPoint) //add a never before visited point/node to the heap
                     {
                         heap.add({midpoint,it->first},score);
-                        if (newPoint)
-                        {
-                            paths[midpoint].first = newDistance;
-                            paths[midpoint].second = curPoint;
-                        }
+                        paths[midpoint].first = newDistance;
+                        paths[midpoint].second = curPoint;
                     }
                     if (lowDist && !newPoint) //otherwise, we either found a new, shorter path, and/or found that the same point is connected to another node. Update if the distance is shorter, add if it's a new node.
                     {
@@ -526,5 +523,26 @@ bool NavMesh::straightLine(const glm::vec4& line)
         }
     }
     return true;
+}
+
+glm::vec4 NavMesh::getRandomArea(const glm::vec2& origin, double minDist, double maxDist)
+{
+    if (nodeTree.size() == 0)
+    {
+        throw std::logic_error ("Can't get random area of blank navigation mesh!");
+    }
+    NavMeshNode* node = nullptr;
+    while (!node)
+    {
+        double radius = fmod(rand(),(maxDist - minDist)) + minDist;
+        double theta = rand()%360*M_PI/180;
+        glm::vec2 point = {origin.x + radius*cos(theta), origin.y + radius*sin(theta)};
+            //std::cout << "Point: " << point.x << " " << point.y << std::endl;
+
+        point.x = std::max(std::min(bounds.x + bounds.z, point.x), bounds.x);
+        point.y = std::max(std::min(bounds.y + bounds.a, point.y), bounds.y); //clamp the points so that the point can't be out of bounds
+       node  = getNearestNode(point);
+    }
+    return node->getRect();
 }
 

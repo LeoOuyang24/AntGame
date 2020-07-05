@@ -4,6 +4,7 @@
 #include "game.h"
 #include "ants.h"
 #include "sequence.h"
+#include "navigation.h"
 
 SpriteWrapper frame;
 
@@ -84,7 +85,7 @@ Unit* Manager::generateCreature()
     return toSpawn;
 }
 
-void Manager::spawnCreatures()
+/*void Manager::spawnCreatures()
 {
 
     Unit* toSpawn = generateCreature();
@@ -92,32 +93,40 @@ void Manager::spawnCreatures()
     const glm::vec4* mapSize = &(level->getRect(level->getCurrentChunk()));
     const glm::vec4* camera = &(GameWindow::getCamera().getRect());
     const glm::vec4* entityRect = &(toSpawn->getRect().getRect());
-    int x = rand()%((int)(mapSize->z -  entityRect->z)) + mapSize->x; //we want to make sure our object spawns outside of the camera's view and doesn't spawn partially out of the map
-    bool cameraInTheWay = (x >= camera->x && x <= camera->x + camera->z); //if we chose an x coordinate that may overlap with the camera's rect, we need to adjust our y coordinate
-    int y = rand() % ((int)(mapSize->a - entityRect->a - camera->a*cameraInTheWay)) + mapSize->y;
-    //modify coordinates so our object doesn't spawn in the player's view
-    y += camera->a*(y > camera->y)*cameraInTheWay;
-    toSpawn->getRect().setPos({x,y});
-    level->addUnit(*toSpawn);
+    auto area = level->getMesh().getRandomArea(level->getRect());
+    if (area.z - entityRect->z > 0 && area.a - entityRect->a > 0) //if we have enough space
+    {
+        int x = rand()%((int)(area.z -  entityRect->z)) + area.x; //we want to make sure our object spawns outside of the camera's view and doesn't spawn partially out of the map
+        bool cameraInTheWay = (x >= camera->x && x <= camera->x + camera->z); //if we chose an x coordinate that may overlap with the camera's rect, we need to adjust our y coordinate
+        int y = rand() % ((int)(area.a - entityRect->a - camera->a*cameraInTheWay)) + area.y;
+        //modify coordinates so our object doesn't spawn in the player's view
+        y += camera->a*(y > camera->y)*cameraInTheWay;
+        toSpawn->getRect().setPos({x,y});
+        level->addUnit(*toSpawn);
+    }
 
-}
+}*/
 
 void Manager::spawnCreatures(Anthill& hill, double minR, double maxR) //spawn creatures near an anthill at a certain radius
 {
-    const glm::vec4* rect = &(hill.getRect().getRect());
-    double diag = rect->z*sqrt(2); //largest distance from the center that intersects with the anthill
-    minR = std::max(diag,minR);
-    maxR = std::max(minR, maxR);
-    double r = fmod(rand(),(maxR - minR)) + minR;
-    double theta = rand()%360*M_PI/180;
-    glm::vec2 point = {rect->x + rect->z/2 + cos(theta)*r,rect->y + rect->a/2 + sin(theta)*r};
-    Unit* toSpawn = new Bug(point.x,point.y);
-    AttackComponent* attack = (new AttackComponent(1,50,*toSpawn));
-    attack->setTarget(GameWindow::getLevel().getUnit(&hill));
-    toSpawn->addComponent(*attack);
-    //SeigeComponent* seige = new SeigeComponent(*toSpawn,hill);
-    //toSpawn->addComponent(*seige);
-    GameWindow::getLevel().addUnit(*toSpawn);
+    Unit* toSpawn = generateCreature();
+    Map* level = &(GameWindow::getLevel());
+    const glm::vec4* mapSize = &(level->getRect(level->getCurrentChunk()));
+  //  const glm::vec4* camera = &(GameWindow::getCamera().getRect());
+    const glm::vec4* entityRect = &(toSpawn->getRect().getRect());
+    auto area = level->getMesh().getRandomArea(hill.getCenter(), minR, maxR);
+    printRect(area);
+    if (area.z - entityRect->z > 0 && area.a - entityRect->a > 0) //if we have enough space
+    {
+        int x = rand()%((int)(area.z -  entityRect->z)) + area.x; //we want to make sure our object spawns outside of the camera's view and doesn't spawn partially out of the map
+       // bool cameraInTheWay = (x >= camera->x && x <= camera->x + camera->z); //if we chose an x coordinate that may overlap with the camera's rect, we need to adjust our y coordinate
+        int y = rand() % ((int)(area.a - entityRect->a)) + area.y;
+        //modify coordinates so our object doesn't spawn in the player's view
+        //y += camera->a*(y > camera->y)*cameraInTheWay;
+        toSpawn->getRect().setPos({x,y});
+        toSpawn->getComponent<AttackComponent>()->setTarget(level->getUnit(&hill));
+        level->addUnit(*toSpawn);
+    }
 
    // std::cout << point.x << " " << point.y << std::endl;
 
@@ -486,7 +495,7 @@ void Camera::update()
         {
             rect.y +=  absMin((mousePos.second - 1), (mousePos.second - screenDimen.y + 2 ))*DeltaTime::deltaTime;
         }
-      /*  if (bounds)
+       /*if (bounds)
         {
             rect.x = std::max(bounds->x,std::min(bounds->x + bounds->z - rect.z,rect.x));
             rect.y = std::max(bounds->y, std::min(bounds->y + bounds->a + GameWindow::getMenuHeight() - rect.a , rect.y));
@@ -566,7 +575,7 @@ void Camera::center(const glm::vec2& point)
 
 void Camera::zoom(float amount)
 {
-    zoomAmount += amount ;//std::max(minZoom,std::min(maxZoom,zoomAmount+ amount));
+    zoomAmount += amount; //std::max(minZoom,std::min(maxZoom,zoomAmount+ amount));
     glm::vec2 rectCenter = {rect.x + rect.z/2, rect.y + rect.a/2};
     rect.z = zoomAmount*baseDimen.x;
     rect.a = zoomAmount*baseDimen.y;
@@ -636,11 +645,11 @@ GameWindow::GameWindow() : Window({0,0},nullptr,{0,0,0,0})
     gameOver->addButton(*(new QuitButton(*this)));
     manager.init(level.getRect(level.getCurrentChunk()));
     debug.init();
-    Anthill* hill = (new Anthill({320,320}));
+    Anthill* hill = (new Anthill({level.getCurrentChunk().rect.z/2,level.getCurrentChunk().rect.z/2}));
     anthill = level.addUnit(*hill, true);
     hill->setManager(manager);
-    level.addUnit(*(new Dummy(0,0)));
-    level.addUnit(*(new Bug(-100,0)), true);
+    //level.addUnit(*(new Dummy(0,0)));
+    //level.addUnit(*(new Bug(-100,0)), true);
     //level.remove(*hill);
    // level.addUnit(*(new Beetle(320,320)));
 
@@ -703,7 +712,7 @@ bool GameWindow::updateSelect()
 
             double width = mousePos.x - origin.x;
             double height = mousePos.y - origin.y;
-            selection = {origin.x,origin.y, width, height};
+            selection = absoluteValueRect({origin.x,origin.y, width, height});
         }
         else
         {

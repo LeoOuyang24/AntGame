@@ -43,7 +43,7 @@ class Manager
     DeltaTime spawner; //marks the last time something spawned
     Anthill* signalling = nullptr; //the anthill currently conquering
     Unit* generateCreature(); //chooses a random creature to spawn
-    void spawnCreatures(); //spawn a creature at a random position
+    //void spawnCreatures(); //spawn a creature at a random position
     void spawnCreatures(Anthill& hill, double minR, double maxR); //spawn creatures near an anthill at a certain radius
     std::weak_ptr<TaskNode> currentTask; //the current antmanager
     std::weak_ptr<TaskNode> parentTask; //the current parent task

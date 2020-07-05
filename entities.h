@@ -216,7 +216,6 @@ class ShootComponent : public AttackComponent, public ComponentContainer<ShootCo
 public:
     ShootComponent(float damage_, int endLag_, double range_, Unit& unit);
 //    void attack(HealthComponent* health);
-    void update();
 };
 
 class Anthill;
@@ -246,20 +245,6 @@ class Bug : public Unit
 public:
     Bug(int x, int y);
     ~Bug();
-};
-
-class Beetle : public Unit
-{
-    class BeetleMove : public ApproachComponent, public ComponentContainer<BeetleMove> // finds and attacks the nearest ant
-    {
-    public:
-        BeetleMove(Unit& unit);
-        void update();
-        ~BeetleMove();
-    };
-public:
-    Beetle(int x, int y);
-    ~Beetle();
 };
 
 class ResourceEatComponent : public ApproachComponent, public ComponentContainer<ResourceEatComponent> //finds and eats the nearest ResourceCountComponent, including anthills

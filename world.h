@@ -12,6 +12,7 @@ class NavMesh;
 class Object;
 class Ant;
 
+
 typedef  std::map<Object*, std::shared_ptr<Object>> ObjectStorage;
 typedef  std::map<Ant*, std::shared_ptr<Ant>> AntStorage;
 
@@ -87,14 +88,16 @@ public:
     };
 private:
     constexpr static int levels = 11;
-    constexpr static int chunkDimen = 2000;
+    constexpr static int chunkDimen = 5000;
+    constexpr static int maxObjectSize = 50; //the longest any one dimension of an entity can be
+    const static glm::vec4 playerArea; //area that walls can't spawn because the player's stuff will be there
     friend class GameWindow;
   //  glm::vec4 rect = {0,0,0,0};
-
+    std::shared_ptr<NavMesh> mesh;
     std::shared_ptr<Chunk> chunks[levels][levels];
     Chunk* currentChunk = nullptr;
     void addGatePair(int x1, int y1, int x2, int y2);
-    std::shared_ptr<NavMesh> mesh;
+    void generateLevel();
 };
 
 

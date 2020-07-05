@@ -144,6 +144,7 @@ int main(int args, char* argsc[])
         SDL_GL_SwapWindow(window);
         DeltaTime::update();
         eventsEmpty = true;
+        //fastPrint(convert(DeltaTime::deltaTime) + "\n");
       //  std::cout << DeltaTime::deltaTime << std::endl;
     }
     game.close();

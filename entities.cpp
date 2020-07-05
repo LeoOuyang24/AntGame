@@ -412,7 +412,7 @@ void PathComponent::setTarget(const glm::vec2& point)
         NavMesh* mesh = &(GameWindow::getLevel().getMesh());
         try
         {
-            path = mesh->getPath(getCenter(),point, entity->getComponent<RectComponent>()->getRect().z/2);
+            path = mesh->getPath(getCenter(),point, entity->getComponent<RectComponent>()->getRect().z/2*sqrt(2));
             target = path.front();
         }
         catch (...)
@@ -439,8 +439,7 @@ void PathComponent::addPoint(const glm::vec2& point)
 
 void PathComponent::update()
 {
-    Debug::DebugNavMesh::showPath(path);
-        //std::cout << target.x << " " << target.y << std::endl;
+    //Debug::DebugNavMesh::showPath(path);
     if (atTarget())
     {
         if (path.size() > 1) //if we haven't reached the end of the path, select the next point
@@ -534,8 +533,6 @@ void ApproachComponent::setTarget(const glm::vec2& target, const std::shared_ptr
     {
         if (unit)
         {
-            const glm::vec4* tarRect = &((*unit)->getRect().getRect());
-            displacement = {target.x - (tarRect->x + tarRect->z/2) , target.y - (tarRect->y + tarRect->a/2)};
             targetUnit = *unit;
         }
         else
@@ -548,7 +545,10 @@ void ApproachComponent::setTarget(const glm::vec2& target, const std::shared_ptr
 
 void ApproachComponent::setTarget(const std::shared_ptr<Object>& unit)
 {
-    setTarget(unit->getCenter(),&unit);
+    if (move)
+    {
+        setTarget(closestPointOnVec(unit->getRect().getRect(),move->getCenter()),&unit);
+    }
 }
 
 void ApproachComponent::update()
@@ -599,11 +599,18 @@ void AttackComponent::attack(HealthComponent* health)
 
 void AttackComponent::update()
 {
-    ApproachComponent::update();
     Object* ptr = targetUnit.lock().get();
-    if (canAttack(ptr))
+    if (canAttack(ptr)) //attack if we are able to.
     {
         attack(ptr->getComponent<HealthComponent>());
+        if (move)
+        {
+            move->setTarget(move->getCenter());
+        }
+    }
+    else //otherwise, move
+    {
+        ApproachComponent::update();
     }
 }
 
@@ -627,23 +634,6 @@ bool ShootComponent::canAttack(Object* ptr)
 ShootComponent::ShootComponent(float damage_, int endLag_, double range_, Unit& unit) : range(range_), AttackComponent(damage_,endLag_, unit), ComponentContainer<ShootComponent>(unit)
 {
 
-}
-
-void ShootComponent::update()
-{
-    Object* ptr = targetUnit.lock().get();
-    if (canAttack(ptr)) //attack if we are able to.
-    {
-        attack(ptr->getComponent<HealthComponent>());
-        if (move)
-        {
-            move->setTarget(move->getCenter());
-        }
-    }
-    else //otherwise, move
-    {
-        ApproachComponent::update();
-    }
 }
 
 
@@ -688,64 +678,14 @@ Dummy::Dummy(int x, int y) : Unit(*(new ClickableComponent("Dummy", *this)), *(n
 
 }
 
-Bug::Bug(int x, int y) : Unit(*(new ClickableComponent("Bug", *this)), *(new PathComponent(.02,{x,y,64,64},*this)), *(new RectRenderComponent({1,.5,1,1},*this)),*(new HealthComponent(*this, 100)))
+Bug::Bug(int x, int y) : Unit(*(new ClickableComponent("Bug", *this)), *(new PathComponent(.02,{x,y,10,10},*this)), *(new RectRenderComponent({1,.5,1,1},*this)),*(new HealthComponent(*this, 100)))
 {
     //getComponent<MoveComponent>()->setTarget({0,0});
-    addComponent(*(new CorpseComponent(*this, 100)));
+    addComponent(*(new AttackComponent(1, 50, *this)));
    // addComponent(*(new ResourceEatComponent(*this)));
 }
 
 Bug::~Bug()
-{
-
-}
-
-Beetle::Beetle(int x, int y) : Unit(*(new ClickableComponent("Beetle", *this)), *(new PathComponent(.02,{x,y,64,64},*this)), *(new RectRenderComponent({1,.5,0,1},*this)),*(new HealthComponent(*this, 100)))
-{
-    auto attack = new AttackComponent(1,50,*this);
-    addComponent(*(attack));
-    //addComponent(*(new BeetleMove(*this)));
-    addComponent(*(new CorpseComponent(*this,200)));
-}
-
-Beetle::BeetleMove::BeetleMove(Unit& unit) : ApproachComponent(unit), ComponentContainer<BeetleMove>(unit)
-{
-
-}
-
-void Beetle::BeetleMove::update()
-{
-    Object* targetPtr = getTargetUnit();
-    Object* owner = ((Object*)entity);
-    if (owner)
-    {
-        Object* nearest = findNearestUnit<Ant::AntMoveComponent>(100);
-        if (nearest)
-        {
-            setTarget(GameWindow::getLevel().getUnit(nearest));
-        }
-        if (targetPtr)
-        {
-            if ( targetPtr->getRect().collides(owner->getRect().getRect()))
-            {
-                AttackComponent* attack = owner->getComponent<AttackComponent>();
-                if (attack)
-                {
-                    attack->attack(targetPtr->getComponent<HealthComponent>());
-                }
-            }
-        }
-
-    }
-    ApproachComponent::update();
-}
-
-Beetle::BeetleMove::~BeetleMove()
-{
-
-}
-
-Beetle::~Beetle()
 {
 
 }

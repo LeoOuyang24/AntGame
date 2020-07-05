@@ -9,7 +9,6 @@ Terrain::Terrain(int x, int y, int w, int h) : Object(*(new ClickableComponent("
     addComponent(*(new RepelComponent(*this)));
 }
 
-
 Map::Map()
 {
 
@@ -18,39 +17,14 @@ Map::Map()
 void Map::init(const glm::vec4& region)
 {
    // rect = region;
-
-    for (int i = 0; i < levels; ++i)
-    {
-        for (int j = 0; j < levels; ++j)
-        {
-            glm::vec2 topLeft= {i*chunkDimen-levels/2.0*chunkDimen,(j%(levels))*chunkDimen - levels/2.0*chunkDimen};
-            chunks[i][j].reset(new Chunk({{topLeft.x,topLeft.y,chunkDimen,chunkDimen}}));
-        }
-    }
-
-    setCurrentChunk((getChunk(0,0)));
+   setCurrentChunk(*(new Chunk({0,0,chunkDimen,chunkDimen})));
     mesh.reset(new NavMesh(currentChunk->rect,*(currentChunk->tree.get())));
 
-    for (int i = 0; i < levels; ++i)
-    {
-        for (int j = 0; j < levels; ++j)
-        {
-            const glm::vec4* currentRect = &(chunks[i][j]->rect);
-          //  remove(*g);*/
-          if ( i != levels - 1)
-          {
-           // addGatePair(currentRect->x + chunkDimen - 64, currentRect->y + chunkDimen/2 - 32, chunks[i+1][j]->rect.x, currentRect->y + chunkDimen/2 - 32); //rightmost gate
-          }
-          if (j != levels - 1)
-          {
-        //    addGatePair(currentRect->x + chunkDimen/2 - 32, currentRect->y + chunkDimen - 64, chunks[i][j+1]->rect.x + chunkDimen/2,chunks[i][j+1]->rect.y); //downmost gate
-          }
-        }
-    }
+    generateLevel();
     //addUnit(*(new Anthill({0,0})));
   //  addUnit(*(new Terrain(-10,-33,200,10)));
  //   addUnit(*(new Terrain(-33,10,10,200)));
-    mesh->init2(getCurrentChunk().entities);
+  //  mesh->init2(getCurrentChunk().entities);
    // Terrain* t1 = new Terrain(-33,10,10,200);
    // Terrain* t2 = new Terrain(-73,10,10,200);
     //addUnit(*(t));
@@ -60,17 +34,12 @@ void Map::init(const glm::vec4& region)
 
 std::shared_ptr<Object> Map::addUnit(Object& entity, bool friendly)
 {
-    Chunk* chunk = &(getChunk(entity));
-    if (chunk == nullptr)
-    {
-        throw std::logic_error("Map::addUnit: Tried to add object to non-existing chunk!");
-    }
     std::shared_ptr<Object> ptr = std::shared_ptr<Object>(&entity);
     //std::shared_ptr<Object> obj = std::shared_ptr<Object>((new Bug(200,200)));
     //obj.reset();
     entity.setFriendly(friendly);
-    chunk->entities[&entity] = ptr;
-    chunk->tree->add(entity.getRect());
+    currentChunk->entities[&entity] = ptr;
+    currentChunk->tree->add(entity.getRect());
     if (!entity.getMovable())
     {
         mesh->smartAddNode(entity.getRect().getRect());
@@ -84,12 +53,7 @@ std::shared_ptr<Object> Map::addUnit(Object& entity, bool friendly)
 void Map::addTerrain(const glm::vec4& rect)
 {
     Terrain* terr = (new Terrain(rect.x,rect.y,rect.z,rect.a));
-    Chunk* chunk = &getChunk(*terr);
-    if (chunk == nullptr)
-    {
-        throw std::logic_error("Map::addTerrain: Tried to add terrain to non-existing chunk!");
-    }
-    chunk->terrain.emplace_back(terr);
+    currentChunk->terrain.emplace_back(terr);
     mesh->smartAddNode(rect);
 }
 
@@ -97,10 +61,9 @@ std::shared_ptr<Object>& Map::getUnit(Object* unit)
 {
     if (unit)
     {
-        Chunk* chunk = &(getChunk(*unit));
-        if (chunk->entities.find(unit) != chunk->entities.end())
+        if (currentChunk->entities.find(unit) != currentChunk->entities.end())
         {
-            return chunk->entities[unit];
+            return currentChunk->entities[unit];
         }
         throw std::runtime_error("Map.GetUnit: Can't find unit!");
     }
@@ -335,6 +298,7 @@ void Map::Chunk::clear()
 void Map::Chunk::update()
 {
     int size = terrain.size();
+   // std::cout << size << std::endl;
     for (int i = 0; i < size; ++i)
     {
         terrain[i]->update();
@@ -346,6 +310,8 @@ Map::Chunk::~Chunk()
     clear();
 }
 
+const glm::vec4 Map::playerArea = {chunkDimen/2 - 1000,chunkDimen/2 - 1000,2000,2000};
+
 void Map::addGatePair(int x1, int y1, int x2, int y2)
 {
     Map::Gate* gate1 = (new Gate(x1,y1));
@@ -354,4 +320,36 @@ void Map::addGatePair(int x1, int y1, int x2, int y2)
     gate2->setDest(std::dynamic_pointer_cast<Gate>(addUnit(*gate1)));
     //addUnit(*gate1);
     //addUnit(*gate2);
+}
+
+void Map::generateLevel()
+{
+    //currentChunk = new Chunk({0,0,chunkDimen,chunkDimen});
+    int walls = 100;
+    glm::vec2 points = {chunkDimen/maxObjectSize,chunkDimen/maxObjectSize};
+    int size =points.x*points.y;
+    int maxDimen = 10*maxObjectSize;
+    //addTerrain({100,100,100,100});
+    //addTerrain({200,200,100,100});
+   // glm::vec2 playerPoints = {playerArea.z/maxObjectSize + 1, playerArea.a/maxObjectSize + 1}; //points we can't use because it's in the player area
+    int luck = 1;
+    for (int i = 0; i < size; ++i)
+    {
+        if (rand()%luck == 0)
+        {
+            int x = fmod(i,points.x)*maxObjectSize;
+            int y = i/points.x*maxObjectSize;
+            if (pointInVec(playerArea,x,y,0))
+            {
+                continue;
+            }
+            addTerrain({x,y,maxObjectSize,maxObjectSize});
+            luck/=2;
+            if (luck == 0)
+            {
+                luck = 10;
+            }
+        }
+    }
+
 }

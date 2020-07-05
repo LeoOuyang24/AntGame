@@ -28,7 +28,7 @@ class NavMesh //a navigation mesh of rectangle
     public:
 
         NavMeshNode(const glm::vec4& rect);
-        void addNode(NavMeshNode& n); //tests if n is adjacent to this node. Adds it if it is.
+        void addNode(NavMeshNode& n); //adds a node as a neighbor
         void removeNode(NavMeshNode& n);
         void setDimen(const glm::vec2& dimens);
         void setRect(const glm::vec4& rect);
@@ -60,6 +60,8 @@ public:
     //void render();
     Path getPath(const glm::vec2& start, const glm::vec2& end, int width = 0); //returns a path from start to end using A*. Not guaranteed to be the shortest path. Width is the shortest distance we can be from any given negative area. This allows us to find paths for large objects without colliding with walls
     bool straightLine(const glm::vec4& line); //returns true if the line doesn't overlap with any negative space.
+    glm::vec4 getRandomArea(const glm::vec2& origin, double minDist, double maxDist); //returns the area of a randomly chosen navmesh node that is between min and max distacne from origin. Guaranteed won't crash by generating a point out of bounds
+    //note that this function just randomly generates a point and then chooses the nearest node. This means that larger nodes have larger chances of of being selected. This makes sense, but it should be noted that not all nodes have an equal chance of being selected.
 
 };
 
