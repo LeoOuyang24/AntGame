@@ -173,5 +173,12 @@ public:
 
 };
 
+class EntityAssembler //returns an entity with certain components attached. Unique to different entities
+{
+public:
+    virtual Entity* assemble(); //returns an entity with components attached on the heap. Does not clean up the memory!
+};
+
+
 
 #endif // COMPONENTS_H_INCLUDED

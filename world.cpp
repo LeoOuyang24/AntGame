@@ -338,7 +338,7 @@ void Map::generateLevel()
         if (rand()%luck == 0)
         {
             int x = fmod(i,points.x)*maxObjectSize;
-            int y = i/points.x*maxObjectSize;
+            int y = floor(i/points.x)*maxObjectSize;
             if (pointInVec(playerArea,x,y,0))
             {
                 continue;

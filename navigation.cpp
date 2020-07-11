@@ -336,8 +336,22 @@ void NavMesh::smartAddNode(const glm::vec4& rect)
                     //std::cout << "Done removing" << std::endl;
                 }
         }
-      //  negativeTree.add(*(new RectPositional(rect)));
+        negativeTree.add(*(new RectPositional(rect)));
        // std::cout << nodeTree.size() << std::endl;
+}
+
+bool NavMesh::notInWall(const glm::vec4& rect)
+{
+    auto near = negativeTree.getNearest(rect);
+    int size = near.size();
+    for (int i = 0; i < size; ++i)
+    {
+        if (near[i]->collides(rect))
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, int width)
@@ -361,6 +375,8 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
         glm::vec2 curPoint; //current point to analyze
         NavMeshNode* curNode = startNode; //current node to analyze
         int num = 0;
+       // GameWindow::requestRect(startNode->getRect(), {1,0,0,1},true,0,1,0);
+        bool startEdge = false; //there's a fun edge case where if the start point is on the edge of two nodes, the algorithm will skirt around the neighboring node. This helps fix that (see documentation).
         while (heap.size() != 0 && heap.peak().first != end) //we end either when the heap is empty (no path) or when the top of the heap is the end (there is a path)
         {
             curPoint = heap.peak().first;
@@ -388,20 +404,29 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
 
                 continue;
             }
-        //    Font::tnr.requestWrite({convert(num),GameWindow::getCamera().toScreen({curPoint.x,curPoint.y,10,10}),0,{1,1,1,1},2});
+           // Font::tnr.requestWrite({convert(num),GameWindow::getCamera().toScreen({curPoint.x,curPoint.y,10,10}),0,{1,1,1,1},2});
             Neighbors* nextTo = &(curNode->getNextTo());
             auto endIt = nextTo->end(); //get the end iterator
             for (auto it = nextTo->begin(); it != endIt; ++it)
             {
 
-                if ((curPoint.x >= it->second.x && curPoint.x <= it->second.z) && (curPoint.y == it->second.y)) //since all lines are horizontal or vertical, this tests to see if the our current point is on the intersection of our neighbor.
-                {                    //We don't want to process this as it makes no progress
+                if (((curPoint.x >= it->second.x && curPoint.x <= it->second.z) && (curPoint.y == it->second.y)) //since all lines are horizontal or vertical, this tests to see if the our current point is on the intersection of our neighbor.
+                     || pointDistance({it->second.x,it->second.y},{it->second.z,it->second.a}) < width) //also don't process if the line is too narrow
+                {                    //We The closest point between our current point and a line that we are already on is obviously just curPoint.
+                    if (curPoint == start && !startEdge) //The case where curPoint == start deserves special attention only once. startEdge ensures we only do it once
+                    {
+                        double distance = pointDistance(curPoint,end) + paths[curPoint].first ;
+                        heap.add({curPoint,it->first},distance); //we don't want to reprocess this point so we add a slight penalty for looping.
+                        startEdge = true;
+                    }
                     continue;
                 }
+
 
                 glm::vec2 midpoint;  //this is not actually the midpoint, but rather the point on the intersection line we think will be closest to the goal
                 midpoint = lineLineIntersectExtend(curPoint,end,{it->second.x,it->second.y},{it->second.z,it->second.a});//this ensures that if there is a direct path to the end, we work towards it.
                 const glm::vec4* nodeRect = &(it->first->getRect());
+             //   GameWindow::requestRect(*nodeRect,{0,1,0,1},true,0,1,0);
                 glm::vec2 nodeCenter = {nodeRect->x + nodeRect->z/2, nodeRect->y + nodeRect->a/2};
                 glm::vec2 a = {it->second.x, it->second.y},
                 b = {it->second.z, it->second.a}; //the endpoints of the intersection line segment.

@@ -169,3 +169,8 @@ Entity::~Entity()
 {
     components.clear();
 }
+
+Entity* EntityAssembler::assemble()
+{
+    return nullptr;
+}

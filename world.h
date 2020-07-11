@@ -13,7 +13,7 @@ class Object;
 class Ant;
 
 
-typedef  std::map<Object*, std::shared_ptr<Object>> ObjectStorage;
+typedef  std::map<Object*, std::shared_ptr<Entity>> ObjectStorage;
 typedef  std::map<Ant*, std::shared_ptr<Ant>> AntStorage;
 
 class Terrain : public Object

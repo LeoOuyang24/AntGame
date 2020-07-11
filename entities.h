@@ -63,6 +63,17 @@ public:
     virtual ~Object();
 };
 
+class ObjectAssembler : public EntityAssembler
+{
+protected:
+    glm::vec2 dimen;
+    std::string name;
+public:
+    ObjectAssembler(const glm::vec2& rect_, std::string name_);
+    const glm::vec2& getDimen();
+    std::string getName();
+};
+
 class InteractionComponent : public Component, public ComponentContainer<InteractionComponent> //objects that can be interacted with
 {
 public:
@@ -111,6 +122,15 @@ public:
     Manager* getManager();
     void setManager(Manager& manager);
 
+};
+
+class UnitAssembler : public ObjectAssembler
+{
+protected:
+    double maxHealth = 0;
+public:
+    UnitAssembler(const glm::vec2& rect_, std::string name_, double maxHealth_);
+    double getMaxHealth();
 };
 
 class RepelComponent : public Component, public ComponentContainer<RepelComponent> //component that repels objects on collision

@@ -103,7 +103,7 @@ int main(int args, char* argsc[])
    SpriteWrapper spr;
     spr.init("image.png",true);
 
-
+  //  glClearColor(0,0,1,1);
   //  Font comic = Font("betterComicSans.ttf");
   //  FontManager::addFont(comic);
 
@@ -135,12 +135,13 @@ int main(int args, char* argsc[])
         }
 
        //drawRectangle(RenderProgram::lineProgram,{1,1,1},{0,0,64,64},0);
-      // glm::vec4 rect = {320,320,128,64};
-     //  PolyRender::requestRect(rect,{0,0,1,1},true,0,.1);
-   //    Font::alef.requestWrite({"a",rect,0,{0,1,0,1},1});
-        SpriteManager::render();
+       glm::vec4 rect = {320,320,128,64};
+      // spr.request({rect,0,NONE,{0,1,0,1}});
+       //PolyRender::requestRect(rect,{0,0,0,1},true,0,.1);
+     //  Font::tnr.requestWrite({"hella",rect,0,{1,0,0,1},1});
         PolyRender::render();
         FontManager::update();
+        SpriteManager::render();
         SDL_GL_SwapWindow(window);
         DeltaTime::update();
         eventsEmpty = true;

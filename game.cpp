@@ -8,7 +8,7 @@
 
 SpriteWrapper frame;
 
-Manager::TaskNode::TaskNode(Manager& t) : task(t, GameWindow::selectColor)
+Manager::TaskNode::TaskNode(Manager& t) : task(t, Player::selectColor)
 {
 
 }
@@ -266,46 +266,6 @@ void Manager::updateAntManagers()
     }
 
 }
-
-
-
-/*void Manager::updateAnts()
-{
-    int released = MouseManager::getJustReleased();
-    if (MouseManager::getJustClicked() == SDL_BUTTON_LEFT)
-    {
-       // antManager.clear();
-       currentTask.reset();
-        //selectedUnit = nullptr;
-    }
-    int index = 0;
-    Map* level = &(GameWindow::getLevel());
-    AntStorage* ants = &(level->getUnit(level->getCurrentChunk()));
-    auto it = ants->begin();
-    AntManager* newTask = nullptr; //if we select any ants, this pointer will point to the new task
-    const glm::vec4* selectRect = &(GameWindow::getSelection());
-    RawQuadTree* tree = level->getTree(level->getCurrentChunk());
-    for (auto i = ants->begin(); i != ants->end(); i = it)
-    {
-        ++it;
-        if (i->second->getComponent<HealthComponent>()->getHealth() > 0)
-        {
-            RectPositional* rectPos = &(i->second->getRect());
-            const glm::vec4* rect = &(rectPos->getRect());
-            RawQuadTree* oldTree = tree->find(*rectPos);
-            i->second->update();
-            tree->update(*rectPos,*oldTree);
-
-
-        }
-        else
-        {
-            i->second->onDeath();
-            level->remove(static_cast<Unit&>(*((i)->first)));
-        }
-        index ++;
-    }
-}*/
 
 void Manager::updateEntities()
 {
@@ -622,14 +582,12 @@ Camera::~Camera()
 }
 
 float GameWindow::menuHeight = 1;
-glm::vec2 GameWindow::origin = {0,0};
-glm::vec4 GameWindow::selection = {0,0,0,0};
-const glm::vec4 GameWindow::selectColor = {1,1,1,.5};
 Camera GameWindow::camera;
 Manager GameWindow::manager;
 Map GameWindow::level;
 Debug GameWindow::debug;
 Window* GameWindow::gameOver = nullptr;
+Player GameWindow::player;
 float GameWindow::interfaceZ = .3;
 bool GameWindow::renderAbsolute = false;
 
@@ -648,6 +606,9 @@ GameWindow::GameWindow() : Window({0,0},nullptr,{0,0,0,0})
     Anthill* hill = (new Anthill({level.getCurrentChunk().rect.z/2,level.getCurrentChunk().rect.z/2}));
     anthill = level.addUnit(*hill, true);
     hill->setManager(manager);
+    level.addUnit(*(new Factory(level.getCurrentChunk().rect.z/2 + 100,level.getCurrentChunk().rect.z/2 + 100)));
+    level.addUnit(*(new Factory(level.getCurrentChunk().rect.z/2 + 135,level.getCurrentChunk().rect.z/2 + 100)));
+
     //level.addUnit(*(new Dummy(0,0)));
     //level.addUnit(*(new Bug(-100,0)), true);
     //level.remove(*hill);
@@ -700,30 +661,6 @@ GameWindow::GameWindow() : Window({0,0},nullptr,{0,0,0,0})
    // manager.clear();
 }
 
-bool GameWindow::updateSelect()
-{
-    if (MouseManager::isPressed(SDL_BUTTON_LEFT))
-    {
-        std::pair<int,int> mouse_Pos = MouseManager::getMousePos();
-        glm::vec2 mousePos = camera.toWorld({mouse_Pos.first, mouse_Pos.second});
-      //  std::cout << mousePos.x << " " << mousePos.y << std::endl;
-        if (MouseManager::getJustClicked() != SDL_BUTTON_LEFT)
-        {
-
-            double width = mousePos.x - origin.x;
-            double height = mousePos.y - origin.y;
-            selection = absoluteValueRect({origin.x,origin.y, width, height});
-        }
-        else
-        {
-            origin.x = mousePos.x;
-            origin.y = mousePos.y;
-        }
-        return true;
-    }
-    return false;
-}
-
 void GameWindow::update(int x, int y, bool clicked)
 {
    // PolyRender::requestPolygon({{0,0,0},{0,400,0},{100,100,0},{100,400,0}},{0,0,0,1});
@@ -737,15 +674,10 @@ void GameWindow::update(int x, int y, bool clicked)
     {
         renderAbsolute = false;
 
-        bool select = updateSelect();
-
 
         camera.update();
         level.render();
-        if (select)
-        {
-            requestRect(selection,selectColor,true,0,-.1);
-        }
+
 
         manager.update();
 
@@ -757,12 +689,13 @@ void GameWindow::update(int x, int y, bool clicked)
                 labels[i]->update();
             }
         }
+        player.update();
         debug.update();
 
         renderAbsolute = true;
     // std::cout << camera.getRect().x << " " << camera.getRect().x + camera.getRect().z << std::endl;
         renderSelectedUnits();
-
+        //requestRect({0,0,320,320},{1,0,1,1},true,0,1,1);
 
     }
     //std::cout << ComponentContainer<RenderComponent>::components.size() << std::endl;
@@ -826,7 +759,7 @@ float GameWindow::getMenuHeight()
 
 const glm::vec4& GameWindow::getSelection()
 {
-    return selection;
+    return player.getSelection();
 }
 Camera& GameWindow::getCamera()
 {
@@ -839,6 +772,11 @@ const Manager& GameWindow::getManager()
 Map& GameWindow::getLevel()
 {
     return level;
+}
+
+Player& GameWindow::getPlayer()
+{
+    return player;
 }
 
 void GameWindow::requestNGon(int n, const glm::vec2& center, double side, const glm::vec4& color, double angle, bool filled, float z, bool absolute)

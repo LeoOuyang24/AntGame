@@ -74,7 +74,7 @@ void ClickableComponent::update()
             }
             offset += rect->a + spacing.y;
         }
-        GameWindow::requestRect(*unitRect,GameWindow::selectColor,true,0,0.01);
+        GameWindow::requestRect(*unitRect,Player::selectColor,true,0,0.01);
     }
     /*bool becomeClicked = (MouseManager::isPressed(SDL_BUTTON_LEFT) && vecIntersect(GameWindow::getSelection(),*unitRect));
         if (entity->getComponent<Ant::AntMoveComponent>())
@@ -86,7 +86,7 @@ void ClickableComponent::update()
 }
 void ClickableComponent::display(const glm::vec4& rect)
 {
-    Font::tnr.write(Font::wordProgram,{name,rect});
+    Font::tnr.requestWrite({name,rect});
 }
 
 void ClickableComponent::addButton(Button& button)
@@ -175,6 +175,21 @@ void Object::setDead(bool isDead)
 Object::~Object()
 {
     //std::cout << "Object Destructor" << std::endl;
+}
+
+ObjectAssembler::ObjectAssembler(const glm::vec2& rect_, std::string name_) : dimen(rect_), name(name_)
+{
+
+}
+
+const glm::vec2& ObjectAssembler::getDimen()
+{
+    return dimen;
+}
+
+std::string ObjectAssembler::getName()
+{
+    return name;
 }
 
 InteractionComponent::InteractionComponent(Object& unit) : Component(unit), ComponentContainer<InteractionComponent>(&unit)
@@ -313,6 +328,16 @@ Manager* Unit::getManager()
     return manager;
 }
 
+UnitAssembler::UnitAssembler(const glm::vec2& rect_, std::string name_, double maxHealth_) : ObjectAssembler(rect_, name_), maxHealth(maxHealth_)
+{
+
+}
+
+double UnitAssembler::getMaxHealth()
+{
+    return maxHealth;
+}
+
 Structure::Structure(ClickableComponent& click, RectComponent& rect, RenderComponent& render, HealthComponent& health) : Unit(click,rect,render,health,false)
 {
     addComponent(*(new RepelComponent(*this)));
@@ -439,7 +464,7 @@ void PathComponent::addPoint(const glm::vec2& point)
 
 void PathComponent::update()
 {
-    //Debug::DebugNavMesh::showPath(path);
+    Debug::DebugNavMesh::showPath(path);
     if (atTarget())
     {
         if (path.size() > 1) //if we haven't reached the end of the path, select the next point

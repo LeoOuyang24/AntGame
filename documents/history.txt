@@ -1,5 +1,11 @@
 This document keeps track of all changes as well as considered changes made to the resources as well as why they were made. Consider this a "learning from the past" kind of document. 
 
+7/11/2020:
+	Created an entity assembler class that returns an Entity with certain components attached. The idea here is to create a "blueprint" of objects so that we can check things about entities without actually having to create an entity. For example, if I were making an object that is always 64x64, I could find this out by looking at an object's assmebler and not have to actually create the object. If I were to then create the object, I'd call the assembler's assemble method. Currently, the assemble method returns an entity on the heap. The reason we do this instead of taking in an entity and adding components is because classes like Object and Structure expect the object to already have certain components at construction. We can't create an empty Object and then pass it into the assembler. In hindsight, this may be a better approach but we already have too much built around the idea of Object and Structure to change it. 
+
+7/10/2020:
+	Created a new Player class that keeps track of player inputs (selecting, building units) as well as resources and money. This class, like Manager and Camera, can be a static class where everything is a static method of variable. In case we ever decide to add multiplayer, and in keeping with the tradition of having GameWindow fetch all global classes, Player is not a static class. This makes it so that Player isn't the "odd one out" class that is static while everything else isn't. 
+
 6/20/2020:
 	AttackComponents are now now children of ApproachComponents because they share very similar properties: both attempt to move towards a target if it is nearby and both do nothing if there are no targets. In fact, attackcomponents are effictively ApproachComponents that also deal damage while in range and can only target objects with health bars.
 

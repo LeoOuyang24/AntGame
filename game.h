@@ -11,6 +11,7 @@
 #include "ants.h"
 #include "antManager.h"
 #include "debug.h"
+#include "player.h"
 
 extern SpriteWrapper frame;
 
@@ -18,7 +19,6 @@ extern SpriteWrapper frame;
 
 
 class Ant;
-
 
 
 
@@ -98,17 +98,15 @@ class SequenceUnit;
 class GameWindow : public Window //the gamewindow is mostly static because most of its functions/members are used everywhere in the program. These members can't be manipulated without first creating a GameWindow
 {
     static float menuHeight;
-    static glm::vec2 origin; //last point the mouse was at
-    static glm::vec4 selection;
     static Camera camera;
     static Map level;
     static Manager manager;
     static Window* gameOver;
     static Debug debug;
+    static Player player;
     static bool renderAbsolute; //whether or not to renderAbsolute
 
     ObjPtr anthill; //pointer to the anthill. Keeps track of whether or not the player has lost
-    bool updateSelect(); //updates the selection window and returns whether or not the player is selecting
     std::vector<std::shared_ptr<SequenceUnit>> labels;
     struct QuitButton : public Button
     {
@@ -119,11 +117,11 @@ class GameWindow : public Window //the gamewindow is mostly static because most 
 public:
     static float interfaceZ;
     bool quit = false;
-    const static glm::vec4 selectColor;
     const static glm::vec4& getSelection();
     static Camera& getCamera();
     static const Manager& getManager();
     static Map& getLevel();
+    static Player& getPlayer();
     static void requestNGon(int n, const glm::vec2& center, double side, const glm::vec4& color, double angle, bool filled, float z, bool absolute = false); //easier way to render polygons without having to call getCamera();
     static void requestRect(const glm::vec4& rect, const glm::vec4& color, bool filled, double angle, float z, bool absolute = false); //if absolute is true, the coordinates are taken as screen coordinates
     GameWindow();
