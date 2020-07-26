@@ -340,6 +340,12 @@ void NavMesh::smartAddNode(const glm::vec4& rect)
        // std::cout << nodeTree.size() << std::endl;
 }
 
+void NavMesh::reset()
+{
+    negativeTree.clear();
+    nodeTree.clear();
+}
+
 bool NavMesh::notInWall(const glm::vec4& rect)
 {
     auto near = negativeTree.getNearest(rect);

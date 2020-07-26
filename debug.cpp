@@ -58,13 +58,13 @@ void Debug::DebugNavMesh::showPath(Path& path)
                 GameWindow::requestNGon(10,*next,2,{1,0,0,1},0,true,0,false);
                 glm::vec2 p1 = cam->toScreen(*prev);
                 glm::vec2 p2 = cam->toScreen(*next);
-                PolyRender::requestLine({p1.x,p1.y,p2.x,p2.y},{1,1,1,1},1);
+                PolyRender::requestLine({p1.x,p1.y,p2.x,p2.y},{1,1,1,1},GameWindow::interfaceZ);
                 prev = next;
                 //std::cout << p1.x << " " << p1.y << " " << p2.x << " " << p2.y << std::endl;
            }
            glm::vec2 startP = cam->toScreen(path.front());
            glm::vec2 endP = cam->toScreen(path.back());
-            PolyRender::requestLine({startP.x, startP.y, endP.x, endP.y},{.5,0,.5,1},1);
+            PolyRender::requestLine({startP.x, startP.y, endP.x, endP.y},{.5,0,.5,1},GameWindow::interfaceZ);
         }
     }
 }

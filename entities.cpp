@@ -99,6 +99,28 @@ ClickableComponent::~ClickableComponent()
 
 }
 
+AnimationComponent::AnimationComponent(AnimationWrapper* anime, Entity& entity ) : sprite(anime), RenderComponent(entity), ComponentContainer<AnimationComponent>(entity)
+{
+
+}
+
+void AnimationComponent::render(const SpriteParameter& param)
+{
+    if (sprite)
+    {
+        sprite->request(param,animeParam);
+    }
+}
+
+void AnimationComponent::update()
+{
+    auto rect = entity->getComponent<RectComponent>();
+    if (rect)
+    {
+        render({GameWindow::getCamera().toScreen(rect->getRect())});
+    }
+}
+
 RectRenderComponent::RectRenderComponent(const glm::vec4& color, Entity& unit) : RenderComponent(unit), ComponentContainer<RectRenderComponent>(&unit), color(color)
 {
 
@@ -106,12 +128,12 @@ RectRenderComponent::RectRenderComponent(const glm::vec4& color, Entity& unit) :
 
 void RectRenderComponent::update()
 {
-    GameWindow::requestRect(((Object*)entity)->getRect().getRect(),color,true,0,0);
+    render({GameWindow::getCamera().toScreen(((Object*)entity)->getRect().getRect()),0,NONE,color,&RenderProgram::basicProgram,0});
 }
 
 void RectRenderComponent::render(const SpriteParameter& param)
 {
-    GameWindow::requestRect(param.rect,color*param.tint,true,param.radians,param.z,true);
+    PolyRender::requestRect(param.rect,color*param.tint,true,param.radians,param.z);
 }
 
 RectRenderComponent::~RectRenderComponent()
@@ -128,6 +150,15 @@ Object::Object(ClickableComponent& click, RectComponent& rect_, RenderComponent&
 
 
 }
+
+Object::Object(std::string name, const glm::vec4& vec, AnimationWrapper* rapper, bool mov) : Entity(), movable(mov),
+    clickable(new ClickableComponent(name, *this)), rect(new RectComponent(vec, *this)), render(new AnimationComponent(rapper, *this))
+{
+    addComponent(*(clickable));
+    addComponent(*(rect));
+    addComponent(*(render));
+}
+
 RectComponent& Object::getRect() const
 {
     return *rect;
@@ -177,7 +208,7 @@ Object::~Object()
     //std::cout << "Object Destructor" << std::endl;
 }
 
-ObjectAssembler::ObjectAssembler(const glm::vec2& rect_, std::string name_) : dimen(rect_), name(name_)
+ObjectAssembler::ObjectAssembler( std::string name_, const glm::vec2& rect_,AnimationWrapper* anime, bool mov) : dimen(rect_), name(name_), sprite(anime), movable(mov)
 {
 
 }
@@ -190,6 +221,21 @@ const glm::vec2& ObjectAssembler::getDimen()
 std::string ObjectAssembler::getName()
 {
     return name;
+}
+
+AnimationWrapper* ObjectAssembler::getSprite()
+{
+    return sprite;
+}
+
+bool ObjectAssembler::getMovable()
+{
+    return movable;
+}
+
+Entity* ObjectAssembler::assemble()
+{
+    return new Object(name,{0,0,dimen.x,dimen.y},sprite,movable);
 }
 
 InteractionComponent::InteractionComponent(Object& unit) : Component(unit), ComponentContainer<InteractionComponent>(&unit)
@@ -257,7 +303,7 @@ void HealthComponent::update()
     {
         const glm::vec4* rect = &(rectComp->getRect());
         //GameWindow::requestRect({rect->x ,rect->y - displacement, rect->z, 0},{1,0,0,1},true,0,0);
-        render({rect->x,rect->y - displacement, rect->z}, 0);
+        render({rect->x,rect->y - displacement,rect->z}, 0);
     }
 }
 
@@ -277,15 +323,51 @@ HealthComponent::~HealthComponent()
 
 }
 
-
 Unit::Unit(ClickableComponent& click, RectComponent& rect, RenderComponent& render, HealthComponent& health, bool mov) : Object(click,rect,render, mov), health(&health)
 {
     addComponent(health);
 }
 
+Unit::Unit(std::string name, const glm::vec4& rect, AnimationWrapper* anime, bool mov, double maxHealth) : Object(name, rect, anime, mov),
+        health(new HealthComponent(*this, maxHealth, .001*RenderProgram::getScreenDimen().y))
+{
+    addComponent(*(health));
+}
+
 void Unit::setManager(Manager& manager)
 {
     this->manager = &manager;
+}
+
+
+HealthComponent& Unit::getHealth()
+{
+    return *health;
+}
+
+void Unit::interact(Ant& ant)
+{
+
+}
+
+Manager* Unit::getManager()
+{
+    return manager;
+}
+
+UnitAssembler::UnitAssembler( std::string name_,const glm::vec2& rect_, AnimationWrapper* wrap, bool mov, double maxHealth_) : ObjectAssembler( name_,rect_, wrap, mov), maxHealth(maxHealth_)
+{
+
+}
+
+double UnitAssembler::getMaxHealth()
+{
+    return maxHealth;
+}
+
+Entity* UnitAssembler::assemble()
+{
+    return new Unit(name,{0,0,dimen.x,dimen.y}, sprite, movable, maxHealth);
 }
 
 RepelComponent::RepelComponent(Object& unit) : Component(unit), ComponentContainer<RepelComponent>(unit)
@@ -311,31 +393,6 @@ void RepelComponent::collide(Entity& unit)
 
         }
     }
-}
-
-HealthComponent& Unit::getHealth()
-{
-    return *health;
-}
-
-void Unit::interact(Ant& ant)
-{
-
-}
-
-Manager* Unit::getManager()
-{
-    return manager;
-}
-
-UnitAssembler::UnitAssembler(const glm::vec2& rect_, std::string name_, double maxHealth_) : ObjectAssembler(rect_, name_), maxHealth(maxHealth_)
-{
-
-}
-
-double UnitAssembler::getMaxHealth()
-{
-    return maxHealth;
 }
 
 Structure::Structure(ClickableComponent& click, RectComponent& rect, RenderComponent& render, HealthComponent& health) : Unit(click,rect,render,health,false)
@@ -495,10 +552,10 @@ void WanderMove::update()
         double angle = rand()%360*M_PI/180.0;
         int maxDimen = std::max(rect.z,rect.a);
         double radius = rand()%(100 - 10) + maxDimen + 10;
-        glm::vec2 point = {rect.x + rect.z/2 + cos(angle)*radius, rect.y + rect.a/2 + sin(angle)*radius};
+        glm::vec2 point = {rect.x + rect.z/2 + cos(angle)*radius, rect.y + rect.a/2 + sin(angle)*radius}; //target point, currenlty randomly generated
         Map* level = &(GameWindow::getLevel());
-        const glm::vec4* levelRect = &(level->getRect(level->getChunk(*(Unit*)entity)));
-        point.x = std::max(levelRect->x, std::min(point.x, levelRect->x + levelRect->z - rect.z));
+        const glm::vec4* levelRect = &(level->getCurrentChunk().getRect());
+        point.x = std::max(levelRect->x, std::min(point.x, levelRect->x + levelRect->z - rect.z)); //clamp point to levelREct
         point.y = std::max(levelRect->y, std::min(point.y, levelRect->y + levelRect->a - rect.a));
         setTarget(point);
     }
@@ -521,7 +578,7 @@ Object* ApproachComponent::findNearestUnit(double radius)
     double minDistance = -1;
     if (owner)
     {
-        RawQuadTree* tree = GameWindow::getLevel().getTreeOf(*owner);
+        RawQuadTree* tree = GameWindow::getLevel().getTree();
         if (tree)
         {
             glm::vec2 center = owner->getRect().getCenter();

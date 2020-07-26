@@ -13,28 +13,50 @@ class Object;
 class Ant;
 
 
-typedef  std::map<Object*, std::shared_ptr<Entity>> ObjectStorage;
+typedef  std::map<Object*, std::shared_ptr<Object>> ObjectStorage;
 typedef  std::map<Ant*, std::shared_ptr<Ant>> AntStorage;
+
+template <typename N>
+using SPStorage = std::vector<std::shared_ptr<N>>; //Smart Point Storage
 
 class Terrain : public Object
 {
+    class TerrainRender : public RectRenderComponent, public ComponentContainer<TerrainRender>
+    {
+    public:
+        TerrainRender(const glm::vec4& color, Entity& ent);
+        void update();
+    };
 public:
     Terrain(int x, int y, int w, int h);
 };
 
-class Map
+class Shard : public ObjectAssembler
 {
-
+    class ShardComponent : public Component, public ComponentContainer<ShardComponent> //when touched, set this object to dead and increments the amount of shards found for the current chunk
+    {
+    public:
+        ShardComponent(Entity& owner);
+        void collide(Entity& entity);
+    };
 public:
+    Shard();
+    Entity* assemble();
+};
+
+struct Map
+{
     class Chunk;
     Map();
     void init(const glm::vec4& region);
-    std::shared_ptr<Object> addUnit(Object& entity, bool friendly = false);//this method returns the shared_ptr in case any other class wants to share ownership. friendly determines if the unit is an enemy or not
+    void nextLevel();
+
+    std::shared_ptr<Object> addUnit(Object& entity,  bool friendly = false);//this method returns the shared_ptr in case any other class wants to share ownership. friendly determines if the unit is an enemy or not
+    std::shared_ptr<Object> addUnit(Object& entity,  int x, int y, bool friendly = false);
+
     std::shared_ptr<Object>& getUnit(Object* unit);
     void addTerrain(const glm::vec4& rect);
     void moveObject(Object& obj, double x, double y); //can move either ants or objects
-    Chunk& getChunk(int x, int y); //assumes 0,0 = [5][5]
-    Chunk& getChunk(Object& unit);
     void setCurrentChunk(Chunk& chunk);
     ObjectStorage& getEntities(Chunk& chunk);
     NavMesh& getMesh(); //might be null if init hasn't been called
@@ -42,62 +64,60 @@ public:
     Chunk& getCurrentChunk();
     void render();
     const glm::vec4& getRect(Chunk& chunk);
-    RawQuadTree* getTreeOf(Object& unit);
-    RawQuadTree* getTree(Chunk&chunk);
+    RawQuadTree* getTree();
     void reset();
+    void setChangeLevel(bool l);
+    bool getChangeLevel();
+        void findShard(); //finds a shard (increments foundShards by 1)
+    int getFoundShards();
     ~Map();
 
     class Gate : public Object
     {
-        class NextAreaComponent : public InteractionComponent, public ComponentContainer<NextAreaComponent>
-        {
-            std::weak_ptr<Gate> dest;
-        public:
-            NextAreaComponent(Object& unit);
-            void setDest(const std::shared_ptr<Gate>& other);
-            void interact(Object& actor);
-            Gate* getDest();
-            ~NextAreaComponent();
-        };
         class NextAreaButton : public Button
         {
-            Gate* gate = nullptr;
         public:
-            NextAreaButton(Gate& unit);
+            NextAreaButton();
             void press();
             ~NextAreaButton();
         };
-    NextAreaComponent* nextArea = nullptr;
     public:
         Gate(int x, int y);
-        void setDest(const std::shared_ptr<Gate>& other);
         ~Gate();
     };
-    struct Chunk
+    class Chunk
     {
         //friend class Map;
+    public:
         glm::vec4 rect = {0,0,0,0};
         ObjectStorage entities;
-        std::vector<std::shared_ptr<Terrain>> terrain;
+        SPStorage<Terrain> terrain;
       //  std::vector<std::shared_ptr<Label>> labels;
         std::shared_ptr<RawQuadTree> tree;
-        void clear();
         void update();
+
+        glm::vec4& getRect();
+        void remove(Object& unit);
+        void clear(); //removes all entities and terrain
         Chunk(const glm::vec4& rect_);
         ~Chunk();
+
     };
 private:
-    constexpr static int levels = 11;
+
     constexpr static int chunkDimen = 5000;
     constexpr static int maxObjectSize = 50; //the longest any one dimension of an entity can be
     const static glm::vec4 playerArea; //area that walls can't spawn because the player's stuff will be there
+    bool changeLevel = false; //whether or not to changeLevel
+
+    int foundShards = 0;
+
     friend class GameWindow;
   //  glm::vec4 rect = {0,0,0,0};
     std::shared_ptr<NavMesh> mesh;
-    std::shared_ptr<Chunk> chunks[levels][levels];
+    SPStorage<Chunk> levels;
     Chunk* currentChunk = nullptr;
-    void addGatePair(int x1, int y1, int x2, int y2);
-    void generateLevel();
+    void generateLevel(); //generates terrain and shards. Should only be called when currentChunk and mesh are not null
 };
 
 

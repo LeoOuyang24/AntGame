@@ -5,6 +5,7 @@
 
 #include "glInterface.h"
 #include "SDLhelper.h"
+#include "render.h"
 
 #include "components.h"
 
@@ -28,9 +29,19 @@ public:
     ~ClickableComponent();
 };
 
+class AnimationComponent : public RenderComponent, public ComponentContainer<AnimationComponent>
+{
+    AnimationWrapper* sprite = nullptr;
+    AnimationParameter animeParam;
+public:
+    AnimationComponent(AnimationWrapper* anime, Entity& entity );
+    void render(const SpriteParameter& param);
+    void update();
+};
 
 class RectRenderComponent : public RenderComponent, public ComponentContainer<RectRenderComponent>
 {
+protected:
     glm::vec4 color;
 public:
     RectRenderComponent(const glm::vec4& color, Entity& unit);
@@ -41,15 +52,17 @@ public:
 
 class Object : public Entity//environment objects. Can be seen, have a hitbox, and can be clicked on
 {
+    friend class EntityAssembler;
 protected:
     bool dead = false;
-    const bool movable = false; //whether or not the object moves when pushed by another unit. True for structures, false for units
+    const bool movable = false; //whether or not the object moves when pushed by another unit. False for structures, true for units
     bool friendly = false; //whether or not the player can target the unit
     ClickableComponent* clickable = nullptr;
     RectComponent* rect = nullptr;
     RenderComponent* render = nullptr;
 public:
-    Object(ClickableComponent& click, RectComponent& rect, RenderComponent& render, bool mov = false);
+    Object(ClickableComponent& click, RectComponent& rect, RenderComponent& render, bool mov = true);
+    Object(std::string name, const glm::vec4& rect, AnimationWrapper* rapper, bool mov = true);
     RectComponent& getRect() const;
     glm::vec2 getCenter();
     ClickableComponent& getClickable();
@@ -68,10 +81,16 @@ class ObjectAssembler : public EntityAssembler
 protected:
     glm::vec2 dimen;
     std::string name;
+    AnimationWrapper* sprite = nullptr;
+    bool movable = false;
 public:
-    ObjectAssembler(const glm::vec2& rect_, std::string name_);
+    ObjectAssembler(std::string name_, const glm::vec2& rect_, AnimationWrapper* anime, bool mov);
     const glm::vec2& getDimen();
     std::string getName();
+    AnimationWrapper* getSprite();
+    bool getMovable();
+    virtual Entity* assemble();
+
 };
 
 class InteractionComponent : public Component, public ComponentContainer<InteractionComponent> //objects that can be interacted with
@@ -113,9 +132,10 @@ class Unit : public Object //Units can be clicked on and seen and have health
 protected:
     HealthComponent* health = nullptr;
     Manager* manager = nullptr;
+    Unit();
 public:
     Unit(ClickableComponent& click, RectComponent& rect, RenderComponent& render, HealthComponent& health, bool mov = true);
-
+    Unit(std::string name, const glm::vec4& rect, AnimationWrapper* anime, bool mov, double maxHealth);
     HealthComponent& getHealth();
     bool clicked();
     virtual void interact(Ant& ant);
@@ -129,8 +149,9 @@ class UnitAssembler : public ObjectAssembler
 protected:
     double maxHealth = 0;
 public:
-    UnitAssembler(const glm::vec2& rect_, std::string name_, double maxHealth_);
+    UnitAssembler( std::string name_,const glm::vec2& rect_, AnimationWrapper* anime, bool mov, double maxHealth_);
     double getMaxHealth();
+    Entity* assemble();
 };
 
 class RepelComponent : public Component, public ComponentContainer<RepelComponent> //component that repels objects on collision

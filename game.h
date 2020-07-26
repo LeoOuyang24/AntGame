@@ -12,6 +12,7 @@
 #include "antManager.h"
 #include "debug.h"
 #include "player.h"
+#include "fog.h"
 
 extern SpriteWrapper frame;
 
@@ -22,7 +23,7 @@ class Ant;
 
 
 
-class Manager
+class Manager //handles updating units
 {
     constexpr static int maxTasks = 10;
     friend class AntManager;
@@ -41,14 +42,12 @@ class Manager
   //  std::vector<UnitPtr> selectedUnits;
     ObjPtr selectedUnit;
     DeltaTime spawner; //marks the last time something spawned
-    Anthill* signalling = nullptr; //the anthill currently conquering
     Unit* generateCreature(); //chooses a random creature to spawn
     //void spawnCreatures(); //spawn a creature at a random position
     void spawnCreatures(Anthill& hill, double minR, double maxR); //spawn creatures near an anthill at a certain radius
     std::weak_ptr<TaskNode> currentTask; //the current antmanager
     std::weak_ptr<TaskNode> parentTask; //the current parent task
     int processAntManagers(std::shared_ptr<TaskNode>& node, int index, int y, int x); //updates an AntManager and all of its children. y and x are the amount of displacement to render the task. index is the index of the antmanager, < 0 if its a child antmanager. Returns the y of the next AntManager
-    void updateAntManagers();
     void updateEntities();
     void split();
 public:
@@ -56,19 +55,21 @@ public:
     const ObjPtr getSelectedUnit() const;
     const AntManager* getCurrentTask() const;
     void init(const glm::vec4& region);
-    void update();
-    void setSignalling(Anthill& hill);
+    void update(); //updates and spawn entities
+    void updateAntManagers(); //updates antmanagers
+    void reset();
 };
 
 class GameWindow;
 class Camera : public Entity
 {
     glm::vec2 baseDimen = {0,0};
-    const glm::vec4* bounds = nullptr;
+    glm::vec4 bounds;
     glm::vec4 rect = {0,0,0,0};
     double zoomAmount = 1; //percentage of the base width and height of the camera
     double zoomGoal = -1;
     double zoomSpeed = .0001;
+    double oldZoom;
     static double minZoom, maxZoom;
     MoveComponent* move;
 public:
@@ -76,7 +77,7 @@ public:
     void init(int w, int h);
     void update();
     const glm::vec4& getRect() const;
-    void setBounds(const glm::vec4* newBounds);
+    void setBounds(const glm::vec4& newBounds);
     glm::vec4 toScreen(const glm::vec4& rect) const;//converts a rect from the world coordinate to the screen coordinate
     glm::vec2 toScreen(const glm::vec2& point) const;
     glm::vec4 toWorld(const glm::vec4& rect) const;  //converts a rect from the screen coordinate to the world coordinate
@@ -97,6 +98,8 @@ public:
 class SequenceUnit;
 class GameWindow : public Window //the gamewindow is mostly static because most of its functions/members are used everywhere in the program. These members can't be manipulated without first creating a GameWindow
 {
+
+
     static float menuHeight;
     static Camera camera;
     static Map level;
@@ -104,9 +107,12 @@ class GameWindow : public Window //the gamewindow is mostly static because most 
     static Window* gameOver;
     static Debug debug;
     static Player player;
+    static FogMaker fogMaker;
+
     static bool renderAbsolute; //whether or not to renderAbsolute
 
     ObjPtr anthill; //pointer to the anthill. Keeps track of whether or not the player has lost
+
     std::vector<std::shared_ptr<SequenceUnit>> labels;
     struct QuitButton : public Button
     {
@@ -116,16 +122,19 @@ class GameWindow : public Window //the gamewindow is mostly static because most 
     };
 public:
     static float interfaceZ;
+    static float fontZ; //z for rendering text on top of the interface
     bool quit = false;
     const static glm::vec4& getSelection();
     static Camera& getCamera();
     static const Manager& getManager();
     static Map& getLevel();
     static Player& getPlayer();
+    static FogMaker& getFogMaker();
     static void requestNGon(int n, const glm::vec2& center, double side, const glm::vec4& color, double angle, bool filled, float z, bool absolute = false); //easier way to render polygons without having to call getCamera();
     static void requestRect(const glm::vec4& rect, const glm::vec4& color, bool filled, double angle, float z, bool absolute = false); //if absolute is true, the coordinates are taken as screen coordinates
     GameWindow();
     void update(int x, int y, bool clicked);
+    void renderTopBar();
     void renderSelectedUnits();
     static float getMenuHeight();
     static void close();

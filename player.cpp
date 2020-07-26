@@ -5,6 +5,7 @@
 #include "player.h"
 #include "game.h"
 #include "navigation.h"
+#include "animation.h"
 
 const glm::vec4 Player::selectColor = {1,1,1,.5};
 
@@ -32,6 +33,10 @@ bool Player::updateSelect()
     return false;
 }
 
+int Player::getResource()
+{
+    return resource;
+}
 
 void Player::addResource(int r)
 {
@@ -41,7 +46,7 @@ void Player::addResource(int r)
 void Player::update()
 {
     glm::vec2 screenDimen = RenderProgram::getScreenDimen();
-    Font::tnr.requestWrite({"Resources: " + convert(resource),GameWindow::getCamera().toAbsolute({screenDimen.x - 200, 50, 100,100}),0,{0,0,0,1},1});
+   // Font::tnr.requestWrite({"Resources: " + convert(resource),GameWindow::getCamera().toAbsolute({screenDimen.x - 200, 50, 100,100}),0,{0,0,0,1},GameWindow::interfaceZ});
 
     switch(KeyManager::getJustPressed())
     {
@@ -75,7 +80,7 @@ void Player::update()
             if (!collides)
             {
                 Map* level = &GameWindow::getLevel();
-                RawQuadTree* tree = level->getTree(level->getCurrentChunk());
+                RawQuadTree* tree = level->getTree();
                 auto vec = tree->getNearest(structRect);
                 int size = vec.size();
                 for (int i = 0; i < size; ++i)
@@ -97,7 +102,7 @@ void Player::update()
                 Unit* ptr = static_cast<Unit*>(assembler.assemble());
                 RectComponent* rect = &ptr->getRect();
                 rect->setPos({mousePos.x - dimen.x/2, mousePos.y - dimen.y/2});
-                GameWindow::getLevel().addUnit(*(ptr));
+                GameWindow::getLevel().addUnit(*(ptr), ptr->getFriendly());
             }
             break;
     }
@@ -137,15 +142,15 @@ Factory::Factory(int x, int y) : Structure(*(new ClickableComponent("Factory", *
     addComponent(*(new CreateEnergyComponent(GameWindow::getPlayer(),1000, *this)));
 }
 
-FactoryAssembler::FactoryAssembler() : UnitAssembler({30,30},"Factory", 100)
+FactoryAssembler::FactoryAssembler() : UnitAssembler("Factory",{30,30}, &defaultAnime, false, 100)
 {
 
 }
 
 Entity* FactoryAssembler::assemble()
 {
-    Structure* stru = new Structure(*(new ClickableComponent(name, *stru)),*(new RectComponent({0,0,dimen.x,dimen.y}, *stru)),
-                                    *(new RectRenderComponent({.5,.5,.5,1},*stru)), *(new HealthComponent(*stru,maxHealth)));
+    Unit* stru = static_cast<Unit*>(UnitAssembler::assemble());
+    stru->setFriendly(true);
     stru->addComponent(*(new CreateEnergyComponent(GameWindow::getPlayer(),1000,*stru)));
 
     return stru;

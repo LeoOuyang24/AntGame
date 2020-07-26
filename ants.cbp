@@ -85,6 +85,7 @@
 		<Unit filename="../../resources/stb_image.h" />
 		<Unit filename="../../resources/vanilla.cpp" />
 		<Unit filename="../../resources/vanilla.h" />
+		<Unit filename="animation.h" />
 		<Unit filename="antManager.cpp" />
 		<Unit filename="antManager.h" />
 		<Unit filename="ants.cpp" />
@@ -96,16 +97,18 @@
 		<Unit filename="debug.h" />
 		<Unit filename="entities.cpp" />
 		<Unit filename="entities.h" />
+		<Unit filename="fog.cpp" />
+		<Unit filename="fog.h" />
 		<Unit filename="game.cpp" />
 		<Unit filename="game.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="navigation.cpp" />
 		<Unit filename="navigation.h" />
+		<Unit filename="player.cpp" />
 		<Unit filename="player.h" />
 		<Unit filename="sequence.cpp" />
 		<Unit filename="sequence.h" />
 		<Unit filename="sprites.cpp" />
-		<Unit filename="sprites.h" />
 		<Unit filename="world.cpp" />
 		<Unit filename="world.h" />
 		<Extensions>

@@ -19,6 +19,7 @@ class Player //tracks player stats (resources, money). Also handles player input
 public:
     static const glm::vec4 selectColor;
 
+    int getResource();
     void addResource(int r); //used to increase or decrease resources. Resources can't be negative
     void update();
     const glm::vec4& getSelection();

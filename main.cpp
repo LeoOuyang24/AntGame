@@ -12,6 +12,7 @@
 #include "entities.h"
 #include "ants.h"
 #include "game.h"
+#include "animation.h"
 
 struct A
 {
@@ -85,7 +86,8 @@ int main(int args, char* argsc[])
    // std::cout << lineInVec({82.9492,10},{83,-90},{-10,-33,200,-10},0) << std::endl;
 
     srand(time(NULL));
-    SDL_Window* window = SDL_CreateWindow("Project",SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,screenWidth, screenHeight, SDL_WINDOW_OPENGL);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE,1);
+    SDL_Window* window = SDL_CreateWindow("Project",SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,screenWidth, screenHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     SDL_StopTextInput();
     SDL_GL_CreateContext(window);
 
@@ -100,13 +102,17 @@ int main(int args, char* argsc[])
     GameWindow game;
     interface.switchCurrent(&game);
 
+    initSprites();
+
    SpriteWrapper spr;
-    spr.init("image.png",true);
+    spr.init("image.png");
+    AnimationWrapper anime;
+    anime.init(new BaseAnimation("oldMan.png",-1, 6,1));
 
   //  glClearColor(0,0,1,1);
   //  Font comic = Font("betterComicSans.ttf");
   //  FontManager::addFont(comic);
-
+   // glDepthMask(false);
     SpriteManager::addSprite(spr);
     while (!quit)
     {
@@ -126,7 +132,7 @@ int main(int args, char* argsc[])
             KeyManager::getKeys(e);
             MouseManager::update(e);
         }
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         interface.update();
         if (game.quit)
@@ -135,17 +141,17 @@ int main(int args, char* argsc[])
         }
 
        //drawRectangle(RenderProgram::lineProgram,{1,1,1},{0,0,64,64},0);
-       glm::vec4 rect = {320,320,128,64};
+       //glm::vec4 rect = {320,320,128,64};
       // spr.request({rect,0,NONE,{0,1,0,1}});
        //PolyRender::requestRect(rect,{0,0,0,1},true,0,.1);
      //  Font::tnr.requestWrite({"hella",rect,0,{1,0,0,1},1});
+        SpriteManager::render();
         PolyRender::render();
         FontManager::update();
-        SpriteManager::render();
         SDL_GL_SwapWindow(window);
         DeltaTime::update();
         eventsEmpty = true;
-        //fastPrint(convert(DeltaTime::deltaTime) + "\n");
+       // fastPrint(convert(DeltaTime::deltaTime) + "\n");
       //  std::cout << DeltaTime::deltaTime << std::endl;
     }
     game.close();

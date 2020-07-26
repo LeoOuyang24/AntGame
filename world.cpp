@@ -1,12 +1,48 @@
+#include <queue>
+
 #include "world.h"
 #include "entities.h"
 #include "ants.h"
 #include "game.h"
 #include "navigation.h"
+#include "animation.h"
+
+Terrain::TerrainRender::TerrainRender(const glm::vec4& color, Entity& ent) : RectRenderComponent(color, ent), ComponentContainer<Terrain::TerrainRender>(ent)
+{
+
+}
+
+void Terrain::TerrainRender::update()
+{
+    GameWindow::requestRect(((Object*)entity)->getRect().getRect(),color,true,0,FogMaker::fogZ);
+}
 
 Terrain::Terrain(int x, int y, int w, int h) : Object(*(new ClickableComponent("Terrain", *this)), *(new RectComponent({x,y,w,h},*this)), *(new RectRenderComponent({.5,.5,.5,1},*this)))
 {
     addComponent(*(new RepelComponent(*this)));
+}
+
+Shard::ShardComponent::ShardComponent(Entity& owner) : Component(owner), ComponentContainer<ShardComponent>(owner)
+{
+
+}
+
+void Shard::ShardComponent::collide(Entity& other)
+{
+    static_cast<Object*>(entity)->setDead(true);
+    GameWindow::getLevel().findShard();
+}
+
+Shard::Shard() : ObjectAssembler("Shard", {40,40},&shardAnime, true)
+{
+
+}
+
+Entity* Shard::assemble()
+{
+    Entity* stru = (ObjectAssembler::assemble());
+    stru->addComponent(*(new ShardComponent(*stru)));
+    return stru;
 }
 
 Map::Map()
@@ -17,19 +53,29 @@ Map::Map()
 void Map::init(const glm::vec4& region)
 {
    // rect = region;
-   setCurrentChunk(*(new Chunk({0,0,chunkDimen,chunkDimen})));
-    mesh.reset(new NavMesh(currentChunk->rect,*(currentChunk->tree.get())));
+    nextLevel();
 
+}
+
+void Map::nextLevel()
+{
+    if (!currentChunk)
+    {
+         setCurrentChunk(*(new Chunk({0,0,chunkDimen,chunkDimen})));
+    }
+    else
+    {
+        currentChunk->clear();
+    }
+    if (!mesh.get())
+    {
+        mesh.reset(new NavMesh(currentChunk->rect,*(currentChunk->tree.get())));
+    }
+    else
+    {
+        mesh->reset();
+    }
     generateLevel();
-    //addUnit(*(new Anthill({0,0})));
-  //  addUnit(*(new Terrain(-10,-33,200,10)));
- //   addUnit(*(new Terrain(-33,10,10,200)));
-  //  mesh->init2(getCurrentChunk().entities);
-   // Terrain* t1 = new Terrain(-33,10,10,200);
-   // Terrain* t2 = new Terrain(-73,10,10,200);
-    //addUnit(*(t));
-  //  mesh->smartAddNode(t1->getRect().getRect());
-   // mesh->smartAddNode(t2->getRect().getRect());
 }
 
 std::shared_ptr<Object> Map::addUnit(Object& entity, bool friendly)
@@ -49,6 +95,14 @@ std::shared_ptr<Object> Map::addUnit(Object& entity, bool friendly)
 
     return ptr;
 }
+
+std::shared_ptr<Object> Map::addUnit(Object& entity,int x, int y, bool friendly)
+{
+    auto asdf = addUnit(entity,friendly);
+    moveObject(entity,x,y);
+    return asdf;
+}
+
 
 void Map::addTerrain(const glm::vec4& rect)
 {
@@ -75,15 +129,9 @@ std::shared_ptr<Object>& Map::getUnit(Object* unit)
 
 void Map::moveObject(Object& obj, double x, double y)
 {
-    Chunk* oldChunk = &(getChunk(obj));
     obj.getRect().setPos({x,y});
-    oldChunk->tree->remove(obj.getRect());
-    Chunk* newChunk = &(getChunk(obj));
-    newChunk->tree->add(obj.getRect());
-    //std::cout << getChunk(obj).ants.size() << oldChunk->ants.size() << std::endl;
+    currentChunk->tree->update(obj.getRect(), *currentChunk->tree.get());
 
-    newChunk->entities[&obj] = oldChunk->entities[&obj];
-    oldChunk->entities.erase(&obj);
     //std::cout << obj.getCenter().x << std::endl;
    // std::cout << getChunk(obj).ants.size() << oldChunk->ants.size() << std::endl;
 }
@@ -91,46 +139,14 @@ void Map::moveObject(Object& obj, double x, double y)
 void Map::setCurrentChunk(Chunk& chunk)
 {
     currentChunk = &chunk;
-    GameWindow::getCamera().setBounds(&(chunk.rect));
+    //GameWindow::getCamera().setBounds(&(chunk.rect));
 }
 
 void Map::remove(Object& unit)
 {
-    Chunk* chunk = &(getChunk(unit));
-    chunk->tree->remove(unit.getRect());
-    chunk->entities.erase(&unit);
+    currentChunk->remove(unit);
 }
 
-Map::Chunk& Map::getChunk(Object& unit)
-{
-    glm::vec2 center = unit.getCenter();
-   // std::cout << center.x << " " << center.y << std::endl;
-    center.x = ((center.x) + chunkDimen*levels/2.0)/chunkDimen - levels/2;
-    if (center.x < 0)
-    {
-        center.x = floor(center.x);
-    }
-    center.y = ((center.y) + chunkDimen*levels/2.0)/chunkDimen - levels/2;;
-    if (center.y < 0)
-    {
-        center.y = floor(center.y);
-    }
-    return getChunk(center.x,center.y);
-}
-
-Map::Chunk& Map::getChunk(int x, int y)
-{
-    if (abs(x) > levels/2 || abs(y) > levels/2)
-    {
-        throw std::runtime_error("index out of bounds in Map.getChunks()!");
-    }
-    else
-    {
-        //std::cout << x + levels/2 << " " << y + levels/2 << std::endl;
-        return (*(chunks[x+levels/2][y+levels/2]).get());
-    }
-
-}
 Map::Chunk& Map::getCurrentChunk()
 {
     if (!currentChunk)
@@ -166,6 +182,8 @@ void Map::render()
            // drawRectangle(RenderProgram::basicProgram,{i/(rect.z/width),j/(rect.a/width),1},{rect.x + i*width,rect.y + j*width,width,width},0);
         }
     }
+    currentChunk->update();
+    GameWindow::getFogMaker().requestRectFog(playerArea);
   //  mesh->render();
 }
 
@@ -173,33 +191,39 @@ const glm::vec4& Map::getRect(Chunk& chunk) //returns rect of the current Chunk
 {
    return chunk.rect;
 }
-RawQuadTree* Map::getTree(Chunk& chunk)
+RawQuadTree* Map::getTree()
 {
-    return chunk.tree.get();
-}
-RawQuadTree* Map::getTreeOf(Object& unit)
-{
-    return getChunk(unit).tree.get();
+    return currentChunk->tree.get();
 }
 
 void Map::reset()
 {
-    for(int i = 0; i < levels; i++)
+    levels.clear();
+    foundShards = 0;
+}
+
+void Map::setChangeLevel(bool l)
+{
+    changeLevel = l;
+}
+bool Map::getChangeLevel()
+{
+    return changeLevel;
+}
+
+void Map::findShard()
+{
+    foundShards++;
+    if (foundShards == 5)
     {
-        for (int j = 0; j < levels; j ++)
-        {
-            Chunk* current = chunks[i][j].get();
-            if (current)
-            {
-                int size = current->entities.size();
-                for (int it = 0 ; it < size; ++it)
-                    {
-                        remove(*(current->entities.begin()->second.get()));
-                    }
-                chunks[i][j].reset();
-            }
-        }
+        addUnit(*(new Gate(playerArea.x + playerArea.z/2, playerArea.y + playerArea.a/2*3/2)),false);
+        foundShards = 0;
     }
+}
+
+int Map::getFoundShards()
+{
+    return foundShards;
 }
 
 Map::~Map()
@@ -207,40 +231,7 @@ Map::~Map()
 
 }
 
-Map::Gate::NextAreaComponent::NextAreaComponent(Object& unit) : InteractionComponent(unit), ComponentContainer<Gate::NextAreaComponent>(&unit)
-{
-
-}
-
-void Map::Gate::NextAreaComponent::setDest(const std::shared_ptr<Gate>& other)
-{
-    dest = other;
-}
-
-void Map::Gate::NextAreaComponent::interact(Object& other)
-{
-    Gate* destination = dest.lock().get();
-    if (destination && entity)
-    {
-        Map* level = &(GameWindow::getLevel());
-        //level->setCurrentChunk(level->getChunk(*destination));
-       // GameWindow::getCamera().setBounds(&(GameWindow::getLevel().getRect(GameWindow::getLevel().getChunk(*destination))));
-        //other.getRect().setPos({destination->getRect().getCenter().x, destination->getRect().getCenter().y});
-        level->moveObject(other,destination->getRect().getCenter().x, destination->getRect().getCenter().y);
-    }
-}
-
-Map::Gate* Map::Gate::NextAreaComponent::getDest()
-{
-    return dest.lock().get();
-}
-
-Map::Gate::NextAreaComponent::~NextAreaComponent()
-{
-
-}
-
-Map::Gate::NextAreaButton::NextAreaButton(Gate& unit) : Button({0,0,64,16},nullptr,nullptr,{"Next Area!"},&Font::tnr,{0,1,0,1}), gate(&unit)
+Map::Gate::NextAreaButton::NextAreaButton() : Button({0,0,64,16},nullptr,nullptr,{"Next Area!"},&Font::tnr,{0,1,0,1})
 {
 
 }
@@ -248,11 +239,7 @@ Map::Gate::NextAreaButton::NextAreaButton(Gate& unit) : Button({0,0,64,16},nullp
 void Map::Gate::NextAreaButton::press()
 {
   Map* level = &(GameWindow::getLevel());
-  Gate* dest = gate->getComponent<NextAreaComponent>()->getDest();
-  if (dest)
-  {
-    level->setCurrentChunk(level->getChunk(*(dest)));
-  }
+    level->setChangeLevel(true);
 }
 
 Map::Gate::NextAreaButton::~NextAreaButton()
@@ -262,21 +249,7 @@ Map::Gate::NextAreaButton::~NextAreaButton()
 
 Map::Gate::Gate(int x, int y) : Object(*(new ClickableComponent("Gate",*this)),*(new RectComponent({x,y,64,64},*this)), *(new RectRenderComponent({1,.1,.1,1},*this)))
 {
-    nextArea = new Gate::NextAreaComponent(*this);
-    addComponent(*nextArea);
-    getClickable().addButton(*(new NextAreaButton(*this)));
-}
-
-void Map::Gate::setDest(const std::shared_ptr<Gate>& other)
-{
-    if (nextArea)
-    {
-        nextArea->setDest(other);
-    }
-    else
-    {
-        throw std::logic_error("No nextAreaComponent");
-    }
+    getClickable().addButton(*(new NextAreaButton()));
 }
 
 Map::Gate::~Gate()
@@ -290,11 +263,6 @@ Map::Chunk::Chunk(const glm::vec4& rect_)
     tree.reset(new RawQuadTree(rect_));
 }
 
-void Map::Chunk::clear()
-{
-    entities.clear();
-}
-
 void Map::Chunk::update()
 {
     int size = terrain.size();
@@ -305,6 +273,27 @@ void Map::Chunk::update()
     }
 }
 
+
+glm::vec4& Map::Chunk::getRect()
+{
+    return rect;
+}
+
+void Map::Chunk::remove(Object& unit)
+{
+    tree->remove(unit.getRect());
+    entities.erase(&unit);
+}
+
+void Map::Chunk::clear()
+{
+    while (entities.size() > 0)
+    {
+        remove(*(entities.begin()->first));
+    }
+    terrain.clear();
+}
+
 Map::Chunk::~Chunk()
 {
     clear();
@@ -312,44 +301,107 @@ Map::Chunk::~Chunk()
 
 const glm::vec4 Map::playerArea = {chunkDimen/2 - 1000,chunkDimen/2 - 1000,2000,2000};
 
-void Map::addGatePair(int x1, int y1, int x2, int y2)
-{
-    Map::Gate* gate1 = (new Gate(x1,y1));
-    Map::Gate* gate2 = (new Gate(x2,y2));
-    gate1->setDest(std::dynamic_pointer_cast<Gate>(addUnit(*gate2)));
-    gate2->setDest(std::dynamic_pointer_cast<Gate>(addUnit(*gate1)));
-    //addUnit(*gate1);
-    //addUnit(*gate2);
-}
 
 void Map::generateLevel()
 {
     //currentChunk = new Chunk({0,0,chunkDimen,chunkDimen});
     int walls = 100;
     glm::vec2 points = {chunkDimen/maxObjectSize,chunkDimen/maxObjectSize};
-    int size =points.x*points.y;
-    int maxDimen = 10*maxObjectSize;
     //addTerrain({100,100,100,100});
     //addTerrain({200,200,100,100});
    // glm::vec2 playerPoints = {playerArea.z/maxObjectSize + 1, playerArea.a/maxObjectSize + 1}; //points we can't use because it's in the player area
-    int luck = 1;
-    for (int i = 0; i < size; ++i)
+    int luck = 10;
+    std::queue<std::pair<glm::vec2,bool>>  dists; //vector of empty areas. x is the starting index and y is the # of spawn points are on the line. Bool is true if the line is empty
+    std::vector<glm::vec2> emptySpots;
+    dists.push({{0,points.x},true});
+
+    int shards = 0;
+    for (int i = 0; i < points.y -1; ++i) //for every row...
     {
-        if (rand()%luck == 0)
+        int size = dists.size();
+        glm::vec2 line = {0,0};
+        bool empty = false;
+        glm::vec2 popped;
+        bool poppedEmpty = false; //whether the line is empty or a line of blocks
+        for (int j = 0; j < size; j ++) //for each line
         {
-            int x = fmod(i,points.x)*maxObjectSize;
-            int y = floor(i/points.x)*maxObjectSize;
-            if (pointInVec(playerArea,x,y,0))
+            int spawned = 0; //the number of spawned blocks
+            int y = i*maxObjectSize;
+            //std::cout << i << " " << blankSpace <<std::endl;
+            popped =  dists.front().first;
+            poppedEmpty = dists.front().second;
+            //std::cout << i << " " << j << " " << popped.x << " " << popped.y << " " << std::endl;
+            dists.pop();
+            for (int g = 0; g < popped.y; ++g) //for each possible spawn point on a line
             {
-                continue;
-            }
-            addTerrain({x,y,maxObjectSize,maxObjectSize});
-            luck/=2;
-            if (luck == 0)
-            {
-                luck = 10;
+                int x = (g + popped.x)*maxObjectSize;
+                bool inPlayerArea = line.x >= playerArea.x && line.x + line.y < playerArea.x + playerArea.z && y >= playerArea.y && y < playerArea.y + playerArea.a;
+                if (rand()%luck == 0 && (!poppedEmpty || spawned < popped.y - 1) && !pointInVec(playerArea,x,y,0)) //we have to get lucky, not be in the player area and either not hit the spawn limit or be before the line
+                {
+
+                    addTerrain({x,y,maxObjectSize,maxObjectSize});
+                    luck/=2;
+                    if (luck == 0)
+                    {
+                        luck = 10;
+                    }
+                    if (line.y > 0 && empty)
+                    {
+                        if (!(inPlayerArea)) //this isn't quite the same thing as checking if the point is in the rect because we want the resulting rects to not collide with player rect
+                        {
+                          //  std::cout << line.x<< " "<< line.y <<" " << empty<< std::endl;
+                            dists.push({line,empty});
+                        }
+                        line = {line.x + (line.y ),1 };
+                        empty = false;
+                    }
+                    else
+                    {
+                        line.y ++ ;
+                    }
+                    if (!empty)
+                    {
+                        spawned ++;
+                    }
+                }
+                else
+                {
+                    if ( pointVecDistance(playerArea,x,y) > .1*chunkDimen)
+                    {
+                        emptySpots.push_back({x,y});
+                    }
+                    if (line.y > 0 && !empty)
+                    {
+                        if (!(inPlayerArea)) //this isn't quite the same thing as checking if the point is in the rect because we want the resulting rects to not collide with player rect
+                        {
+                          //  std::cout << line.x<< " "<< line.y<< " " << empty << std::endl;
+                            dists.push({line,empty});
+                        }
+                        line = {line.x + line.y, 1};
+                        empty = true;
+                    }
+                    else
+                    {
+                        line.y ++;
+
+                    }
+                }
             }
         }
+        if (line.y > 0)
+        {
+          //  std::cout << line.x << " " << line.y << std::endl;
+            dists.push({line,empty});
+        }
     }
-
+    Shard assembler;
+    glm::vec2 dimen = assembler.getDimen();
+    for (int i = 0; i < 5; ++i) //add shards
+    {
+        glm::vec2 chosen = emptySpots[rand()%emptySpots.size()];
+        addUnit(*(static_cast<Object*>(assembler.assemble())),chosen.x + fmod(rand(),(maxObjectSize/2 - dimen.x/2)),
+                chosen.y + fmod(rand(),(maxObjectSize/2 - dimen.y/2)),true);
+    }
+    addUnit(*(new Anthill({chunkDimen/2,chunkDimen/2})),true);
+   // addUnit(*(new Gate({chunkDimen/2, chunkDimen/2 + 100})));
 }
