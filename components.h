@@ -91,7 +91,7 @@ protected:
     Entity* entity;
 
 public:
-    Component(Entity& entity);
+    Component(Entity& owner);
     virtual void update();
     virtual void collide(Entity& other);
     virtual void onDeath();
@@ -104,7 +104,7 @@ class RectComponent : public Component, public ComponentContainer<RectComponent>
 public:
     RectComponent(const glm::vec4& rect, Entity& entity);
     void setRect(const glm::vec4& rect);
-    void setPos(const glm::vec2& pos);
+    virtual void setPos(const glm::vec2& pos);
     glm::vec2 getCenter();
     virtual ~RectComponent();
 };

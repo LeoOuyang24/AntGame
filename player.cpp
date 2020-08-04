@@ -99,10 +99,13 @@ void Player::update()
             GameWindow::requestRect(structRect,color,true,0,0,0);
             if (MouseManager::getJustClicked() == SDL_BUTTON_LEFT && !collides)
             {
-                Unit* ptr = static_cast<Unit*>(assembler.assemble());
+                Object* ptr = (assembler.assemble());
                 RectComponent* rect = &ptr->getRect();
                 rect->setPos({mousePos.x - dimen.x/2, mousePos.y - dimen.y/2});
+                InactiveComponent* inactive = new InactiveComponent(assembler.getProdTime(),*ptr);
+                ptr->addComponent(*inactive);
                 GameWindow::getLevel().addUnit(*(ptr), ptr->getFriendly());
+                inactive->init();
             }
             break;
     }
@@ -116,6 +119,35 @@ void Player::update()
 const glm::vec4& Player::getSelection()
 {
     return selection;
+}
+
+InactiveComponent::InactiveComponent(double duration, Entity& entity) : waitTime(duration), Component(entity), ComponentContainer<InactiveComponent>(entity)
+{
+
+}
+
+void InactiveComponent::init()
+{
+    timeLeft.set();
+}
+
+bool InactiveComponent::done()
+{
+    return timeLeft.timePassed(waitTime);
+}
+
+void InactiveComponent::render()
+{
+    RenderComponent* render = entity->getComponent<RenderComponent>();
+    RectComponent* rect = entity->getComponent<RectComponent>();
+    if (render && rect)
+    {
+        glm::vec4 renderRect = GameWindow::getCamera().toScreen(rect->getRect());
+        render->render({renderRect,0,NONE,{.5,.5,.5,1}});
+        renderTimeMeter({renderRect.x,renderRect.y + 1.1*renderRect.a, renderRect.z,20 },
+                        {.5,.5,.5,1},timeLeft,waitTime,GameWindow::interfaceZ);
+      //  Font::tnr.requestWrite({convert((waitTime - (SDL_GetTicks() - timeLeft.getTime()))/1000.0),renderRect,0,{1,1,1,1},GameWindow::fontZ});
+    }
 }
 
 CreateEnergyComponent::CreateEnergyComponent(Player& player_, int frames, Entity& entity) : player(&player_), waitTime(frames), Component(entity), ComponentContainer<CreateEnergyComponent>(entity)
@@ -142,12 +174,12 @@ Factory::Factory(int x, int y) : Structure(*(new ClickableComponent("Factory", *
     addComponent(*(new CreateEnergyComponent(GameWindow::getPlayer(),1000, *this)));
 }
 
-FactoryAssembler::FactoryAssembler() : UnitAssembler("Factory",{30,30}, &defaultAnime, false, 100)
+FactoryAssembler::FactoryAssembler() : UnitAssembler("Factory",{30,30}, &defaultAnime, false, 100,1000)
 {
 
 }
 
-Entity* FactoryAssembler::assemble()
+Object* FactoryAssembler::assemble()
 {
     Unit* stru = static_cast<Unit*>(UnitAssembler::assemble());
     stru->setFriendly(true);

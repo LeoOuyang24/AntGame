@@ -5,6 +5,7 @@
 #include "game.h"
 #include "ants.h"
 #include "navigation.h"
+#include "animation.h"
 
 void renderMeter(const glm::vec3& xyWidth, const glm::vec4& color, double current, double maximum, float z)
 {
@@ -12,6 +13,13 @@ void renderMeter(const glm::vec3& xyWidth, const glm::vec4& color, double curren
     glm::vec4 renderRect = {xyWidth.x,xyWidth.y,xyWidth.z*current/maximum,height};
     GameWindow::requestRect(renderRect,color,true, 0, z);
     GameWindow::requestRect(renderRect,{0,0,0,1},false,0,z);
+}
+
+void renderTimeMeter(const glm::vec4& rect, const glm::vec4& color, DeltaTime& alarm, double duration, float z)
+{
+    double time = SDL_GetTicks() - alarm.getTime(); //amount of time passed
+    PolyRender::requestRect({rect.x,rect.y,rect.z*(time)/duration,rect.a},color,true,0,z);
+    Font::tnr.requestWrite({convert ((duration - time)/1000.0),rect,0,{0,0,0,1},z+.01});
 }
 
 ClickableComponent::ClickableComponent(std::string name, Entity& entity) : Component(entity), ComponentContainer<ClickableComponent>(&entity), name(name)
@@ -74,7 +82,8 @@ void ClickableComponent::update()
             }
             offset += rect->a + spacing.y;
         }
-        GameWindow::requestRect(*unitRect,Player::selectColor,true,0,0.01);
+        PolyRender::requestNGon(10,GameWindow::getCamera().toScreen({unitRect->x + unitRect->z/2,unitRect->y + unitRect->a/2}),unitRect->z/2*sqrt(2),{0,.5,1,1},0,false,1);
+        //GameWindow::requestRect(*unitRect,Player::selectColor,true,0,0);
     }
     /*bool becomeClicked = (MouseManager::isPressed(SDL_BUTTON_LEFT) && vecIntersect(GameWindow::getSelection(),*unitRect));
         if (entity->getComponent<Ant::AntMoveComponent>())
@@ -86,7 +95,7 @@ void ClickableComponent::update()
 }
 void ClickableComponent::display(const glm::vec4& rect)
 {
-    Font::tnr.requestWrite({name,rect});
+   // Font::tnr.requestWrite({name,rect});
 }
 
 void ClickableComponent::addButton(Button& button)
@@ -117,7 +126,7 @@ void AnimationComponent::update()
     auto rect = entity->getComponent<RectComponent>();
     if (rect)
     {
-        render({GameWindow::getCamera().toScreen(rect->getRect())});
+        render({GameWindow::getCamera().toScreen(rect->getRect()),0,NONE});
     }
 }
 
@@ -159,6 +168,25 @@ Object::Object(std::string name, const glm::vec4& vec, AnimationWrapper* rapper,
     addComponent(*(render));
 }
 
+Object::Object()
+{
+
+}
+void Object::addRect(RectComponent* r)
+{
+    addComponent(*r);
+    rect = r;
+}
+void Object::addClickable(ClickableComponent* c)
+{
+    addComponent(*c);
+    clickable = c;
+}
+void Object::addRender(RenderComponent* rend)
+{
+    addComponent(*rend);
+    render = rend;
+}
 RectComponent& Object::getRect() const
 {
     return *rect;
@@ -233,7 +261,7 @@ bool ObjectAssembler::getMovable()
     return movable;
 }
 
-Entity* ObjectAssembler::assemble()
+Object* ObjectAssembler::assemble()
 {
     return new Object(name,{0,0,dimen.x,dimen.y},sprite,movable);
 }
@@ -334,6 +362,17 @@ Unit::Unit(std::string name, const glm::vec4& rect, AnimationWrapper* anime, boo
     addComponent(*(health));
 }
 
+Unit::Unit()
+{
+
+}
+
+void Unit::addHealth(HealthComponent* h)
+{
+    health = h;
+    addComponent(*h);
+}
+
 void Unit::setManager(Manager& manager)
 {
     this->manager = &manager;
@@ -355,7 +394,8 @@ Manager* Unit::getManager()
     return manager;
 }
 
-UnitAssembler::UnitAssembler( std::string name_,const glm::vec2& rect_, AnimationWrapper* wrap, bool mov, double maxHealth_) : ObjectAssembler( name_,rect_, wrap, mov), maxHealth(maxHealth_)
+UnitAssembler::UnitAssembler( std::string name_,const glm::vec2& rect_, AnimationWrapper* wrap, bool mov, double maxHealth_, double prodTime_) :
+     ObjectAssembler( name_,rect_, wrap, mov), maxHealth(maxHealth_), prodTime(prodTime_)
 {
 
 }
@@ -365,7 +405,12 @@ double UnitAssembler::getMaxHealth()
     return maxHealth;
 }
 
-Entity* UnitAssembler::assemble()
+double UnitAssembler::getProdTime()
+{
+    return prodTime;
+}
+
+Object* UnitAssembler::assemble()
 {
     return new Unit(name,{0,0,dimen.x,dimen.y}, sprite, movable, maxHealth);
 }
@@ -482,6 +527,13 @@ PathComponent::PathComponent(double speed, const glm::vec4& rect, Entity& unit) 
 
 }
 
+void PathComponent::setPos(const glm::vec2& pos)
+{
+    rect.x = pos.x - rect.z/2;
+    rect.y = pos.y - rect.a/2;
+    setTarget(pos);
+}
+
 void PathComponent::setTarget(const glm::vec2& point)
 {
     if (getTarget() != point)
@@ -521,7 +573,7 @@ void PathComponent::addPoint(const glm::vec2& point)
 
 void PathComponent::update()
 {
-    Debug::DebugNavMesh::showPath(path);
+    //Debug::DebugNavMesh::showPath(path);
     if (atTarget())
     {
         if (path.size() > 1) //if we haven't reached the end of the path, select the next point
@@ -682,6 +734,7 @@ void AttackComponent::attack(HealthComponent* health)
 void AttackComponent::update()
 {
     Object* ptr = targetUnit.lock().get();
+  //  std::cout << ptr << std::endl;
     if (canAttack(ptr)) //attack if we are able to.
     {
         attack(ptr->getComponent<HealthComponent>());
@@ -693,6 +746,23 @@ void AttackComponent::update()
     else //otherwise, move
     {
         ApproachComponent::update();
+    }
+}
+
+void AttackComponent::setTarget(const glm::vec2& target, const std::shared_ptr<Object>* unit) //unit is a pointer so you can move to a point rather than a unit
+{
+    if (move)
+    {
+        if (unit)
+        {
+            std::cout << unit << std::endl;
+            targetUnit = *unit;
+        }
+        else
+        {
+            targetUnit.reset();
+        }
+        move->setTarget(target);
     }
 }
 
@@ -760,7 +830,7 @@ Dummy::Dummy(int x, int y) : Unit(*(new ClickableComponent("Dummy", *this)), *(n
 
 }
 
-Bug::Bug(int x, int y) : Unit(*(new ClickableComponent("Bug", *this)), *(new PathComponent(.02,{x,y,10,10},*this)), *(new RectRenderComponent({1,.5,1,1},*this)),*(new HealthComponent(*this, 100)))
+Bug::Bug(int x, int y) : Unit(*(new ClickableComponent("Bug", *this)), *(new PathComponent(.02,{x,y,10,10},*this)), *(new AnimationComponent(&basicEnemyAnime,*this)),*(new HealthComponent(*this, 100)))
 {
     //getComponent<MoveComponent>()->setTarget({0,0});
     addComponent(*(new AttackComponent(1, 50, *this)));

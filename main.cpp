@@ -145,13 +145,13 @@ int main(int args, char* argsc[])
       // spr.request({rect,0,NONE,{0,1,0,1}});
        //PolyRender::requestRect(rect,{0,0,0,1},true,0,.1);
      //  Font::tnr.requestWrite({"hella",rect,0,{1,0,0,1},1});
-        SpriteManager::render();
         PolyRender::render();
+        SpriteManager::render();
         FontManager::update();
         SDL_GL_SwapWindow(window);
         DeltaTime::update();
         eventsEmpty = true;
-       // fastPrint(convert(DeltaTime::deltaTime) + "\n");
+        //fastPrint(convert(DeltaTime::deltaTime) + "\n");
       //  std::cout << DeltaTime::deltaTime << std::endl;
     }
     game.close();

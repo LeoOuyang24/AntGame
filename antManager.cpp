@@ -3,7 +3,7 @@
 
 const int AntManager::spacing = 2;
 
-void AntManager::addChildAnt(const std::shared_ptr<Ant>& ant)
+void AntManager::addChildAnt(const std::shared_ptr<Entity>& ant)
 {
     selected.emplace_back(ant);
 }
@@ -37,7 +37,7 @@ const glm::vec2& AntManager::getCenter()
 {
     return antsCenter;
 }
-const std::vector<std::weak_ptr<Ant>>& AntManager::getAnts() const
+const std::vector<std::weak_ptr<Entity>>& AntManager::getAnts() const
 {
     return selected;
 }
@@ -133,17 +133,18 @@ void AntManager::getInput()
 
         for (int i = 0; i < chosen; ++i)
         {
-            Ant* ptr = selected[i].lock().get();
-            if (ptr)
+            Entity* ptr = selected[i].lock().get();
+            ClickableComponent* click = ptr->getComponent<ClickableComponent>();
+            if (ptr && click)
             {
-            //    ptr->getClickable().click(true);
-                GameWindow::requestRect(ptr->getRect().getRect(),selectColor,true,0,GameWindow::interfaceZ);
+                click->click(true);
+               // GameWindow::requestRect(ptr->getRect().getRect(),selectColor,true,0,0);
                 if (justClicked) //if we've recieved a new task
                 {
-                     if( ptr->getCurrentTask() != this)
+                    /* if( ptr->getCurrentTask() != this)
                      {
                         ptr->setCurrentTask(*this);
-                     }
+                     }*/
                    // std::cout << this << " " << currentTask << std::endl;
                     if (clumpDimen.x >= 1) //moving to target. Decimals can still be rounded to 0
                     {
@@ -173,11 +174,11 @@ void AntManager::getInput()
                             // current->getComponent<MoveComponent>()->getTarget().x << " " << current->getComponent<MoveComponent>()->getTarget().y << std::endl;
                             if (newTarget)
                             {
-                                ptr->setTarget(moveTo,&(map->getUnit(newTarget->get())));
+                                ptr->getComponent<ApproachComponent>()->setTarget(moveTo,newTarget);
                             }
                             else
                             {
-                                ptr->setTarget(moveTo,nullptr);
+                                ptr->getComponent<ApproachComponent>()->setTarget(moveTo,nullptr);
                             }
                         }
                     }
@@ -220,7 +221,7 @@ void AntManager::updateAnts()
         antsCenter = {0,0};
         for (int i = 0; i < chosen; ++ i)
         {
-            Ant* current = selected[i].lock().get();
+            Entity* current = selected[i].lock().get();
             if (!current)
             {
                 selected.erase(selected.begin() + i);
@@ -229,12 +230,12 @@ void AntManager::updateAnts()
             }
             else
             {
-                glm::vec4 currentRect = current->getRect().getRect();
+                glm::vec4 currentRect = current->getComponent<RectComponent>()->getRect();
                 antsCenter.x += currentRect.x + currentRect.z/2;
                 antsCenter.y += currentRect.y + currentRect.a/2;
-                if (currentTask != IDLE && current->getCurrentTask() == this)
+                if (currentTask != IDLE)
                 {
-                    if (current->getCarrying() == 0)
+                   /* if (current->getCarrying() == 0)
                     {
                         if (targetRect && vecIntersect(currentRect,*targetRect)) //at target
                         {
@@ -258,15 +259,16 @@ void AntManager::updateAnts()
                                 break;
                             }
                         }
-                        if (currentTask == MOVE && atTarget && !current->getComponent<MoveComponent>()->atTarget())
-                        {
-                            atTarget = false;
-                        }
+
                     }
                     else
                     {
                         current->setTarget(map->getUnit(current->getComponent<Ant::AntMoveComponent>()->getHome()));
                         collected = false;
+                    }*/
+                    if (currentTask == MOVE && atTarget && !current->getComponent<MoveComponent>()->atTarget())
+                    {
+                        atTarget = false;
                     }
                 }
             }
@@ -295,15 +297,11 @@ void AntManager::updateAnts()
 
 }
 
-void AntManager::addAnt(const std::shared_ptr<Ant>& ant)
+void AntManager::addAnt(const std::shared_ptr<Entity>& ant)
 {
-    AntManager* oldTask = ant->getCurrentTask();
-    if (oldTask)
-    {
-    //    oldTask->remove(*(ant.get()));
-    }
+
     selected.emplace_back(ant);
-    ant->setCurrentTask(*this);
+  //  ant->setCurrentTask(*this);
 
 }
 
@@ -361,10 +359,10 @@ std::vector<AntManager> AntManager::split(int pieces )
     for (int i = 0; i < size; ++i)
     {
         int index = 0;
-        Ant* ant = selected[i].lock().get();
+        Entity* ant = selected[i].lock().get();
         if (ant)
         {
-            glm::vec2 center = ant->getRect().getCenter();
+            glm::vec2 center = ant->getComponent<RectComponent>()->getCenter();
             if (center.x <= antsCenter.x)
             {
                 if (center.y > antsCenter.y)

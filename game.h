@@ -56,7 +56,7 @@ public:
     const AntManager* getCurrentTask() const;
     void init(const glm::vec4& region);
     void update(); //updates and spawn entities
-    void updateAntManagers(); //updates antmanagers
+    void updateAntManagers(); //updates antmanagers. Separate from update because we want this to be rendered away from the fog
     void reset();
 };
 

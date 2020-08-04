@@ -25,6 +25,17 @@ public:
     const glm::vec4& getSelection();
 };
 
+class InactiveComponent : public Component, public ComponentContainer<InactiveComponent> //represents how long an entity is inactive for. Usually because a building is under construction
+{
+    DeltaTime timeLeft;
+    double waitTime = 0;
+public:
+    InactiveComponent(double duration, Entity& entity);
+    void init(); //starts the timer
+    bool done(); //returns true when the object is no longer inactive
+    void render(); //what to render while this entity is inactive
+};
+
 class CreateEnergyComponent : public Component, public ComponentContainer<CreateEnergyComponent>
 {
     DeltaTime alarm; //the timer for when to generate energy.
@@ -45,7 +56,7 @@ class FactoryAssembler : public UnitAssembler
 {
 public:
     FactoryAssembler();
-    Entity* assemble();
+    Object* assemble();
 };
 
 #endif // PLAYER_H_INCLUDED

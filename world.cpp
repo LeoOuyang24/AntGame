@@ -38,9 +38,9 @@ Shard::Shard() : ObjectAssembler("Shard", {40,40},&shardAnime, true)
 
 }
 
-Entity* Shard::assemble()
+Object* Shard::assemble()
 {
-    Entity* stru = (ObjectAssembler::assemble());
+    Object* stru = (ObjectAssembler::assemble());
     stru->addComponent(*(new ShardComponent(*stru)));
     return stru;
 }
@@ -226,6 +226,11 @@ int Map::getFoundShards()
     return foundShards;
 }
 
+Anthill* Map::getAnthill()
+{
+    return mainHill.lock().get();
+}
+
 Map::~Map()
 {
 
@@ -302,10 +307,9 @@ Map::Chunk::~Chunk()
 const glm::vec4 Map::playerArea = {chunkDimen/2 - 1000,chunkDimen/2 - 1000,2000,2000};
 
 
-void Map::generateLevel()
+void Map::generateLevel() // Doesn't generate terrain on the bottom most row. It's simply too big a hassle to ensure that inaccessible areas don't spawn on the bottom row
 {
     //currentChunk = new Chunk({0,0,chunkDimen,chunkDimen});
-    int walls = 100;
     glm::vec2 points = {chunkDimen/maxObjectSize,chunkDimen/maxObjectSize};
     //addTerrain({100,100,100,100});
     //addTerrain({200,200,100,100});
@@ -315,8 +319,7 @@ void Map::generateLevel()
     std::vector<glm::vec2> emptySpots;
     dists.push({{0,points.x},true});
 
-    int shards = 0;
-    for (int i = 0; i < points.y -1; ++i) //for every row...
+    for (int i = 0; i < points.y -1; ++i) //for every row except the bottom most...
     {
         int size = dists.size();
         glm::vec2 line = {0,0};
@@ -399,9 +402,9 @@ void Map::generateLevel()
     for (int i = 0; i < 5; ++i) //add shards
     {
         glm::vec2 chosen = emptySpots[rand()%emptySpots.size()];
-        addUnit(*(static_cast<Object*>(assembler.assemble())),chosen.x + fmod(rand(),(maxObjectSize/2 - dimen.x/2)),
+        addUnit(*(assembler.assemble()),chosen.x + fmod(rand(),(maxObjectSize/2 - dimen.x/2)),
                 chosen.y + fmod(rand(),(maxObjectSize/2 - dimen.y/2)),true);
     }
-    addUnit(*(new Anthill({chunkDimen/2,chunkDimen/2})),true);
+    mainHill = std::static_pointer_cast<Anthill>(addUnit(*(new Anthill({chunkDimen/2,chunkDimen/2})),true));
    // addUnit(*(new Gate({chunkDimen/2, chunkDimen/2 + 100})));
 }

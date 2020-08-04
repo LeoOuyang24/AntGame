@@ -969,7 +969,7 @@
 	<memory>
 	<stack>
 
-1595803585 source:c:\users\leoou\onedrive\desktop\projects\ants\main.cpp
+1596328236 source:c:\users\leoou\onedrive\desktop\projects\ants\main.cpp
 	<iostream>
 	<time.h>
 	<typeinfo>
@@ -984,38 +984,41 @@
 	"game.h"
 	"animation.h"
 
-1595793996 source:c:\users\leoou\onedrive\desktop\projects\ants\sprites.cpp
+1595811850 source:c:\users\leoou\onedrive\desktop\projects\ants\sprites.cpp
 	"animation.h"
 
 1564186026 c:\users\leoou\onedrive\desktop\projects\ants\sprites.h
 	"render.h"
 
-1595793556 source:c:\users\leoou\onedrive\desktop\projects\ants\components.cpp
+1596267803 source:c:\users\leoou\onedrive\desktop\projects\ants\components.cpp
 	<iostream>
 	"vanilla.h"
 	"SDLHelper.h"
 	"render.h"
 	"components.h"
 
-1594486719 c:\users\leoou\onedrive\desktop\projects\ants\components.h
+1596155314 c:\users\leoou\onedrive\desktop\projects\ants\components.h
 	<memory.h>
 	<unordered_map>
 	<typeinfo>
 	"glGame.h"
 
-1595788410 source:c:\users\leoou\onedrive\desktop\projects\ants\ants.cpp
+1596410653 source:c:\users\leoou\onedrive\desktop\projects\ants\ants.cpp
 	<cmath>
 	"render.h"
 	"vanilla.h"
 	"ants.h"
 	"world.h"
 	"game.h"
+	"animation.h"
 
-1592980857 c:\users\leoou\onedrive\desktop\projects\ants\ants.h
+1596330460 c:\users\leoou\onedrive\desktop\projects\ants\ants.h
+	<deque>
 	"components.h"
 	"entities.h"
+	"friendlyAssemblers.h"
 
-1595809541 source:c:\users\leoou\onedrive\desktop\projects\ants\game.cpp
+1596557211 source:c:\users\leoou\onedrive\desktop\projects\ants\game.cpp
 	"SDLHelper.h"
 	"vanilla.h"
 	"game.h"
@@ -1023,7 +1026,7 @@
 	"sequence.h"
 	"navigation.h"
 
-1595787375 c:\users\leoou\onedrive\desktop\projects\ants\game.h
+1596299532 c:\users\leoou\onedrive\desktop\projects\ants\game.h
 	"glInterface.h"
 	"glGame.h"
 	"vanilla.h"
@@ -1036,28 +1039,29 @@
 	"player.h"
 	"fog.h"
 
-1595733458 c:\users\leoou\onedrive\desktop\projects\ants\entities.h
+1596409191 c:\users\leoou\onedrive\desktop\projects\ants\entities.h
 	<deque>
 	"glInterface.h"
 	"SDLhelper.h"
 	"render.h"
 	"components.h"
 
-1595741645 source:c:\users\leoou\onedrive\desktop\projects\ants\entities.cpp
+1596411158 source:c:\users\leoou\onedrive\desktop\projects\ants\entities.cpp
 	"SDLHelper.h"
 	"render.h"
 	"entities.h"
 	"game.h"
 	"ants.h"
 	"navigation.h"
+	"animation.h"
 
-1595809416 c:\users\leoou\onedrive\desktop\projects\ants\world.h
+1596326698 c:\users\leoou\onedrive\desktop\projects\ants\world.h
 	"glInterface.h"
 	"SDLhelper.h"
 	"components.h"
 	"entities.h"
 
-1595809586 source:c:\users\leoou\onedrive\desktop\projects\ants\world.cpp
+1596327174 source:c:\users\leoou\onedrive\desktop\projects\ants\world.cpp
 	<queue>
 	"world.h"
 	"entities.h"
@@ -1073,11 +1077,11 @@
 	"entities.h"
 	"game.h"
 
-1592689486 c:\users\leoou\onedrive\desktop\projects\ants\antmanager.h
+1596225523 c:\users\leoou\onedrive\desktop\projects\ants\antmanager.h
 	<memory>
 	"entities.h"
 
-1595741714 source:c:\users\leoou\onedrive\desktop\projects\ants\antmanager.cpp
+1596299275 source:c:\users\leoou\onedrive\desktop\projects\ants\antmanager.cpp
 	"antManager.h"
 	"game.h"
 
@@ -1107,10 +1111,10 @@
 	"navigation.h"
 	"game.h"
 
-1595783853 c:\users\leoou\onedrive\desktop\projects\ants\player.h
+1596557135 c:\users\leoou\onedrive\desktop\projects\ants\player.h
 	"entities.h"
 
-1595784023 source:c:\users\leoou\onedrive\desktop\projects\ants\player.cpp
+1596563802 source:c:\users\leoou\onedrive\desktop\projects\ants\player.cpp
 	"vanilla.h"
 	"FreeTypeHelper.h"
 	"player.h"
@@ -1118,12 +1122,20 @@
 	"navigation.h"
 	"animation.h"
 
-1595719938 c:\users\leoou\onedrive\desktop\projects\ants\animation.h
+1595811676 c:\users\leoou\onedrive\desktop\projects\ants\animation.h
 	"render.h"
 
 1594925144 c:\users\leoou\onedrive\desktop\projects\ants\fog.h
 
-1595719834 source:c:\users\leoou\onedrive\desktop\projects\ants\fog.cpp
+1595819009 source:c:\users\leoou\onedrive\desktop\projects\ants\fog.cpp
 	"game.h"
 	"fog.h"
+
+1596326686 source:c:\users\leoou\onedrive\desktop\projects\ants\friendlyassemblers.cpp
+	"friendlyAssemblers.h"
+	"animation.h"
+	"ants.h"
+
+1596326686 c:\users\leoou\onedrive\desktop\projects\ants\friendlyassemblers.h
+	"entities.h"
 

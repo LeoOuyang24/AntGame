@@ -12,6 +12,7 @@
 typedef std::deque<glm::vec2> Path;
 
 void renderMeter(const glm::vec3& xyWidth, const glm::vec4& color, double current, double maximum, float z);
+void renderTimeMeter(const glm::vec4& rect, const glm::vec4& color, DeltaTime& alarm, double duration, float z);
 
 class ClickableComponent : public Component, public ComponentContainer<ClickableComponent> //clickable component handles user inputs, like when the user selects the unit or presses a button
 {
@@ -63,6 +64,10 @@ protected:
 public:
     Object(ClickableComponent& click, RectComponent& rect, RenderComponent& render, bool mov = true);
     Object(std::string name, const glm::vec4& rect, AnimationWrapper* rapper, bool mov = true);
+    Object();
+    void addRect(RectComponent* r);
+    void addClickable(ClickableComponent* c);
+    void addRender(RenderComponent* rend);
     RectComponent& getRect() const;
     glm::vec2 getCenter();
     ClickableComponent& getClickable();
@@ -76,7 +81,7 @@ public:
     virtual ~Object();
 };
 
-class ObjectAssembler : public EntityAssembler
+class ObjectAssembler
 {
 protected:
     glm::vec2 dimen;
@@ -89,7 +94,7 @@ public:
     std::string getName();
     AnimationWrapper* getSprite();
     bool getMovable();
-    virtual Entity* assemble();
+    virtual Object* assemble();
 
 };
 
@@ -132,10 +137,11 @@ class Unit : public Object //Units can be clicked on and seen and have health
 protected:
     HealthComponent* health = nullptr;
     Manager* manager = nullptr;
-    Unit();
 public:
     Unit(ClickableComponent& click, RectComponent& rect, RenderComponent& render, HealthComponent& health, bool mov = true);
     Unit(std::string name, const glm::vec4& rect, AnimationWrapper* anime, bool mov, double maxHealth);
+    Unit();
+    void addHealth(HealthComponent* h);
     HealthComponent& getHealth();
     bool clicked();
     virtual void interact(Ant& ant);
@@ -147,11 +153,13 @@ public:
 class UnitAssembler : public ObjectAssembler
 {
 protected:
+    double prodTime = 0; //milliseconds it takes to produce this unit
     double maxHealth = 0;
 public:
-    UnitAssembler( std::string name_,const glm::vec2& rect_, AnimationWrapper* anime, bool mov, double maxHealth_);
+    UnitAssembler( std::string name_,const glm::vec2& rect_, AnimationWrapper* anime, bool mov, double maxHealth_, double prodTime_);
     double getMaxHealth();
-    Entity* assemble();
+    double getProdTime();
+    Object* assemble();
 };
 
 class RepelComponent : public Component, public ComponentContainer<RepelComponent> //component that repels objects on collision
@@ -204,6 +212,7 @@ class PathComponent : public MoveComponent, public ComponentContainer<PathCompon
     Path path;
 public:
     PathComponent(double speed, const glm::vec4& rect, Entity& unit);
+    void setPos(const glm::vec2& pos);
     virtual void setTarget(const glm::vec2& point);
     const glm::vec2& getTarget(); //gets the final target. //atTarget() returns whether this object is at the next point, not the final point
     void addPoint(const glm::vec2& point); //add a point to the path
@@ -247,6 +256,8 @@ public:
     AttackComponent(float damage_, int endLag_, Unit& unit);
     virtual void attack(HealthComponent* health); //this is a pointer so you can legally pass in a null pointer. This function will make sure it's not null
     virtual void update();
+    using ApproachComponent::setTarget;
+    virtual void setTarget(const glm::vec2& target, const std::shared_ptr<Object>* unit); //unit is a pointer so you can move to a point rather than a unit
     ~AttackComponent();
 };
 

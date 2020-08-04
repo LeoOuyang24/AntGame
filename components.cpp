@@ -8,14 +8,9 @@
 
 
 
-Component::Component(Entity& entity) : ComponentContainer<Component>(nullptr)
+Component::Component(Entity& entity) : entity(&entity), ComponentContainer<Component>(nullptr)
 {
-    this->entity = &entity;
-}
 
-Entity& Component::getEntity()
-{
-    return *entity;
 }
 
 void Component::update()
@@ -30,6 +25,12 @@ void Component::onDeath()
 {
 
 }
+
+Entity& Component::getEntity()
+{
+    return *entity;
+}
+
 Component::~Component()
 {
    // std::cout << "Deleted!" << std::endl;

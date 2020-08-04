@@ -28,22 +28,22 @@ class AntManager //handles ant movement and targeting
     glm::vec2 targetPoint = {0,0}; //point to move ants to
     glm::vec2 antsCenter = {0,0}; //the center of all the ants
     glm::vec4 selectColor = {0,0,0,0};
-    std::vector<std::weak_ptr<Ant>> selected;
+    std::vector<std::weak_ptr<Entity>> selected;
     void change(std::shared_ptr<Unit> newUnit, glm::vec2& newPoint); //sets the member variables and notifies the ants
-    void addChildAnt(const std::shared_ptr<Ant>& ant); //adds an ant to a child so it doesn't remove from parent
+    void addChildAnt(const std::shared_ptr<Entity>& ant); //adds an ant to a child so it doesn't remove from parent
     glm::vec4 getChildColor(int index); //given the index-th child, gets the selectColor
 public:
     static constexpr int maxChildren = 4;
     AntManager(Manager& newManager, const glm::vec4& selectColor);
     ~AntManager();
     const glm::vec2& getCenter();
-    const std::vector<std::weak_ptr<Ant>>& getAnts() const;
+    const std::vector<std::weak_ptr<Entity>>& getAnts() const;
     void clear();
     const Object* getTargetUnit() const;
     void getInput(); //handles input, such as clicks. Sets targetPoint and targetUnit
     void updateAnts(); //updates ants. The key distinction between this and getInput is that this runs regardless of whether this is the current AntManager
     void remove(Unit& unit);
-    void addAnt(const std::shared_ptr<Ant>& ant);
+    void addAnt(const std::shared_ptr<Entity>& ant);
     void render(const glm::vec4& rect, std::string c); //renders the AntManager on the left side of the screen. i is the index of the antManager in Manager
     std::vector<AntManager> split(int index);
     void setTask(Task t);

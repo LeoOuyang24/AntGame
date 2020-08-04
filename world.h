@@ -41,7 +41,7 @@ class Shard : public ObjectAssembler
     };
 public:
     Shard();
-    Entity* assemble();
+    Object* assemble();
 };
 
 struct Map
@@ -70,6 +70,7 @@ struct Map
     bool getChangeLevel();
         void findShard(); //finds a shard (increments foundShards by 1)
     int getFoundShards();
+    Anthill* getAnthill();
     ~Map();
 
     class Gate : public Object
@@ -109,7 +110,7 @@ private:
     constexpr static int maxObjectSize = 50; //the longest any one dimension of an entity can be
     const static glm::vec4 playerArea; //area that walls can't spawn because the player's stuff will be there
     bool changeLevel = false; //whether or not to changeLevel
-
+    std::weak_ptr<Anthill> mainHill;
     int foundShards = 0;
 
     friend class GameWindow;
@@ -117,7 +118,7 @@ private:
     std::shared_ptr<NavMesh> mesh;
     SPStorage<Chunk> levels;
     Chunk* currentChunk = nullptr;
-    void generateLevel(); //generates terrain and shards. Should only be called when currentChunk and mesh are not null
+    void generateLevel(); //generates terrain and shards. Should only be called when currentChunk and mesh are not null.
 };
 
 

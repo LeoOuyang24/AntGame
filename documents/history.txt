@@ -1,5 +1,24 @@
 This document keeps track of all changes as well as considered changes made to the resources as well as why they were made. Consider this a "learning from the past" kind of document. 
 
+7/29/2020:
+	Encountered an issue with the assembler paradigm. Because Units and Objects are so deeply integrated into our code, we have to use them. In the future, it may be more convenient to only use Entities, since they are so much more flexible. The problem with Unit and Objects stems from the original reason for their creation, which was the observation that all objects in our game have to have certain components, such as a position component (RectComponent), a sprite (RenderComponent), and can be clicked on (ClickableComponent). In order to ensure that these objects will always have these components, these objects' constructors required these components to be provided. Problem is, we are now moving to the assembler design which has the benefit of giving us the stats of an object without actually having to create an object. When creating an object through an assembler, the assembler takes the stats and slaps it on an object. The question is what components to use. Spawning ants may have a different ClickableComponent than an enemy. The easiest solution is to do something like this : 
+
+	Object* obj = new Object(*(new RectComponent(*obj)));
+
+Problem is components also need to know about their owners in their constructors. This code as a result doesn't work because obj is null at this time. 
+3 solutions have been put forth:
+	1. Components can be created and their owners can then be added afterward via a addEntity() function. 
+	Why this doesn't work: This is an attractive solution on the surface but because of how Components and all of their parents need to each individually record their owners in ComponentContainer, this is actually somewhat annoying. Constructors allow Components to pass data to ComponentContainers through the inheritance hierarchy with little issue. addEntity() could hypothetically have the same functionality but every time a new Component is made, we'd have to make a new addEntity function that looks like this: 
+	ComponentContainer::remove();
+	ParentComponent::addEntity();
+	ComponentContainer::insert();
+
+This can get annoying although it is doable.
+	2. Have all Objects have the same basic 3 components.
+	Why this doesn't work: This is another very clean solution. It's unlikely that an object will ever need anything other than AnimationComponent or PathComponent. Even if another object needed a different component, we could do something like ApproachComponent, which is not a MoveComponent but a component that affects a MoveComponent. In fact, we could probably simulate every MoveComponent replacement component with a MoveComponent influencer component. Still, it's risky as it's possible that we may need an object in the future that needs something completely different.
+	3. Allow Objects to add essential components after construction. 
+	Why we chose this solution: This solution is very clean and gives a lot of flexibility. The biggest issue with it is that Objects.getRect() doesn't always return a valid RectComponent. However, this is probably not a big deal since only Assemblers will be calling the blank constructor.
+
 7/25/2020:
 	Decided against giving Chunks private members and getters. Even though Chunks are getting more complicated, most of the interaction with outside classes is still done through the Map class. As a result, Chunk will remain an extension of the Map class rather than an independent class.
 
