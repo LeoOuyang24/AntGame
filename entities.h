@@ -107,7 +107,6 @@ public:
 };
 
 class Unit;
-class AttackComponent;
 
 class HealthComponent : public Component, public ComponentContainer<HealthComponent>
 {
@@ -155,10 +154,12 @@ class UnitAssembler : public ObjectAssembler
 protected:
     double prodTime = 0; //milliseconds it takes to produce this unit
     double maxHealth = 0;
+    int prodCost = 0;
 public:
     UnitAssembler( std::string name_,const glm::vec2& rect_, AnimationWrapper* anime, bool mov, double maxHealth_, double prodTime_);
     double getMaxHealth();
     double getProdTime();
+    int getProdCost();
     Object* assemble();
 };
 
@@ -234,9 +235,34 @@ protected:
     std::weak_ptr<Object> targetUnit;
     MoveComponent* move = nullptr;
     template<typename T>
-    Object* findNearestUnit(double radius); //finds the nearest unit that has a component T in radius radius. Returns null if none found
+    Object* findNearestUnit(double radius, bool friendly, RawQuadTree& tree)  //finds the nearest unit that has a component T in radius radius and has friendly level = friendly. Returns null if none found. The fact that this is a templated function means it must be in this header file which is why GameWindow::getLevel.getTree() needs to be manually passed in as #include "game.h" creates a circular dependency
+    {
+        Object* owner = ((Object*)entity);
+        Entity* closest = nullptr;
+        double minDistance = -1;
+        if (owner)
+        {
+            glm::vec2 center = owner->getRect().getCenter();
+            std::vector<Positional*> nearby = tree.getNearest( center , radius);
+            int size = nearby.size();
+            for (int i = 0; i < size; ++i)
+            {
+                Object* current = (static_cast<Object*>(&static_cast<RectComponent*>(nearby[i])->getEntity()));
+                if (current->getComponent<T>())
+                {
+                    double distance = current->getComponent<RectComponent>()->distance(center);
+                    if ((distance < minDistance || minDistance == -1) && current != owner && current->getFriendly() == friendly)
+                    {
+                        minDistance = distance;
+                        closest = current;
+                    }
+                }
+            }
+        }
+        return static_cast<Object*>(closest);
+    }
 public:
-    ApproachComponent(Unit& entity);
+    ApproachComponent(Entity& entity);
     virtual void setTarget(const glm::vec2& target, const std::shared_ptr<Object>* unit); //unit is a pointer so you can move to a point rather than a unit
     virtual void setTarget(const std::shared_ptr<Object>& unit);
     virtual void update();
@@ -245,15 +271,16 @@ public:
     ~ApproachComponent();
 };
 
-
 class AttackComponent : public ApproachComponent, public ComponentContainer<AttackComponent>
 {
+protected:
+    double range = 0;
     float damage = 0;
     int endLag = 0; //how much time must pass before the attack can be reused.
     DeltaTime attackTimer;
     virtual bool canAttack(Object* ptr); //returns true if we can attack the target.
 public:
-    AttackComponent(float damage_, int endLag_, Unit& unit);
+    AttackComponent(float damage_, int endLag_, double range_, Entity& unit);
     virtual void attack(HealthComponent* health); //this is a pointer so you can legally pass in a null pointer. This function will make sure it's not null
     virtual void update();
     using ApproachComponent::setTarget;
@@ -261,14 +288,6 @@ public:
     ~AttackComponent();
 };
 
-class ShootComponent : public AttackComponent, public ComponentContainer<ShootComponent>
-{
-    double range = 0;
-    bool canAttack(Object* ptr);
-public:
-    ShootComponent(float damage_, int endLag_, double range_, Unit& unit);
-//    void attack(HealthComponent* health);
-};
 
 class Anthill;
 class SeigeComponent : public ApproachComponent, public ComponentContainer<SeigeComponent> //a component that causes the unit to attack anthills; ants if no anthilsl are nearby. USed when signalling
@@ -306,5 +325,6 @@ public:
     void update();
     virtual ~ResourceEatComponent();
 };
+
 
 #endif // ENTITIES_H_INCLUDED

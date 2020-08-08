@@ -4,6 +4,7 @@ AnimationWrapper defaultAnime;
 AnimationWrapper shardAnime;
 AnimationWrapper basicSoldierAnime;
 AnimationWrapper basicEnemyAnime;
+AnimationWrapper portalAnime;
 
 void initSprites()
 {
@@ -12,4 +13,6 @@ void initSprites()
 
     basicSoldierAnime.init(new BaseAnimation("sprites/astronaut.png", .01, 3,1));
     basicEnemyAnime.init(new BaseAnimation("sprites/evilMoon.png", .01,3,1));
+
+    portalAnime.init(new BaseAnimation("sprites/portal.png",.01,3,2));
 }

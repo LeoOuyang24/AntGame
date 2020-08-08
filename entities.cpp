@@ -17,9 +17,9 @@ void renderMeter(const glm::vec3& xyWidth, const glm::vec4& color, double curren
 
 void renderTimeMeter(const glm::vec4& rect, const glm::vec4& color, DeltaTime& alarm, double duration, float z)
 {
-    double time = SDL_GetTicks() - alarm.getTime(); //amount of time passed
+    double time = std::min(SDL_GetTicks() - alarm.getTime(),duration); //amount of time passed
     PolyRender::requestRect({rect.x,rect.y,rect.z*(time)/duration,rect.a},color,true,0,z);
-    Font::tnr.requestWrite({convert ((duration - time)/1000.0),rect,0,{0,0,0,1},z+.01});
+    Font::tnr.requestWrite({convert ((duration - time)/1000.0),rect,0,{0,0,0,1},z+.01f});
 }
 
 ClickableComponent::ClickableComponent(std::string name, Entity& entity) : Component(entity), ComponentContainer<ClickableComponent>(&entity), name(name)
@@ -108,7 +108,7 @@ ClickableComponent::~ClickableComponent()
 
 }
 
-AnimationComponent::AnimationComponent(AnimationWrapper* anime, Entity& entity ) : sprite(anime), RenderComponent(entity), ComponentContainer<AnimationComponent>(entity)
+AnimationComponent::AnimationComponent(AnimationWrapper* anime, Entity& entity ) :  RenderComponent(entity), ComponentContainer<AnimationComponent>(entity), sprite(anime)
 {
 
 }
@@ -126,7 +126,13 @@ void AnimationComponent::update()
     auto rect = entity->getComponent<RectComponent>();
     if (rect)
     {
-        render({GameWindow::getCamera().toScreen(rect->getRect()),0,NONE});
+        double angle = 0;
+        MoveComponent* move = entity->getComponent<MoveComponent>();
+        if (move && !move->atTarget())
+        {
+            angle = atan2(move->getCenter().y - move->getTarget().y,move->getCenter().x - move->getTarget().x) + M_PI/2;
+        }
+        render({GameWindow::getCamera().toScreen(rect->getRect()),angle,NONE});
     }
 }
 
@@ -410,6 +416,11 @@ double UnitAssembler::getProdTime()
     return prodTime;
 }
 
+int UnitAssembler::getProdCost()
+{
+    return prodCost;
+}
+
 Object* UnitAssembler::assemble()
 {
     return new Unit(name,{0,0,dimen.x,dimen.y}, sprite, movable, maxHealth);
@@ -617,42 +628,11 @@ void WanderMove::update()
     }
 }
 
-ApproachComponent::ApproachComponent(Unit& entity) : Component(entity), ComponentContainer<ApproachComponent>(entity), move(entity.getComponent<MoveComponent>())
+ApproachComponent::ApproachComponent(Entity& entity) : Component(entity), ComponentContainer<ApproachComponent>(entity), move(entity.getComponent<MoveComponent>())
 {
 
 }
 
-template <typename T>
-Object* ApproachComponent::findNearestUnit(double radius)
-{
-    Object* owner = ((Object*)entity);
-    Entity* closest = nullptr;
-    double minDistance = -1;
-    if (owner)
-    {
-        RawQuadTree* tree = GameWindow::getLevel().getTree();
-        if (tree)
-        {
-            glm::vec2 center = owner->getRect().getCenter();
-            std::vector<Positional*> nearby = tree->getNearest( center , radius);
-            int size = nearby.size();
-            for (int i = 0; i < size; ++i)
-            {
-                Entity* current = &(static_cast<RectComponent*>(nearby[i])->getEntity());
-                if (current->getComponent<T>())
-                {
-                    double distance = current->getComponent<RectComponent>()->distance(center);
-                    if ((distance < minDistance || minDistance == -1) && current != owner)
-                    {
-                        minDistance = distance;
-                        closest = current;
-                    }
-                }
-            }
-        }
-    }
-    return static_cast<Object*>(closest);
-}
 void ApproachComponent::setMove(MoveComponent& move_)
 {
     move = &move_;
@@ -714,10 +694,17 @@ ApproachComponent::~ApproachComponent()
 
 bool AttackComponent::canAttack(Object* ptr)
 {
-    return move && ptr && ptr->getComponent<HealthComponent>() && vecIntersect(move->getRect(),ptr->getRect().getRect());
+    if (ptr)
+    {
+        RectComponent* otherRect = &ptr->getRect();
+        return move && ptr->getComponent<HealthComponent>() && vecDistance(otherRect->getRect(),move->getRect()) <= range
+            && GameWindow::getLevel().getMesh().straightLine(glm::vec4(otherRect->getCenter(), move->getCenter())) ;
+    }
+    return false;
 }
 
-AttackComponent::AttackComponent(float damage_, int endLag_, Unit& unit) : ApproachComponent(unit), ComponentContainer<AttackComponent>(&unit),  damage(damage_), endLag(endLag_)
+AttackComponent::AttackComponent(float damage_, int endLag_, double range_, Entity& unit) : ApproachComponent(unit), ComponentContainer<AttackComponent>(&unit),
+                                                                                            damage(damage_), range(range_), endLag(endLag_)
 {
 
 }
@@ -753,9 +740,8 @@ void AttackComponent::setTarget(const glm::vec2& target, const std::shared_ptr<O
 {
     if (move)
     {
-        if (unit)
+        if (unit && targetUnit.lock().get() != unit->get())
         {
-            std::cout << unit << std::endl;
             targetUnit = *unit;
         }
         else
@@ -771,22 +757,6 @@ AttackComponent::~AttackComponent()
 
 }
 
-bool ShootComponent::canAttack(Object* ptr)
-{
-    if (ptr)
-    {
-        auto otherRect = &(ptr->getRect());
-        return  ptr->getComponent<HealthComponent>() && move && vecDistance(otherRect->getRect(),move->getRect()) <= range
-        && GameWindow::getLevel().getMesh().straightLine(glm::vec4(otherRect->getCenter(), move->getCenter())) ;
-    }
-    return false;
-
-}
-
-ShootComponent::ShootComponent(float damage_, int endLag_, double range_, Unit& unit) : range(range_), AttackComponent(damage_,endLag_, unit), ComponentContainer<ShootComponent>(unit)
-{
-
-}
 
 
 SeigeComponent::SeigeComponent(Unit& entity, Anthill& hill) : ApproachComponent(entity), ComponentContainer<SeigeComponent>(entity),
@@ -833,7 +803,7 @@ Dummy::Dummy(int x, int y) : Unit(*(new ClickableComponent("Dummy", *this)), *(n
 Bug::Bug(int x, int y) : Unit(*(new ClickableComponent("Bug", *this)), *(new PathComponent(.02,{x,y,10,10},*this)), *(new AnimationComponent(&basicEnemyAnime,*this)),*(new HealthComponent(*this, 100)))
 {
     //getComponent<MoveComponent>()->setTarget({0,0});
-    addComponent(*(new AttackComponent(1, 50, *this)));
+    addComponent(*(new AttackComponent(1, 50, 0,*this)));
    // addComponent(*(new ResourceEatComponent(*this)));
 }
 
@@ -855,11 +825,11 @@ void ResourceEatComponent::update()
     {
         if (!targetPtr)
         {
-                Object* nearest = findNearestUnit<ResourceComponent>(500);
-                if (nearest)
-                {
-                    setTarget((GameWindow::getLevel().getUnit((static_cast<Object*>(nearest)))));
-                }
+            Object* nearest = findNearestUnit<ResourceComponent>(500,false,*GameWindow::getLevel().getTree());
+            if (nearest)
+            {
+                setTarget((GameWindow::getLevel().getUnit((static_cast<Object*>(nearest)))));
+            }
         }
         else
         {

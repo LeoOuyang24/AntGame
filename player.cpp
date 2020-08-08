@@ -97,7 +97,7 @@ void Player::update()
                 color = {1,0,0,1};
             }
             GameWindow::requestRect(structRect,color,true,0,0,0);
-            if (MouseManager::getJustClicked() == SDL_BUTTON_LEFT && !collides)
+            if (MouseManager::getJustClicked() == SDL_BUTTON_LEFT && !collides && getResource() >= assembler.getProdCost())
             {
                 Object* ptr = (assembler.assemble());
                 RectComponent* rect = &ptr->getRect();
@@ -106,6 +106,7 @@ void Player::update()
                 ptr->addComponent(*inactive);
                 GameWindow::getLevel().addUnit(*(ptr), ptr->getFriendly());
                 inactive->init();
+                addResource(-1*assembler.getProdCost());
             }
             break;
     }
@@ -176,7 +177,7 @@ Factory::Factory(int x, int y) : Structure(*(new ClickableComponent("Factory", *
 
 FactoryAssembler::FactoryAssembler() : UnitAssembler("Factory",{30,30}, &defaultAnime, false, 100,1000)
 {
-
+    prodCost = 10;
 }
 
 Object* FactoryAssembler::assemble()

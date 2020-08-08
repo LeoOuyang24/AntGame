@@ -9,6 +9,79 @@
 #include "game.h"
 #include "animation.h"
 
+UnitAttackComponent::UnitAttackComponent(float damage_, int endLag_, double range_, Entity& entity) : AttackComponent(damage_,endLag_,range_,entity), ComponentContainer<UnitAttackComponent>(entity)
+{
+
+}
+
+void UnitAttackComponent::update()
+{
+    if (ignore != IGNORE) //if we aren't ignoring, find nearby units to fight
+    {
+        Object* ent = shortTarget.lock().get();
+        if (!ent) //if we aren't already fighting something, find something nearby
+        {
+            Object* nearby = findNearestUnit<HealthComponent>(range,false,*GameWindow::getLevel().getTree());
+            if (nearby)
+            {
+                setShortTarget(&GameWindow::getLevel().getUnit(nearby));
+            }
+            else if (activated && longTarget.second != move->getTarget()) //if there's nothing nearby to fight, set the target to the long target
+            {
+                if (longTarget.first.lock().get())
+                {
+                    setTarget(longTarget.second,&GameWindow::getLevel().getUnit(longTarget.first.lock().get()));
+                }
+                else
+                {
+                    setTarget(longTarget.second,nullptr);
+                }
+            }
+        }
+    }
+    if (move->getCenter() == longTarget.second) //if we are at the target, set our state back to ignore
+    {
+        ignore = IDLE;
+    }
+    AttackComponent::update();
+}
+
+void UnitAttackComponent::setTarget(const glm::vec2& target, const std::shared_ptr<Object>* unit)
+{
+    activated = true;
+    AttackComponent::setTarget(target,unit);
+    longTarget.second = target;
+    if (unit)
+    {
+        longTarget.first = targetUnit;
+        shortTarget = *unit;
+    }
+    else
+    {
+        longTarget.first.reset();
+        shortTarget.reset();
+    }
+    ignore = static_cast<IgnoreState>(std::min(ignore + 1,(int)IGNORE));
+
+//    std::cout << ignore << std::endl;
+}
+
+void UnitAttackComponent::setShortTarget(const std::shared_ptr<Object>* unit)
+{
+    AttackComponent::setTarget(*unit);
+    if (shortTarget.lock().get() != unit->get())
+    {
+        if (unit )
+        {
+            shortTarget = *unit;
+        }
+        else
+        {
+            shortTarget.reset();
+        }
+    }
+}
+
 const short Ant::dimen = 20;
 Ant::AntMoveComponent::AntMoveComponent(Anthill* hill, double speed, const glm::vec4& rect, Entity& entity) : PathComponent(speed,rect,entity), ComponentContainer<Ant::AntMoveComponent>(entity), home(hill)
 {
@@ -130,7 +203,6 @@ Ant::Ant(const glm::vec4& rect, Anthill& home) : Unit(*(new ClickableComponent("
                                                       *(new AnimationComponent(&(basicSoldierAnime),*this)), *(new HealthComponent(*this, 10)))
 {
     health->setVisible(false);
-    addComponent(*(new ShootComponent(1,100,100,*this)));
 }
 
 void Ant::setTarget(const glm::vec2& target, std::shared_ptr<Object>* unit)
@@ -214,7 +286,7 @@ ProduceUnitComponent::ProduceUnitComponent(std::string name, Unit& entity) : Cli
 
 void ProduceUnitComponent::produceUnit(UnitAssembler& assembler)
 {
-    if (toProduce.size() < 10)
+    if (toProduce.size() < 10 && GameWindow::getPlayer().getResource() >= assembler.getProdCost())
     {
         toProduce.push_back(&assembler);
     }
@@ -223,12 +295,14 @@ void ProduceUnitComponent::produceUnit(UnitAssembler& assembler)
 void ProduceUnitComponent::update()
 {
     ClickableComponent::update();
-    if (beingProduced && produceTimer.timePassed(beingProduced->getProdTime())) //if something is in production and is done, put it into the real world
+    if (beingProduced && produceTimer.timePassed(beingProduced->getProdTime()) && GameWindow::getPlayer().getResource() >= beingProduced->getProdCost() ) //if something is in production and is done, put it into the real world
     {
         auto vec4 = entity->getComponent<RectComponent>()->getRect();
         glm::vec2 center = {vec4.x + vec4.z + beingProduced->getDimen().x/2, vec4.y + vec4.a + beingProduced->getDimen().y/2};
 
         GameWindow::getLevel().addUnit(*(beingProduced->assemble()),center.x +5*cos(rand()%360/180.0*M_PI),center.y +5*sin(rand()%360/180.0*M_PI), true);
+        GameWindow::getPlayer().addResource(-1*beingProduced->getProdCost());
+
         beingProduced = nullptr;
         toProduce.pop_front();
     }
@@ -257,12 +331,9 @@ void ProduceUnitComponent::display(const glm::vec4& rect)
                                             {1,1,1,1},&RenderProgram::basicProgram,GameWindow::fontZ} ,{});
         if (it == 0)
         {
-       /*  PolyRender::requestRect({renderRect.x + renderRect.z + .1*rect.a, renderRect.y,
-                                 (SDL_GetTicks() - produceTimer.getTime())/beingProduced->getProdTime()*(rect.z - (renderRect.x + renderRect.z + .1*rect.a))
-                                , .1*rect.a},{.5,.5,.5,1},true,0,GameWindow::interfaceZ);*/
-        renderTimeMeter({renderRect.x+renderRect.z+.1*rect.a, renderRect.y,
-                        rect.z - (renderRect.x + renderRect.z + .1*rect.a), .1*rect.a},
-                        {.5,.5,.5,1},produceTimer,beingProduced->getProdTime(),GameWindow::interfaceZ);
+              renderTimeMeter({renderRect.x+renderRect.z+.1*rect.a, renderRect.y,
+                    rect.z - (renderRect.x + renderRect.z + .1*rect.a), .1*rect.a},
+                    {.5,.5,.5,1},produceTimer,beingProduced->getProdTime(),GameWindow::interfaceZ);
         }
     }
 }

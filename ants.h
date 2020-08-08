@@ -7,9 +7,29 @@
 #include "entities.h"
 #include "friendlyAssemblers.h"
 
-
 class Anthill;
 class AntManager;
+
+class UnitAttackComponent : public AttackComponent, public ComponentContainer<UnitAttackComponent>
+{
+    typedef std::pair<std::weak_ptr<Object>,glm::vec2> TargetInfo;
+    std::weak_ptr<Object> shortTarget; //represents short-term target. Is attacked because it's in range
+    TargetInfo longTarget; //represents a target that the player explicitly chose. Could be an empty position with no enemy to attack
+    enum IgnoreState
+    {
+        IDLE, //when the unit is idle
+        ATTACK,  //unit attacks other units when nearby
+        IGNORE //unit ignores everything and moves towards its target
+    };
+    IgnoreState ignore = IDLE; //whether or not to ignore enemies that are nearby
+    bool activated = false;
+public:
+    UnitAttackComponent(float damage_, int endLag_, double range_,Entity& entity);
+    void update();
+    void setTarget(const glm::vec2& point, const std::shared_ptr<Object>* unit); //sets longTarget and shortTarget. Essentially only used when the player sets the target
+    void setShortTarget(const std::shared_ptr<Object>* unit); //sets shortTarget. Only used when there is a nearby enemy
+};
+
 class Ant : public Unit
 {
     AntManager* currentTask = nullptr;

@@ -6,7 +6,7 @@
 #include "vanilla.h"
 
 #include "components.h"
-#include "entities.h"
+//#include "entities.h"
 #include "world.h"
 #include "ants.h"
 #include "antManager.h"
@@ -15,7 +15,6 @@
 #include "fog.h"
 
 extern SpriteWrapper frame;
-
 
 
 

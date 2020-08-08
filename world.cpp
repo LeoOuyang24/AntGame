@@ -1,7 +1,6 @@
 #include <queue>
 
 #include "world.h"
-#include "entities.h"
 #include "ants.h"
 #include "game.h"
 #include "navigation.h"
@@ -252,7 +251,7 @@ Map::Gate::NextAreaButton::~NextAreaButton()
 
 }
 
-Map::Gate::Gate(int x, int y) : Object(*(new ClickableComponent("Gate",*this)),*(new RectComponent({x,y,64,64},*this)), *(new RectRenderComponent({1,.1,.1,1},*this)))
+Map::Gate::Gate(int x, int y) : Object(*(new ClickableComponent("Gate",*this)),*(new RectComponent({x,y,64,64},*this)), *(new AnimationComponent(&portalAnime,*this)))
 {
     getClickable().addButton(*(new NextAreaButton()));
 }

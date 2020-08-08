@@ -9,6 +9,8 @@ extern AnimationWrapper shardAnime;
 extern AnimationWrapper basicSoldierAnime;
 extern AnimationWrapper basicEnemyAnime;
 
+extern AnimationWrapper portalAnime;
+
 void initSprites();
 
 #endif // ANIMATION_H_INCLUDED

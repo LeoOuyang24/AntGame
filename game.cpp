@@ -616,6 +616,7 @@ GameWindow::GameWindow() : Window({0,0},nullptr,{0,0,0,0})
     manager.init(level.getRect(level.getCurrentChunk()));
     debug.init();
     level.addUnit(*(new Dummy(levelRect.z/2 - 100,levelRect.a/2)));
+    player.addResource(10);
     //level.addUnit(*(new Bug(-100,0)), true);
     //level.remove(*hill);
    // level.addUnit(*(new Beetle(320,320)));
