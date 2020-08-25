@@ -64,7 +64,7 @@ protected:
 public:
     Object(ClickableComponent& click, RectComponent& rect, RenderComponent& render, bool mov = true);
     Object(std::string name, const glm::vec4& rect, AnimationWrapper* rapper, bool mov = true);
-    Object();
+    Object(bool mov);
     void addRect(RectComponent* r);
     void addClickable(ClickableComponent* c);
     void addRender(RenderComponent* rend);
@@ -139,7 +139,7 @@ protected:
 public:
     Unit(ClickableComponent& click, RectComponent& rect, RenderComponent& render, HealthComponent& health, bool mov = true);
     Unit(std::string name, const glm::vec4& rect, AnimationWrapper* anime, bool mov, double maxHealth);
-    Unit();
+    Unit(bool mov);
     void addHealth(HealthComponent* h);
     HealthComponent& getHealth();
     bool clicked();

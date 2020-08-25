@@ -9,7 +9,8 @@
 #include "game.h"
 #include "animation.h"
 
-UnitAttackComponent::UnitAttackComponent(float damage_, int endLag_, double range_, Entity& entity) : AttackComponent(damage_,endLag_,range_,entity), ComponentContainer<UnitAttackComponent>(entity)
+UnitAttackComponent::UnitAttackComponent(float damage_, int endLag_, double range_,double searchRange_, bool f, Entity& entity) : AttackComponent(damage_,endLag_,range_,entity),
+ComponentContainer<UnitAttackComponent>(entity), notFriendly(f), searchRange(searchRange_), activated(f) //coincidentally, activated should always be the same value as f
 {
 
 }
@@ -21,12 +22,12 @@ void UnitAttackComponent::update()
         Object* ent = shortTarget.lock().get();
         if (!ent) //if we aren't already fighting something, find something nearby
         {
-            Object* nearby = findNearestUnit<HealthComponent>(range,false,*GameWindow::getLevel().getTree());
+            Object* nearby = findNearestUnit<HealthComponent>(searchRange,notFriendly,*GameWindow::getLevel().getTree());
             if (nearby)
             {
                 setShortTarget(&GameWindow::getLevel().getUnit(nearby));
             }
-            else if (activated && longTarget.second != move->getTarget()) //if there's nothing nearby to fight, set the target to the long target
+            else if (activated && (longTarget.second != move->getTarget() || targetUnit.lock().get() != longTarget.first.lock().get())) //if there's nothing nearby to fight, set the target to the long target
             {
                 if (longTarget.first.lock().get())
                 {
@@ -37,6 +38,7 @@ void UnitAttackComponent::update()
                     setTarget(longTarget.second,nullptr);
                 }
             }
+
         }
     }
     if (move->getCenter() == longTarget.second) //if we are at the target, set our state back to ignore
@@ -46,40 +48,68 @@ void UnitAttackComponent::update()
     AttackComponent::update();
 }
 
-void UnitAttackComponent::setTarget(const glm::vec2& target, const std::shared_ptr<Object>* unit)
+void UnitAttackComponent::setLongTarget(const glm::vec2& target, std::shared_ptr<Object>* unit)
 {
     activated = true;
     AttackComponent::setTarget(target,unit);
-    longTarget.second = target;
     if (unit)
     {
         longTarget.first = targetUnit;
-        shortTarget = *unit;
     }
     else
     {
+        longTarget.second = target;
         longTarget.first.reset();
-        shortTarget.reset();
     }
     ignore = static_cast<IgnoreState>(std::min(ignore + 1,(int)IGNORE));
-
-//    std::cout << ignore << std::endl;
+    if (((Object*)entity)->getFriendly())
+    {
+        std::cout << ignore << std::endl;
+    }
 }
 
-void UnitAttackComponent::setShortTarget(const std::shared_ptr<Object>* unit)
+void UnitAttackComponent::setShortTarget(std::shared_ptr<Object>* unit)
 {
-    AttackComponent::setTarget(*unit);
     if (shortTarget.lock().get() != unit->get())
     {
+        AttackComponent::setTarget(*unit);
         if (unit )
         {
             shortTarget = *unit;
+            if (entity)
+            {
+                CommandableComponent* command = entity->getComponent<CommandableComponent>();
+                if (command)
+                {
+                    AntManager* curTask = command->getCurrentTask();
+                    if (curTask)
+                    {
+                        curTask->setShortTarget(*unit);
+                    }
+                }
+            }
         }
         else
         {
             shortTarget.reset();
         }
     }
+
+}
+
+CommandableComponent::CommandableComponent(Entity& entity) : Component(entity), ComponentContainer<CommandableComponent>(entity)
+{
+
+}
+
+void CommandableComponent::setCurrentTask(AntManager* task)
+{
+    currentTask = task;
+}
+
+AntManager* CommandableComponent::getCurrentTask()
+{
+    return currentTask;
 }
 
 const short Ant::dimen = 20;
@@ -265,7 +295,7 @@ AntHillRender::~AntHillRender()
 }
 
 ProduceUnitComponent::ProduceUnitButton::ProduceUnitButton(UnitAssembler& obj, ProduceUnitComponent* own) : assembler(&obj),owner(own), Button({0,0,64,16},nullptr,nullptr,
-                                                                                                           {"Create " + obj.getName()},&Font::tnr,
+                                                                                                           {"Create " + obj.getName(),{0,0,0,0},0,{0,0,0,1},GameWindow::fontZ},&Font::tnr,
                                                                                                            {0,1,0,1})
 {
 

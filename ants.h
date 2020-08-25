@@ -22,12 +22,23 @@ class UnitAttackComponent : public AttackComponent, public ComponentContainer<Un
         IGNORE //unit ignores everything and moves towards its target
     };
     IgnoreState ignore = IDLE; //whether or not to ignore enemies that are nearby
-    bool activated = false;
+    bool activated = false; //whether this component should affect MoveComponent. Exists solely to make sure our unit doesn't move to 0,0 upon spawn. Since all of our units are spawned at (0,0) and then moved, we can't just set the position in the constructor
+    bool notFriendly = false; //the type of enemy to attack
+    double searchRange = 0; //aggro range
 public:
-    UnitAttackComponent(float damage_, int endLag_, double range_,Entity& entity);
+    UnitAttackComponent(float damage_, int endLag_, double range_,double searchRange_,bool f, Entity& entity);
     void update();
-    void setTarget(const glm::vec2& point, const std::shared_ptr<Object>* unit); //sets longTarget and shortTarget. Essentially only used when the player sets the target
-    void setShortTarget(const std::shared_ptr<Object>* unit); //sets shortTarget. Only used when there is a nearby enemy
+    void setLongTarget(const glm::vec2& point, std::shared_ptr<Object>* unit); //sets longTarget. Essentially only used when the player sets the target. Ignores the point if a target unit is provided
+    void setShortTarget(std::shared_ptr<Object>* unit); //sets shortTarget. Only used when there is a nearby enemy
+};
+
+class CommandableComponent : public Component, public ComponentContainer<CommandableComponent> //represents that can be commanded by AntManagers
+{
+    AntManager* currentTask = nullptr;
+public:
+    CommandableComponent(Entity& entity);
+    void setCurrentTask(AntManager* task);
+    AntManager* getCurrentTask();
 };
 
 class Ant : public Unit

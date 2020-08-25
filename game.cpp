@@ -5,6 +5,7 @@
 #include "ants.h"
 #include "sequence.h"
 #include "navigation.h"
+#include "enemyAssemblers.h"
 
 SpriteWrapper frame;
 
@@ -65,24 +66,8 @@ void Manager::init(const glm::vec4& region)
 Unit* Manager::generateCreature()
 {
     int random = rand()%5;
-    Unit* toSpawn = nullptr;
-    switch(random)
-    {
-    case 0:
-        toSpawn = new Bug(0,0);
-        break;
-    case 1:
-        toSpawn = new Bug(0,0);
-        break;
-    case 2:
-    case 3:
-    case 4:
-        toSpawn = new Bug(0,0);
-        break;
-    default:
-        toSpawn = new Bug(0,0);
-    }
-    return toSpawn;
+
+    return static_cast<Unit*>(evilMoonAssembler.assemble());
 }
 
 /*void Manager::spawnCreatures()
@@ -124,7 +109,16 @@ void Manager::spawnCreatures(Anthill& hill, double minR, double maxR) //spawn cr
         //modify coordinates so our object doesn't spawn in the player's view
         //y += camera->a*(y > camera->y)*cameraInTheWay;
         toSpawn->getRect().setPos({x,y});
-        toSpawn->getComponent<AttackComponent>()->setTarget(level->getUnit(&hill));
+        UnitAttackComponent* unitAttack = toSpawn->getComponent<UnitAttackComponent>();
+        AttackComponent* attack = toSpawn->getComponent<AttackComponent>();
+        if (unitAttack)
+        {
+            unitAttack->setLongTarget({0,0},&level->getUnit(&hill));
+        }
+        else if (attack)
+        {
+            attack->setTarget(level->getUnit(&hill));
+        }
         level->addUnit(*toSpawn);
     }
 
@@ -404,7 +398,7 @@ void Manager::update()
     if (GameWindow::getLevel().getAnthill() && (!spawner.isSet() || spawner.framesPassed(100)))
     {
         Map* map = &(GameWindow::getLevel());
-      //  spawnCreatures(*GameWindow::getLevel().getAnthill() , 500, map->getRect(map->getCurrentChunk()).z);
+        spawnCreatures(*GameWindow::getLevel().getAnthill() , 500, map->getRect(map->getCurrentChunk()).z);
         spawner.reset();
         spawner.set();
     }
@@ -615,8 +609,12 @@ GameWindow::GameWindow() : Window({0,0},nullptr,{0,0,0,0})
     gameOver->addButton(*(new QuitButton(*this)));
     manager.init(level.getRect(level.getCurrentChunk()));
     debug.init();
-    level.addUnit(*(new Dummy(levelRect.z/2 - 100,levelRect.a/2)));
-    player.addResource(10);
+    auto ptr = evilMoonAssembler.assemble();
+    ptr->getComponent<UnitAttackComponent>()->setLongTarget({0,0},&level.getUnit(level.getAnthill()));
+    level.addUnit(*ptr,levelRect.z/2- 200,levelRect.a/2 - 200,false);
+
+   // level.addUnit(*(new Dummy(levelRect.z/2 - 100,levelRect.a/2)));
+    player.addResource(100);
     //level.addUnit(*(new Bug(-100,0)), true);
     //level.remove(*hill);
    // level.addUnit(*(new Beetle(320,320)));
@@ -700,7 +698,6 @@ void GameWindow::update(int x, int y, bool clicked)
         }
         player.update();
 
-       //yppUuaMMu8CPFtPpHM
       //  GameWindow::requestNGon(10,camera.toWorld(pairtoVec(MouseManager::getMousePos())),30,{0,0,0,0},0,true,3);
 
        // requestRect(camera.getRect(),{0,0,0,.5},true,0,2,0);
@@ -716,10 +713,10 @@ void GameWindow::update(int x, int y, bool clicked)
         glStencilMask(0x00);*/
 
         manager.update();
-        /*PolyRender::render();
+        PolyRender::render();
         SpriteManager::render();
 
-       glDisable(GL_STENCIL_TEST);
+     /*  glDisable(GL_STENCIL_TEST);
         glStencilFunc(GL_ALWAYS,1,0xFF);
         glStencilMask(0xFF);
         glEnable(GL_DEPTH_TEST); //anything rendered after this will be discarded if they are under the fog.*/
@@ -802,12 +799,15 @@ void GameWindow::renderSelectedUnits()
         for (int i = 0; i < size; ++i)
         {
             Entity* current = selectedUnits->at(i).lock().get();
-            glm::vec4 outlineRect = { selectedAntsRect.x + margin.x + i%antsPerRow*(spacing.x + antRectWidth),selectedAntsRect.y + margin.y + i/antsPerRow*spacing.y,antRectWidth,antRectWidth};
-            HealthComponent* health = current->getComponent<HealthComponent>();
-            double healthRatio = health->getHealth()/health->getMaxHealth();//how much health this ant currently has;
-            current->getComponent<RenderComponent>()->render({camera.toAbsolute({outlineRect.x + 2, outlineRect.y + 2, outlineRect.z - 4, outlineRect.a - 4})
-                                                             ,0,NONE,{1-healthRatio,0,0,1},&RenderProgram::basicProgram,fontZ});
-            GameWindow::requestRect(outlineRect,{1,0,1,1},false,0,interfaceZ,true);
+            if (current)
+            {
+                glm::vec4 outlineRect = { selectedAntsRect.x + margin.x + i%antsPerRow*(spacing.x + antRectWidth),selectedAntsRect.y + margin.y + i/antsPerRow*spacing.y,antRectWidth,antRectWidth};
+                HealthComponent* health = current->getComponent<HealthComponent>();
+                double healthRatio = health->getHealth()/health->getMaxHealth();//how much health this ant currently has;
+                current->getComponent<RenderComponent>()->render({camera.toAbsolute({outlineRect.x + 2, outlineRect.y + 2, outlineRect.z - 4, outlineRect.a - 4})
+                                                                 ,0,NONE,{1-healthRatio,0,0,1},&RenderProgram::basicProgram,fontZ});
+                GameWindow::requestRect(outlineRect,{1,0,1,1},false,0,interfaceZ,true);
+            }
         }
     }
     GameWindow::requestRect(wholeRect,{0,1,0,1},true,0,interfaceZ,true);

@@ -40,6 +40,7 @@ public:
     const std::vector<std::weak_ptr<Entity>>& getAnts() const;
     void clear();
     const Object* getTargetUnit() const;
+    void setShortTarget(std::shared_ptr<Object>& obj); //sets the shortTarget of all ants to obj
     void getInput(); //handles input, such as clicks. Sets targetPoint and targetUnit
     void updateAnts(); //updates ants. The key distinction between this and getInput is that this runs regardless of whether this is the current AntManager
     void remove(Unit& unit);

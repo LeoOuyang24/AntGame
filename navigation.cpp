@@ -22,12 +22,18 @@ void NavMesh::NavMeshNode::addNode(NavMeshNode& n)
 {
     const glm::vec4* otherArea = &(n.getRect());
     glm::vec4 intersect = vecIntersectRegion(*otherArea,rect);
-    nextTo.insert({&n,{intersect.x,intersect.y, intersect.x + intersect.z, intersect.y + intersect.a}});
-    if (n.getNextTo().count(this) == 0) //if the other node hasn't added us, add it!
+    glm::vec4 line = {intersect.x,intersect.y, intersect.x + intersect.z, intersect.y + intersect.a};
+    nextTo[&n] = line;
+    if (n.getNextTo().count(this) == 0 || n.getNextTo()[this] != line) //if the other node hasn't added us or doesn't have the same intersection line, add it!
     {
         n.addNode(*this);
     }
 
+}
+
+bool NavMesh::NavMeshNode::isNextTo(NavMeshNode& n)
+{
+    return nextTo.count(&n) != 0;
 }
 
 void NavMesh::NavMeshNode::removeNode(NavMeshNode& n)
@@ -61,7 +67,8 @@ void NavMesh::NavMeshNode::render() const
     {
         glm::vec2 center = cam->toScreen({rect.x + rect.z/2, rect.y + rect.a/2});
         glm::vec2 otherCenter = cam->toScreen({it->first->getRect().x + it->first->getRect().z/2, it->first->getRect().y + it->first->getRect().a/2});
-        PolyRender::requestLine({center.x,center.y,otherCenter.x,otherCenter.y},{center.x,0,otherCenter.x,1},1);
+       // PolyRender::requestLine({center.x,center.y,otherCenter.x,otherCenter.y},{center.x,0,otherCenter.x,1},1);
+        PolyRender::requestRect(GameWindow::getCamera().toScreen({it->second.x,it->second.y - 10*(center.y > otherCenter.y),it->second.z,10}),{1,1,1,1},true,0,1);
     }
 }
 
@@ -531,7 +538,7 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
         }
         else
         {
-            std::cout << "No path" << std::endl;
+            return {};
         }
         return finalPath;
     }
@@ -575,5 +582,140 @@ glm::vec4 NavMesh::getRandomArea(const glm::vec2& origin, double minDist, double
        node  = getNearestNode(point);
     }
     return node->getRect();
+}
+
+void NavMesh::removeWall(RectPositional& positional)
+{
+    glm::vec4 rect = positional.getRect();
+    negativeTree.remove(positional);
+    auto vec = nodeTree.getNearest({rect.x - 1, rect.y - 1, rect.z + 2, rect.a + 2}); //find nearest nodes. We use a slightly larger rect in case the rect is teh exact size of a quadtree node
+    std::sort(vec.begin(),vec.end(), [](Positional* p1, Positional* p2){
+              return p1->getPos().y < p2->getPos().y;
+              }); //sort positionals by lowest y coord to highest
+    std::vector<RectPositional*> top, bottom; //represents nodes at the top and bottom of the wall
+    int size = vec.size();
+    bool skippedFirst = false; //skip the first node that is in line with the wall
+    NavMeshNode* baseNode = nullptr, //baseNode is the unfinished node,
+                *topNode = nullptr, //topNode is the topMostNode,
+                *botNode = nullptr; // botNode is the botMostNode
+    bool sideWall = rect.x == bounds.x || rect.x + rect.z == bounds.x + bounds.z; //true if the wall borders the left or right edge of the mesh
+    for (int i = 0; i < size; ++i)
+    {
+        NavMeshNode* node = static_cast<NavMeshNode*>(vec[i]);
+        glm::vec4 blankRect = node->getRect();
+        if (vecIntersect(blankRect,rect))
+        {
+            bool inWall = blankRect.x >= rect.x && blankRect.x + blankRect.z <= rect.x + rect.z; //if the rect is entirely enclosed in the wall
+            if (blankRect.y + blankRect.a == rect.y && inWall)
+            {
+                top.push_back(node);
+            }
+            else if (blankRect.y == rect.y + rect.a && inWall)
+            {
+                bottom.push_back(node);
+            }
+            else if (blankRect.y >= rect.y && blankRect.y < rect.y + rect.a)
+            {
+                if (sideWall)
+                {
+                    //life is really easy if sideWall is true because we don't have to worry about a node on the other side of the wall.
+                    //Simply adjust the dimensions of our current node
+                    node->setRect({
+                                  std::min(rect.x,blankRect.x),
+                                  blankRect.y,
+                                  blankRect.z + rect.z,
+                                  blankRect.a
+                                  });
+                }
+                else //if not sideWall, then the next rectPositional should be on the right side of the wall due to how we organized our list
+                {
+                    if (!skippedFirst || !baseNode)
+                    {
+                        skippedFirst = true;
+                        baseNode = node;
+                    }
+                    else
+                    {
+                        glm::vec4 baseRect = baseNode->getRect();
+                       NavMeshNode* finalNode = baseRect.a < blankRect.a ? baseNode : node; //finalNode is the one that we are done with
+                       glm::vec4 finalRect = {
+                                          std::min(baseRect.x,blankRect.x),
+                                          baseRect.y, //it shouldn't matter which y we use because it should be the same
+                                          baseRect.z + blankRect.z + rect.z,
+                                          finalNode->getRect().a
+                                            };
+                       finalNode->setRect(finalRect);
+                        baseNode = finalNode == baseNode ? node : baseNode; //set baseNode to the unfinished node
+                        if (finalRect.y == rect.y)
+                        {
+                            topNode = finalNode;
+                        }
+                        else if (finalRect.y == rect.y + rect.a)
+                        {
+                            botNode = finalNode;
+                        }
+                        auto nextTo = baseNode->getNextTo();
+                        auto nextSize = nextTo.end();
+                        for (auto j = nextTo.begin(); j != nextSize; ++j) //add all neighbors to the finalNode
+                        {
+                            if (finalNode->collides((j->first->getRect()))) //if the resized node collides with the neighbor and doesn't already have the node as a neighbor
+                            {
+                                finalNode->addNode(*(j->first));
+                            }
+                        }
+                        if (finalRect.a == baseNode->getRect().a) //we start over
+                        {
+                            nodeTree.remove(*baseNode);
+                            baseNode == nullptr;
+                        }
+                        else
+                        {
+                            baseNode->setRect({
+                              baseNode->getRect().x,
+                              finalRect.y + finalRect.a,
+                              baseNode->getRect().z,
+                              baseRect.y + baseNode->getRect().a - finalNode->getRect().a
+                              });
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            continue;
+        }
+    }
+    if (baseNode) //this should only occur if sideWall is also true
+    {
+        glm::vec4 baseRect = baseNode->getRect();
+        baseNode->setRect({
+                          std::min(rect.x,baseRect.x),
+                          baseRect.y,
+                          baseRect.z + rect.z,
+                          baseRect.a
+                          });
+        if (baseRect.y == rect.y)
+        {
+            topNode = baseNode;
+        }
+        botNode = baseNode;
+    }
+    int topSize = top.size();
+    int botSize = bottom.size();
+    for (int i = 0; i < topSize; ++i)
+    {
+        if (i < topSize)
+        {
+            topNode->addNode(*static_cast<NavMeshNode*>(top[i]));
+        }
+    }
+    for (int i = 0; i < botSize; ++i)
+    {
+        if (i < botSize)
+        {
+            botNode->addNode(*static_cast<NavMeshNode*>(bottom[i]));
+        }
+    }
 }
 

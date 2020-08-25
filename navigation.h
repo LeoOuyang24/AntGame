@@ -28,7 +28,8 @@ class NavMesh //a navigation mesh of rectangle
     public:
 
         NavMeshNode(const glm::vec4& rect);
-        void addNode(NavMeshNode& n); //adds a node as a neighbor
+        void addNode(NavMeshNode& n); //adds a node as a neighbor. If the node is already a neighbor, update the intersection line
+        bool isNextTo(NavMeshNode& n); //returns true if n is already in our neighbors list
         void removeNode(NavMeshNode& n);
         void setDimen(const glm::vec2& dimens);
         void setRect(const glm::vec4& rect);
@@ -48,7 +49,6 @@ class NavMesh //a navigation mesh of rectangle
     void addNode(NavMeshNode& node);
 
     void removeNode(NavMeshNode& node); //deletes node from both the vector and the nodeTree
-
     void splitNode(NavMeshNode& node, const glm::vec4& overlap); //creates new nodes and adds them to neighbors based on how overlap splits node. Does NOT delete node
 public:
     NavMesh(const glm::vec4& bounds_, RawQuadTree& tree_);
@@ -57,11 +57,11 @@ public:
     void smartAddNode(const glm::vec4& rect); //adds a negative space
     void reset(); //clears nodeTree and negativeTree but keeps bounds
     bool notInWall(const glm::vec4& rect); //returns true if rect isn't in a wall
-    Path getPath(const glm::vec2& start, const glm::vec2& end, int width = 0); //returns a path from start to end using A*. Not guaranteed to be the shortest path. Width is the shortest distance we can be from any given negative area. This allows us to find paths for large objects without colliding with walls. This function is so convoluted there's a whole documentation in the documents folder!
+    Path getPath(const glm::vec2& start, const glm::vec2& end, int width = 0); //returns a path from start to end using A*, returning the empty path if there is no path. Not guaranteed to be the shortest path. Width is the shortest distance we can be from any given negative area. This allows us to find paths for large objects without colliding with walls. This function is so convoluted there's a whole documentation in the documents folder!
     bool straightLine(const glm::vec4& line); //returns true if the line doesn't overlap with any negative space.
     glm::vec4 getRandomArea(const glm::vec2& origin, double minDist, double maxDist); //returns the area of a randomly chosen navmesh node that is between min and max distacne from origin. Guaranteed won't crash by generating a point out of bounds
     //note that this function just randomly generates a point and then chooses the nearest node. This means that larger nodes have larger chances of of being selected. This makes sense, but it should be noted that not all nodes have an equal chance of being selected.
-
+    void removeWall(RectPositional& rect); //removes the wall at the given position and replaces with empty space
 };
 
 #endif // NAVIGATION_H_INCLUDED

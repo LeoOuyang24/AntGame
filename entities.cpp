@@ -124,13 +124,25 @@ void AnimationComponent::render(const SpriteParameter& param)
 void AnimationComponent::update()
 {
     auto rect = entity->getComponent<RectComponent>();
-    if (rect)
+    if (rect && vecContains(rect->getRect(),GameWindow::getCamera().getRect()))
     {
         double angle = 0;
         MoveComponent* move = entity->getComponent<MoveComponent>();
-        if (move && !move->atTarget())
+        if (move)
         {
-            angle = atan2(move->getCenter().y - move->getTarget().y,move->getCenter().x - move->getTarget().x) + M_PI/2;
+            if (!move->atTarget() )
+            {
+                angle = atan2(move->getCenter().y - move->getTarget().y,move->getCenter().x - move->getTarget().x) + M_PI/2;
+            }
+            else
+            {
+                ApproachComponent* approach = entity->getComponent<ApproachComponent>();
+                Object* target = approach->getTargetUnit();
+                if ( approach && target)
+                {
+                    angle = atan2( move->getCenter().y - target->getCenter().y , move->getCenter().x -  target->getCenter().x ) + M_PI/2;
+                }
+            }
         }
         render({GameWindow::getCamera().toScreen(rect->getRect()),angle,NONE});
     }
@@ -174,7 +186,7 @@ Object::Object(std::string name, const glm::vec4& vec, AnimationWrapper* rapper,
     addComponent(*(render));
 }
 
-Object::Object()
+Object::Object(bool mov) : movable(mov)
 {
 
 }
@@ -291,7 +303,7 @@ void HealthComponent::addHealth(int amount)
 {
     if (amount < 0)
     {
-        if (invincible.framesPassed(10) || !invincible.isSet())
+        if (invincible.framesPassed(0) || !invincible.isSet())
         {
             invincible.set();
             health = std::max(0.0,std::min(health + amount, maxHealth));
@@ -344,7 +356,13 @@ void HealthComponent::update()
 void HealthComponent::render(const glm::vec3& rect, float z)
 {
     //PolyRender::requestRect({rect.x,rect.y,health/maxHealth*rect.z,height},{1,0,0,1},true,0,rect.a);
-    renderMeter({rect.x,rect.y,rect.z},{1,0,0,1},health,maxHealth,z);
+    glm::vec4 color = {1,0,0,1};
+    if (static_cast<Object*>(entity)->getFriendly()) //if the entity is friendly, render a green healthbar
+    {
+        color.r = 0;
+        color.g = 1;
+    }
+    renderMeter({rect.x,rect.y,rect.z},color,health,maxHealth,z);
 }
 
 Object* HealthComponent::getLastAttacker()
@@ -368,7 +386,7 @@ Unit::Unit(std::string name, const glm::vec4& rect, AnimationWrapper* anime, boo
     addComponent(*(health));
 }
 
-Unit::Unit()
+Unit::Unit(bool mov) : Object(mov)
 {
 
 }
@@ -555,14 +573,10 @@ void PathComponent::setTarget(const glm::vec2& point)
         }*/
         path.clear();
         NavMesh* mesh = &(GameWindow::getLevel().getMesh());
-        try
+        path = mesh->getPath(getCenter(),point, entity->getComponent<RectComponent>()->getRect().z/2*sqrt(2));
+        if (path.size() > 0)
         {
-            path = mesh->getPath(getCenter(),point, entity->getComponent<RectComponent>()->getRect().z/2*sqrt(2));
             target = path.front();
-        }
-        catch (...)
-        {
-            target = point;
         }
     }
     //MoveComponent::setTarget(point);
@@ -675,12 +689,17 @@ void ApproachComponent::update()
             //glm::vec2 center = ptr->getRect().getCenter() + displacement;
             if (move->collides(ptr->getRect().getRect())) //if at the target, stop moving
             {
-                move->setTarget(move->getCenter());
+                move->setSpeed(0);
             }
-            else if (!pointInVec(ptr->getRect().getRect(),move->getTarget().x,move->getTarget().y,0)) //otherwise, approach
+            else
             {
-                move->setTarget(closestPointOnVec(ptr->getRect().getRect(),move->getTarget()));
-                //displacement = move->getTarget() - ptr->getRect().getCenter(); //sometimes, the point can't be reached. Set the target to the point returned by getPath.
+                glm::vec2 target = move->getTarget();
+                glm::vec2 newTarget = closestPointOnVec(ptr->getRect().getRect(),target);
+                if (target != newTarget && !pointInVec(ptr->getRect().getRect(),target.x,target.y,0)) //otherwise, approach
+                {
+                    move->setTarget(newTarget);
+                    //displacement = move->getTarget() - ptr->getRect().getCenter(); //sometimes, the point can't be reached. Set the target to the point returned by getPath.
+                }
             }
         }
     }
@@ -727,7 +746,7 @@ void AttackComponent::update()
         attack(ptr->getComponent<HealthComponent>());
         if (move)
         {
-            move->setTarget(move->getCenter());
+            move->setSpeed(0);
         }
     }
     else //otherwise, move
@@ -740,9 +759,12 @@ void AttackComponent::setTarget(const glm::vec2& target, const std::shared_ptr<O
 {
     if (move)
     {
-        if (unit && targetUnit.lock().get() != unit->get())
+        if (unit)
         {
-            targetUnit = *unit;
+            if (targetUnit.lock().get() != unit->get())
+            {
+                targetUnit = *unit;
+            }
         }
         else
         {
@@ -800,7 +822,7 @@ Dummy::Dummy(int x, int y) : Unit(*(new ClickableComponent("Dummy", *this)), *(n
 
 }
 
-Bug::Bug(int x, int y) : Unit(*(new ClickableComponent("Bug", *this)), *(new PathComponent(.02,{x,y,10,10},*this)), *(new AnimationComponent(&basicEnemyAnime,*this)),*(new HealthComponent(*this, 100)))
+Bug::Bug(int x, int y) : Unit(*(new ClickableComponent("Bug", *this)), *(new PathComponent(.02,{x,y,20,20},*this)), *(new AnimationComponent(&basicEnemyAnime,*this)),*(new HealthComponent(*this, 100)))
 {
     //getComponent<MoveComponent>()->setTarget({0,0});
     addComponent(*(new AttackComponent(1, 50, 0,*this)));

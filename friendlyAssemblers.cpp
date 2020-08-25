@@ -11,11 +11,12 @@ AntAssembler::AntAssembler() : UnitAssembler("Ant",{20,20},&basicSoldierAnime,tr
 
 Object* AntAssembler::assemble()
 {
-    Unit* ent = new Unit();
+    Unit* ent = new Unit(movable);
     ent->addRect((new Ant::AntMoveComponent(nullptr,.1,{0,0,dimen.x,dimen.y},*ent)));
     ent->addClickable((new Ant::AntClickable(name,*ent)));
     ent->addRender((new AnimationComponent(sprite,*ent)));
     ent->addHealth(new HealthComponent(*ent,maxHealth));
-    ent->addComponent(*(new UnitAttackComponent(1,100,100,*ent)));
+    ent->addComponent(*(new UnitAttackComponent(1,100,100,100,false,*ent)));
+    ent->addComponent(*(new CommandableComponent(*ent)));
     return ent;
 }

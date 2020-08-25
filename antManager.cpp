@@ -51,6 +51,23 @@ const Object* AntManager::getTargetUnit() const
     return targetUnit.lock().get();
 }
 
+void AntManager::setShortTarget(std::shared_ptr<Object>& obj)
+{
+    int size = selected.size();
+    for (int i = 0; i < size; ++i)
+    {
+        Entity* ant = selected[i].lock().get();
+        if (ant)
+        {
+            UnitAttackComponent* attack = ant->getComponent<UnitAttackComponent>();
+            if (attack)
+            {
+                attack->setShortTarget(&obj);
+            }
+        }
+    }
+}
+
 void AntManager::getInput()
 {
     int chosen = selected.size();
@@ -134,51 +151,56 @@ void AntManager::getInput()
         for (int i = 0; i < chosen; ++i)
         {
             Entity* ptr = selected[i].lock().get();
-            ClickableComponent* click = ptr->getComponent<ClickableComponent>();
-            if (ptr && click)
+            if (ptr)
             {
-                click->click(true);
-               // GameWindow::requestRect(ptr->getRect().getRect(),selectColor,true,0,0);
-                if (justClicked) //if we've recieved a new task
+                ClickableComponent* click = ptr->getComponent<ClickableComponent>();
+                if (click)
                 {
-                    /* if( ptr->getCurrentTask() != this)
-                     {
-                        ptr->setCurrentTask(*this);
-                     }*/
-                   // std::cout << this << " " << currentTask << std::endl;
-                    if (clumpDimen.x >= 1) //moving to target. Decimals can still be rounded to 0
+                    click->click(true);
+                   // GameWindow::requestRect(ptr->getRect().getRect(),selectColor,true,0,0);
+                    if (justClicked) //if we've recieved a new task
                     {
-                        glm::vec2 moveTo;
-                        /*if (repel)
+                        CommandableComponent* command = ptr->getComponent<CommandableComponent>();
+                         if( command && command->getCurrentTask() != this)
+                         {
+                            command->setCurrentTask(this);
+                         }
+                       // std::cout << this << " " << currentTask << std::endl;
+                        if (clumpDimen.x >= 1) //moving to target. Decimals can still be rounded to 0
                         {
-                            double angle = atan2(targetPoint.y - currentRect.y - currentRect.a/2,targetPoint.x-currentRect.x - currentRect.z/2);
-                            moveTo = {currentRect.x + currentRect.z/2 + -1*(cos(angle)), currentRect.y + currentRect.a/2 + -1*sin(angle)};
-                        }
-                        else*/
-                        {
-                           // std::cout << scale << std::endl;
-                            moveTo = {targetPoint.x + ((i%((int)clumpDimen.x)) - (clumpDimen.x-1)/2)*(Ant::dimen + space.x),
-                            i/((int)(clumpDimen.x))};
-                            if (newTarget)
+                            glm::vec2 moveTo;
+                            /*if (repel)
                             {
-                                moveTo.y = fmod(moveTo.y,clumpDimen.y);
+                                double angle = atan2(targetPoint.y - currentRect.y - currentRect.a/2,targetPoint.x-currentRect.x - currentRect.z/2);
+                                moveTo = {currentRect.x + currentRect.z/2 + -1*(cos(angle)), currentRect.y + currentRect.a/2 + -1*sin(angle)};
                             }
-                          //  std::cout << scale << std::endl;
-                            moveTo.y = (moveTo.y-  (clumpDimen.y-1)/2.0)*(Ant::dimen + space.y) + targetPoint.y;
-                        }
-                        auto otherTarg = ptr->getComponent<MoveComponent>()->getTarget();
-                        if (otherTarg.x != moveTo.x || otherTarg.y != moveTo.y)
-                        {
-                            //atTarget = false;
-                          //  std::cout << "Move: " << i << " " << moveTo.x << " " << moveTo.y<< "\n";
-                            // current->getComponent<MoveComponent>()->getTarget().x << " " << current->getComponent<MoveComponent>()->getTarget().y << std::endl;
-                            if (newTarget)
+                            else*/
                             {
-                                ptr->getComponent<ApproachComponent>()->setTarget(moveTo,newTarget);
+                               // std::cout << scale << std::endl;
+                                moveTo = {targetPoint.x + ((i%((int)clumpDimen.x)) - (clumpDimen.x-1)/2)*(Ant::dimen + space.x),
+                                i/((int)(clumpDimen.x))};
+                                if (newTarget)
+                                {
+                                    moveTo.y = fmod(moveTo.y,clumpDimen.y);
+                                }
+                              //  std::cout << scale << std::endl;
+                                moveTo.y = (moveTo.y-  (clumpDimen.y-1)/2.0)*(Ant::dimen + space.y) + targetPoint.y;
                             }
-                            else
+                            auto otherTarg = ptr->getComponent<MoveComponent>()->getTarget();
+                            if (otherTarg.x != moveTo.x || otherTarg.y != moveTo.y)
                             {
-                                ptr->getComponent<ApproachComponent>()->setTarget(moveTo,nullptr);
+                                //atTarget = false;
+                              //  std::cout << "Move: " << i << " " << moveTo.x << " " << moveTo.y<< "\n";
+                                // current->getComponent<MoveComponent>()->getTarget().x << " " << current->getComponent<MoveComponent>()->getTarget().y << std::endl;
+                                UnitAttackComponent* attack = ptr->getComponent<UnitAttackComponent>();
+                                if (attack)
+                                {
+                                    attack->setLongTarget(moveTo,newTarget);
+                                }
+                                else
+                                {
+                                    ptr->getComponent<ApproachComponent>()->setTarget(moveTo,newTarget);
+                                }
                             }
                         }
                     }

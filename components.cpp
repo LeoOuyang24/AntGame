@@ -62,7 +62,8 @@ RectComponent::~RectComponent()
 
 }
 
-MoveComponent::MoveComponent(double speed, const glm::vec4& rect, Entity& entity) : RectComponent(rect, entity), ComponentContainer<MoveComponent>(&entity), speed(speed)
+MoveComponent::MoveComponent(double speed, const glm::vec4& rect, Entity& entity) : RectComponent(rect, entity), ComponentContainer<MoveComponent>(&entity),
+                                                                                    baseSpeed(speed),speed(speed)
 {
     target = {rect.x + rect.z/2, rect.y + rect.a/2};
 }
@@ -77,6 +78,7 @@ void MoveComponent::update()
         rect.y += absMin(sin(angle)*speed*DeltaTime::deltaTime, target.y - center.y);
     }
     velocity = pointDistance({rect.x + rect.z/2, rect.y + rect.a/2}, center);
+    speed = baseSpeed;
 }
 
 bool MoveComponent::atTarget()

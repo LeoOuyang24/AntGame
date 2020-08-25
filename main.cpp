@@ -87,7 +87,7 @@ int main(int args, char* argsc[])
 
     srand(time(NULL));
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE,1);
-    SDL_Window* window = SDL_CreateWindow("Project",SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,screenWidth, screenHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    SDL_Window* window = SDL_CreateWindow("Project",SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,screenWidth, screenHeight, SDL_WINDOW_OPENGL );
     SDL_StopTextInput();
     SDL_GL_CreateContext(window);
 
@@ -145,6 +145,7 @@ int main(int args, char* argsc[])
       // spr.request({rect,0,NONE,{0,1,0,1}});
        //PolyRender::requestRect(rect,{0,0,0,1},true,0,.1);
      //  Font::tnr.requestWrite({"hella",rect,0,{1,0,0,1},1});
+   //  PolyRender::requestNGon(10,GameWindow::getCamera().toAbsolute(pairtoVec(MouseManager::getMousePos())),10,{1,0,0,1},0,true,3);
         PolyRender::render();
         SpriteManager::render();
         FontManager::update();

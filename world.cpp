@@ -130,7 +130,6 @@ void Map::moveObject(Object& obj, double x, double y)
 {
     obj.getRect().setPos({x,y});
     currentChunk->tree->update(obj.getRect(), *currentChunk->tree.get());
-
     //std::cout << obj.getCenter().x << std::endl;
    // std::cout << getChunk(obj).ants.size() << oldChunk->ants.size() << std::endl;
 }
@@ -144,6 +143,10 @@ void Map::setCurrentChunk(Chunk& chunk)
 void Map::remove(Object& unit)
 {
     currentChunk->remove(unit);
+    if (!unit.getMovable())
+    {
+        mesh->removeWall(unit.getRect());
+    }
 }
 
 Map::Chunk& Map::getCurrentChunk()
@@ -402,7 +405,7 @@ void Map::generateLevel() // Doesn't generate terrain on the bottom most row. It
     {
         glm::vec2 chosen = emptySpots[rand()%emptySpots.size()];
         addUnit(*(assembler.assemble()),chosen.x + fmod(rand(),(maxObjectSize/2 - dimen.x/2)),
-                chosen.y + fmod(rand(),(maxObjectSize/2 - dimen.y/2)),true);
+                chosen.y + fmod(rand(),(maxObjectSize/2 - dimen.y/2)),false);
     }
     mainHill = std::static_pointer_cast<Anthill>(addUnit(*(new Anthill({chunkDimen/2,chunkDimen/2})),true));
    // addUnit(*(new Gate({chunkDimen/2, chunkDimen/2 + 100})));
