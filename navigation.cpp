@@ -555,8 +555,10 @@ bool NavMesh::straightLine(const glm::vec4& line)
     glm::vec2 a = {line.x, line.y}, b = {line.z, line.a};
     for (int i = 0; i < size; ++i)
     {
-        if (lineInVec(a,b,(static_cast<RectPositional*>(vec[i]))->getRect(),0))
+        glm::vec4 wallRect = (static_cast<RectPositional*>(vec[i]))->getRect();
+        if (lineInVec(a,b,wallRect,0) && !pointInVec(wallRect,a.x,a.y,0) && !pointInVec(wallRect,b.x,b.y,0))
         {
+             //sometimes, buildings may target or be targeted so we want to make sure we don't mind if the line starts or ends in a wall.
             return false;
         }
     }
@@ -645,7 +647,6 @@ void NavMesh::removeWall(RectPositional& positional)
                                           finalNode->getRect().a
                                             };
                        finalNode->setRect(finalRect);
-                        baseNode = finalNode == baseNode ? node : baseNode; //set baseNode to the unfinished node
                         if (finalRect.y == rect.y)
                         {
                             topNode = finalNode;
@@ -663,13 +664,14 @@ void NavMesh::removeWall(RectPositional& positional)
                                 finalNode->addNode(*(j->first));
                             }
                         }
-                        if (finalRect.a == baseNode->getRect().a) //we start over
+                        if (blankRect.a == baseRect.a) //we start over
                         {
                             nodeTree.remove(*baseNode);
-                            baseNode == nullptr;
+                            baseNode = nullptr;
                         }
-                        else
+                        else //otherwise, set baseNode to the remaining, smaller node
                         {
+                            baseNode = finalNode == baseNode ? node : baseNode; //set baseNode to the unfinished node
                             baseNode->setRect({
                               baseNode->getRect().x,
                               finalRect.y + finalRect.a,

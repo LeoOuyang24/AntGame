@@ -142,11 +142,12 @@ void Map::setCurrentChunk(Chunk& chunk)
 
 void Map::remove(Object& unit)
 {
-    currentChunk->remove(unit);
     if (!unit.getMovable())
     {
         mesh->removeWall(unit.getRect());
+
     }
+    currentChunk->remove(unit);
 }
 
 Map::Chunk& Map::getCurrentChunk()
@@ -325,7 +326,7 @@ void Map::generateLevel() // Doesn't generate terrain on the bottom most row. It
     {
         int size = dists.size();
         glm::vec2 line = {0,0};
-        bool empty = false;
+        bool empty = true;
         glm::vec2 popped;
         bool poppedEmpty = false; //whether the line is empty or a line of blocks
         for (int j = 0; j < size; j ++) //for each line
@@ -350,7 +351,7 @@ void Map::generateLevel() // Doesn't generate terrain on the bottom most row. It
                     {
                         luck = 10;
                     }
-                    if (line.y > 0 && empty)
+                    if (line.y > 0 && empty) //if we have started generating walls, end the wall of empty space
                     {
                         if (!(inPlayerArea)) //this isn't quite the same thing as checking if the point is in the rect because we want the resulting rects to not collide with player rect
                         {
@@ -375,7 +376,7 @@ void Map::generateLevel() // Doesn't generate terrain on the bottom most row. It
                     {
                         emptySpots.push_back({x,y});
                     }
-                    if (line.y > 0 && !empty)
+                    if (line.y > 0 && !empty) //if we have finished spawning walls, start generating empty space
                     {
                         if (!(inPlayerArea)) //this isn't quite the same thing as checking if the point is in the rect because we want the resulting rects to not collide with player rect
                         {

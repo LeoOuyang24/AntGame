@@ -22,13 +22,16 @@ bool Player::updateSelect()
             double width = mousePos.x - origin.x;
             double height = mousePos.y - origin.y;
             selection = absoluteValueRect({origin.x,origin.y, width, height});
+            return true;
         }
         else
         {
             origin.x = mousePos.x;
             origin.y = mousePos.y;
+            selection.z = 0;
+            selection.a = 0;
+            return false;
         }
-        return true;
     }
     return false;
 }
@@ -45,6 +48,8 @@ void Player::addResource(int r)
 
 void Player::update()
 {
+ //       PolyRender::requestRect(GameWindow::getCamera().toScreen(selection),{1,0,0,.5},true,0,1);
+
     glm::vec2 screenDimen = RenderProgram::getScreenDimen();
    // Font::tnr.requestWrite({"Resources: " + convert(resource),GameWindow::getCamera().toAbsolute({screenDimen.x - 200, 50, 100,100}),0,{0,0,0,1},GameWindow::interfaceZ});
 

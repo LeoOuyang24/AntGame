@@ -113,7 +113,7 @@ void Manager::spawnCreatures(Anthill& hill, double minR, double maxR) //spawn cr
         AttackComponent* attack = toSpawn->getComponent<AttackComponent>();
         if (unitAttack)
         {
-            unitAttack->setLongTarget({0,0},&level->getUnit(&hill));
+            unitAttack->setLongTarget(closestPointOnVec(hill.getRect().getRect(),{x,y}),&level->getUnit(&hill));
         }
         else if (attack)
         {
@@ -395,10 +395,10 @@ void Manager::update()
         curTask->task.getInput();
         //std::cout << currentTask->getAnts().size() << std::endl;
     }
-    if (GameWindow::getLevel().getAnthill() && (!spawner.isSet() || spawner.framesPassed(100)))
+    if (GameWindow::getLevel().getAnthill() && (!spawner.isSet() || spawner.framesPassed(std::min(60 - SDL_GetTicks()/1000,(Uint32)10))))
     {
         Map* map = &(GameWindow::getLevel());
-        spawnCreatures(*GameWindow::getLevel().getAnthill() , 500, map->getRect(map->getCurrentChunk()).z);
+        spawnCreatures(*GameWindow::getLevel().getAnthill() , map->getRect(map->getCurrentChunk()).z/2, map->getRect(map->getCurrentChunk()).z);
         spawner.reset();
         spawner.set();
     }
@@ -609,58 +609,13 @@ GameWindow::GameWindow() : Window({0,0},nullptr,{0,0,0,0})
     gameOver->addButton(*(new QuitButton(*this)));
     manager.init(level.getRect(level.getCurrentChunk()));
     debug.init();
-    auto ptr = evilMoonAssembler.assemble();
+  /*  auto ptr = evilMoonAssembler.assemble();
     ptr->getComponent<UnitAttackComponent>()->setLongTarget({0,0},&level.getUnit(level.getAnthill()));
-    level.addUnit(*ptr,levelRect.z/2- 200,levelRect.a/2 - 200,false);
+    level.addUnit(*ptr,0,0,false);*/
 
    // level.addUnit(*(new Dummy(levelRect.z/2 - 100,levelRect.a/2)));
     player.addResource(100);
-    //level.addUnit(*(new Bug(-100,0)), true);
-    //level.remove(*hill);
-   // level.addUnit(*(new Beetle(320,320)));
 
-  //  auto antPtr = level.addUnit(*(new Ant({380,380,10,10},*hill)));
- //   hill->getComponent<ResourceComponent>()->setResource(-1000);
-   /* auto mushPtr = level.addUnit(*(new Mushroom(480,480)));
-    std::shared_ptr<Label> antLabel = std::shared_ptr<Label>(new Label({400,300,128,32},"Click on the ant",{1,1,1,1},{385,385},
-                                  *(new LambdaTrigger([](){return !GameWindow::getCamera().isZooming();})),
-                                  *(new ObjectTrigger([](Object* obj){
-                                return obj && obj->clicked();},antPtr)),1));
-
-    auto mushLabel = std::shared_ptr<Label>(new Label({500,400,128,32}, "Right click on the mushroom", {1,1,1,1},{485,485},
-                                                        *(new ChainTrigger(antLabel)),
-                                                        *(new ObjectTrigger([](Object* obj){
-                                                            auto task = GameWindow::getManager().getCurrentTask();
-                                                        return obj &&  task && task->getTargetUnit() == obj;},mushPtr)),1));
-    auto duringMush = std::shared_ptr<Label>(new Label({500,400,250,32},"Wait for the ant to collect the mushroom", {1,1,1,1},{485,485},
-                                                       *(new ChainTrigger(mushLabel)),
-                                                       *(new ObjectTrigger([](Object* obj){
-                                                            return obj == nullptr;},mushPtr))));
-    auto firstEnemy = std::shared_ptr<EZSequenceUnit>(new EZSequenceUnit(nullptr,
-                                                                         {[](){MoveComponent* comp = GameWindow::getCamera().getComponent<MoveComponent>();
-                                                                         if (comp)
-                                                                         {
-                                                                             comp->setTarget({800,800});
-                                                                             comp->setSpeed(1);
-                                                                         }   }},
-                                                                         {[](){
-                                                                         GameWindow::getLevel().addUnit(*(new Bug(810,810)));
-                                                                         }},
-                                                                         *(new ChainTrigger(duringMush,5000)),
-                                                                         *(new LambdaTrigger([](){MoveComponent* comp = GameWindow::getCamera().getComponent<MoveComponent>();
-                                                                             return comp && comp->atTarget();
-                                                                          }))
-                                                                         ));
-    auto zoomOut = std::shared_ptr<Label>(new Label
-                                           ({750,750,100,32},"Right click to kill the bug", {1,1,1,1},{842, 842},
-                                                     *(new ChainTrigger(firstEnemy,0)),
-                                                      *(new LambdaTrigger([](){return false;}))));
-    /*labels.push_back(antLabel);
-    labels.push_back(mushLabel);
-    labels.push_back(firstEnemy);
-    labels.push_back(duringMush);
-    labels.push_back(zoomOut);*/
-    //camera.getComponent<MoveComponent>()->setTarget({-100,-100});
     camera.center({levelRect.z/2,levelRect.a/2});
    // camera.setZoomTarget(.5);
    // manager.clear();
@@ -728,6 +683,10 @@ void GameWindow::update(int x, int y, bool clicked)
         renderTopBar();
         renderSelectedUnits();
 
+        if (KeyManager::getJustPressed() == SDLK_d)
+        {
+            level.remove(*level.getAnthill());
+        }
 
         if (level.getChangeLevel())
         {
@@ -735,6 +694,7 @@ void GameWindow::update(int x, int y, bool clicked)
             level.setChangeLevel(false);
             manager.reset();
         }
+
         //camera.goBack();
         //requestRect({0,0,320,320},{1,0,1,1},true,0,1,1);
 

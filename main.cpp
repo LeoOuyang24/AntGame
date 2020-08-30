@@ -79,6 +79,7 @@ int main(int args, char* argsc[])
 
     const int screenWidth = 960;
     const int screenHeight = 960;
+    const int windowMode =  SDL_WINDOW_OPENGL;// | SDL_WINDOW_FULLSCREEN;
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
         return 1;
@@ -87,7 +88,7 @@ int main(int args, char* argsc[])
 
     srand(time(NULL));
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE,1);
-    SDL_Window* window = SDL_CreateWindow("Project",SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,screenWidth, screenHeight, SDL_WINDOW_OPENGL );
+    SDL_Window* window = SDL_CreateWindow("Project",SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,screenWidth, screenHeight,windowMode);
     SDL_StopTextInput();
     SDL_GL_CreateContext(window);
 
@@ -140,7 +141,7 @@ int main(int args, char* argsc[])
             quit = true;
         }
 
-       //drawRectangle(RenderProgram::lineProgram,{1,1,1},{0,0,64,64},0);
+       //drawRectangle(RenderProgram::lineProgram,{1,1,1},{0,0,  64,64},0);
        //glm::vec4 rect = {320,320,128,64};
       // spr.request({rect,0,NONE,{0,1,0,1}});
        //PolyRender::requestRect(rect,{0,0,0,1},true,0,.1);
@@ -152,7 +153,7 @@ int main(int args, char* argsc[])
         SDL_GL_SwapWindow(window);
         DeltaTime::update();
         eventsEmpty = true;
-        //fastPrint(convert(DeltaTime::deltaTime) + "\n");
+        fastPrint("Ticks: " + convert(DeltaTime::deltaTime) + "\n");
       //  std::cout << DeltaTime::deltaTime << std::endl;
     }
     game.close();

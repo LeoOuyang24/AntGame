@@ -1,5 +1,8 @@
 This document keeps track of all changes as well as considered changes made to the resources as well as why they were made. Consider this a "learning from the past" kind of document. 
 
+8/29/2020:
+	Decided against using an std::map in place of MinHeap in the pathfinding algorithm because the map sorts by using keys rather than values. You can't store distance as the keys and the points as the nodes either because you have to be able to update the distances.
+
 8/6/2020:
 	Removed ShootComponent and instead added attacking from a distance to AttackComponent. Making melee attacks is essentially a ranged attack with a range of 0, so it doesn't make sense to have 2 different components when one is all that's needed.
 

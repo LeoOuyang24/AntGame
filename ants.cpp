@@ -62,10 +62,6 @@ void UnitAttackComponent::setLongTarget(const glm::vec2& target, std::shared_ptr
         longTarget.first.reset();
     }
     ignore = static_cast<IgnoreState>(std::min(ignore + 1,(int)IGNORE));
-    if (((Object*)entity)->getFriendly())
-    {
-        std::cout << ignore << std::endl;
-    }
 }
 
 void UnitAttackComponent::setShortTarget(std::shared_ptr<Object>* unit)

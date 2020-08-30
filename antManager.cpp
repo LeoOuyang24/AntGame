@@ -70,13 +70,13 @@ void AntManager::setShortTarget(std::shared_ptr<Object>& obj)
 
 void AntManager::getInput()
 {
+    std::pair<int,int> mousePos = MouseManager::getMousePos();
+    glm::vec4 mouseClick = {GameWindow::getCamera().toWorld({mousePos.first,mousePos.second}),1,1};
     int chosen = selected.size();
     if (chosen > 0)
     {
         bool justClicked = MouseManager::getJustClicked() == SDL_BUTTON_RIGHT;
-        std::pair<int,int> mousePos = MouseManager::getMousePos();
         std::vector<Positional*> nearest;
-        glm::vec4 mouseClick = {GameWindow::getCamera().toWorld({mousePos.first,mousePos.second}),1,1};
         //RectPositional post(mouseClick);
         //tree.getNearest(nearest,post);
         Map* map = &(GameWindow::getLevel());
@@ -84,6 +84,7 @@ void AntManager::getInput()
         std::shared_ptr<Object>* newTarget = nullptr;
         if (justClicked)
         {
+            clickTimer.set();
             int nearSize = nearest.size();
             if (nearSize > 0)
             {
@@ -212,6 +213,14 @@ void AntManager::getInput()
                     selected.erase(selected.begin() + i);
                 }*/
             }
+        }
+    }
+    if (clickTimer.isSet())
+    {
+        PolyRender::requestNGon(100,GameWindow::getCamera().toScreen({mouseClick.x,mouseClick.y}),(SDL_GetTicks()-clickTimer.getTime())/500*5,{0,1,0,1},0,false,GameWindow::fontZ);
+        if (clickTimer.timePassed(500))
+        {
+            clickTimer.reset();
         }
     }
 }

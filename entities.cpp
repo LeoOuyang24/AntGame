@@ -573,10 +573,16 @@ void PathComponent::setTarget(const glm::vec2& point)
         }*/
         path.clear();
         NavMesh* mesh = &(GameWindow::getLevel().getMesh());
+        auto time = SDL_GetTicks();
         path = mesh->getPath(getCenter(),point, entity->getComponent<RectComponent>()->getRect().z/2*sqrt(2));
+        std::cout << SDL_GetTicks() - time << std::endl;
         if (path.size() > 0)
         {
             target = path.front();
+        }
+        else
+        {
+            std::cout << "No path!" << std::endl;
         }
     }
     //MoveComponent::setTarget(point);
@@ -609,6 +615,10 @@ void PathComponent::update()
         } //otherwise, we're done
     }
     MoveComponent::update();
+    if (speed == 0)
+    {
+        std::cout << getCenter().x << " " << getCenter().y << " " << target.x << " " << target.y << std::endl;
+    }
 
 }
 
@@ -666,8 +676,8 @@ void ApproachComponent::setTarget(const glm::vec2& target, const std::shared_ptr
         else
         {
             targetUnit.reset();
+                move->setTarget(target);
         }
-        move->setTarget(target);
     }
 }
 
@@ -768,9 +778,11 @@ void AttackComponent::setTarget(const glm::vec2& target, const std::shared_ptr<O
         }
         else
         {
+
+            move->setTarget(target);
             targetUnit.reset();
+
         }
-        move->setTarget(target);
     }
 }
 

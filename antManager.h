@@ -20,6 +20,7 @@ class AntManager //handles ant movement and targeting
     Task currentTask = IDLE;
     const static int spacing; //spacing between ants when they move
     Manager* manager = nullptr; //we use raw pointers for this because the manager will always be deleted first
+    DeltaTime clickTimer; //a timer to see when was the last time the player clicked. Controls the animation that plays when the player clicks somewhere
     bool repel = false;
    // std::vector<std::shared_ptr<Ant>> selected;
     ObjPtr targetUnit; //used to keep track of an ant group's main target
