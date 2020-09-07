@@ -1,5 +1,8 @@
 This document keeps track of all changes as well as considered changes made to the resources as well as why they were made. Consider this a "learning from the past" kind of document. 
 
+9/7/2020:
+	Added 2 optimizations to pathfinding algorithm. When a new best distance is found, we don't have to update the heap. We also now keep a set of visited nodes so we don't go from Node A to B then back to A.
+
 8/29/2020:
 	Decided against using an std::map in place of MinHeap in the pathfinding algorithm because the map sorts by using keys rather than values. You can't store distance as the keys and the points as the nodes either because you have to be able to update the distances.
 

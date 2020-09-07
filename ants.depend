@@ -958,7 +958,7 @@
 	<limits.h>
 	"vanilla.h"
 
-1592697549 c:\users\leoou\onedrive\desktop\resources\vanilla.h
+1599437735 c:\users\leoou\onedrive\desktop\resources\vanilla.h
 	<iostream>
 	<tuple>
 	<math.h>
@@ -968,8 +968,9 @@
 	<stdlib.h>
 	<memory>
 	<stack>
+	<unordered_map>
 
-1598759187 source:c:\users\leoou\onedrive\desktop\projects\ants\main.cpp
+1599427450 source:c:\users\leoou\onedrive\desktop\projects\ants\main.cpp
 	<iostream>
 	<time.h>
 	<typeinfo>
@@ -1018,7 +1019,7 @@
 	"entities.h"
 	"friendlyAssemblers.h"
 
-1598758438 source:c:\users\leoou\onedrive\desktop\projects\ants\game.cpp
+1599357147 source:c:\users\leoou\onedrive\desktop\projects\ants\game.cpp
 	"SDLHelper.h"
 	"vanilla.h"
 	"game.h"
@@ -1046,7 +1047,7 @@
 	"render.h"
 	"components.h"
 
-1598760444 source:c:\users\leoou\onedrive\desktop\projects\ants\entities.cpp
+1599357303 source:c:\users\leoou\onedrive\desktop\projects\ants\entities.cpp
 	"SDLHelper.h"
 	"render.h"
 	"entities.h"
@@ -1087,12 +1088,13 @@
 1589135255 c:\users\leoou\onedrive\desktop\projects\ants\asciartvromvrom.h
 	<iostream>
 
-1598774684 source:c:\users\leoou\onedrive\desktop\projects\ants\navigation.cpp
+1599503177 source:c:\users\leoou\onedrive\desktop\projects\ants\navigation.cpp
 	<algorithm>
+	<unordered_set>
 	"navigation.h"
 	"game.h"
 
-1598334091 c:\users\leoou\onedrive\desktop\projects\ants\navigation.h
+1599438739 c:\users\leoou\onedrive\desktop\projects\ants\navigation.h
 	<unordered_map>
 	"render.h"
 	"entities.h"

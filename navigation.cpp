@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <unordered_set>
 
 #include "navigation.h"
 #include "game.h"
@@ -380,16 +381,18 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
         {
             return {start,end}; //if both the start and end is in the same node then just move lol
         }
+        std::unordered_set<NavMeshNode*> visited; //set of visited nodes
         std::unordered_map<glm::vec2,std::pair<double,glm::vec2>,HashPoint> paths; //shortest distance from start to paths as well as the closest point that leads to it. Used for backtracking. A node can lie on many nodes so we also keep track the nodes we've visited
-        MinHeap<std::pair<glm::vec2,NavMeshNode*>> heap; //finds the next node to process. We have to also store what node the point is associated with since the points all lie on the border of two nodes.
+        typedef std::pair<glm::vec2,NavMeshNode*> HeapPair ; //an important type for pathfinding
+        MinHeap<HeapPair> heap; //finds the next node to process. We have to also store what node the point is associated with since the points all lie on the border of two nodes.
         heap.add({start,startNode},0);
         //double bestDist = -1; //the distance of the best path found so far. -1 until one path is found
        // glm::vec2 bestPoint = {0,0}; //the last point of the best path found so far. origin until one path is found
         glm::vec2 curPoint; //current point to analyze
         NavMeshNode* curNode = startNode; //current node to analyze
-        int num = 0;
        // GameWindow::requestRect(startNode->getRect(), {1,0,0,1},true,0,1,0);
         bool startEdge = false; //there's a fun edge case where if the start point is on the edge of two nodes, the algorithm will skirt around the neighboring node. This helps fix that (see documentation).
+                       auto time = SDL_GetTicks();
         while (heap.size() != 0 && heap.peak().first != end) //we end either when the heap is empty (no path) or when the top of the heap is the end (there is a path)
         {
             curPoint = heap.peak().first;
@@ -410,72 +413,44 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
                 }
                 else if (score < std::get<0>(paths[end]))
                 {
-                    heap.update({end,endNode},paths[end].first,score);
                     paths[end].first = score;
                     paths[end].second = curPoint;
                 }
-
                 continue;
             }
+            visited.insert(curNode); //if our node is not the endnode add it to the visited nodes set
            // Font::tnr.requestWrite({convert(num),GameWindow::getCamera().toScreen({curPoint.x,curPoint.y,10,10}),0,{1,1,1,1},2});
             Neighbors* nextTo = &(curNode->getNextTo());
             auto endIt = nextTo->end(); //get the end iterator
             for (auto it = nextTo->begin(); it != endIt; ++it)
             {
-
+                if (visited.count(it->first) > 0)
+                {
+                    continue;
+                }
                 if (((curPoint.x >= it->second.x && curPoint.x <= it->second.z) && (curPoint.y == it->second.y)) //since all lines are horizontal or vertical, this tests to see if the our current point is on the intersection of our neighbor.
-                     || pointDistance({it->second.x,it->second.y},{it->second.z,it->second.a}) < width) //also don't process if the line is too narrow
-                {                    //We The closest point between our current point and a line that we are already on is obviously just curPoint.
+                     || it->second.z - it->second.x < width) //also don't process if the line is too narrow
+                {
                     if (curPoint == start && !startEdge) //The case where curPoint == start deserves special attention only once. startEdge ensures we only do it once
                     {
                         double distance = pointDistance(curPoint,end) + paths[curPoint].first ;
-                        heap.add({curPoint,it->first},distance); //we don't want to reprocess this point so we add a slight penalty for looping.
+                        heap.add({curPoint,it->first},distance);  //The closest point between our current point and a line that we are already on is obviously just curPoint.
                         startEdge = true;
                     }
                     continue;
                 }
 
-
+                glm::vec2 a = {it->second.x + width, it->second.y},
+                b = {it->second.z - width, it->second.a}; //the endpoints of the intersection line segment.
                 glm::vec2 midpoint;  //this is not actually the midpoint, but rather the point on the intersection line we think will be closest to the goal
-                midpoint = lineLineIntersectExtend(curPoint,end,{it->second.x,it->second.y},{it->second.z,it->second.a});//this ensures that if there is a direct path to the end, we work towards it.
-                const glm::vec4* nodeRect = &(it->first->getRect());
+                midpoint = lineLineIntersectExtend(curPoint,end,a,b);//this ensures that if there is a direct path to the end, we work towards it.
              //   GameWindow::requestRect(*nodeRect,{0,1,0,1},true,0,1,0);
-                glm::vec2 nodeCenter = {nodeRect->x + nodeRect->z/2, nodeRect->y + nodeRect->a/2};
-                glm::vec2 a = {it->second.x, it->second.y},
-                b = {it->second.z, it->second.a}; //the endpoints of the intersection line segment.
-                if (width > 0)
-                {
-                    a.x += width;
-                    b.x -= width;
-                }
+
                 if (!lineInLine(midpoint,end,a,b)) //if the midpoint isn't on the intersection, choose one of the endpoints
                 {
-                    double aDist = pointDistance(end,a) + pointDistance(curPoint,a);
-                    double bDist = pointDistance(end,b) + pointDistance(curPoint,b);
-                    if (aDist <= bDist)
-                    {
-                        midpoint = a;
-                    }
-                    else
-                    {
-                        midpoint = b;
-                    }
+                    midpoint = pointDistance(end,a) + pointDistance(curPoint,a) < pointDistance(end,b) + pointDistance(curPoint,b) ? a : b;
                 }
-                else //of the midpoint and the endpoints of the intersection, find which is the best point to move to
-                {
-                    double midDist = pointDistance(end,midpoint) + pointDistance(curPoint,midpoint);
-                    double aDist = pointDistance(end,a) + pointDistance(curPoint,a);
-                    double bDist = pointDistance(end,b) + pointDistance(curPoint,b);
-                    if (aDist <= bDist && aDist <= midDist)
-                    {
-                        midpoint = a;
-                    }
-                    else if (bDist <= aDist && bDist <= midDist)
-                    {
-                        midpoint = b;
-                    }
-                    //else, use midpoint
-                }
+                const glm::vec4* nodeRect = &(it->first->getRect());
                 if (midpoint.x == a.x) //on right side of obstacle
                 {
                     if ((midpoint.y == curRect->y && curRect->x == it->second.x) || (midpoint.y == nodeRect->y && nodeRect->x == it->second.x)) //top right
@@ -499,29 +474,21 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
                      }
                 }
                 double newDistance = pointDistance(curPoint,midpoint) + std::get<0>(paths[curPoint]);
-                double score = newDistance + pointDistance(midpoint,end); //the final score that also uses the heuristic
                 bool newPoint = paths.count(midpoint) == 0;
-                bool lowDist = newPoint || paths[midpoint].first > newDistance;
-                if ( newPoint || lowDist)
-                    //if we found the new shortest distance from start to this point, update.
-                { //if we have never reached this point before or if we have never been to this node before, add them to the heap.
-                    if (newPoint) //add a never before visited point/node to the heap
+                //if we found the new shortest distance from start to this point, update.
+                if (newPoint ||(!newPoint && paths[midpoint].first > newDistance)) //add a never before visited point/node to the heap or update if we found a new short distance
+                {
+                    paths[midpoint].first = newDistance;
+                    paths[midpoint].second = curPoint;
+                    if (newPoint)
                     {
-                        heap.add({midpoint,it->first},score);
-                        paths[midpoint].first = newDistance;
-                        paths[midpoint].second = curPoint;
-                    }
-                    if (lowDist && !newPoint) //otherwise, we either found a new, shorter path, and/or found that the same point is connected to another node. Update if the distance is shorter, add if it's a new node.
-                    {
-                        heap.update({midpoint,it->first},paths[midpoint].first,score);
-                        paths[midpoint].first = newDistance;
-                        paths[midpoint].second = curPoint;
+                        //the final score that also uses the heuristic
+                        heap.add({midpoint,it->first},newDistance + pointDistance(midpoint,end));
+                     //   heap.print();
                     }
                 }
             }
-            num++;
         }
-
         Path finalPath;
         curPoint = end;
         if (heap.size() != 0) //the end node is always guaranteed to be still in the heap if a path was found.
@@ -529,7 +496,7 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
            // std::cout << "Repeat\n";
             while (curPoint != start )
             {
-                //std::cout << curPoint.x << " " << curPoint.y << std::endl;
+               // std::cout << paths.count(curPoint) << " " << curPoint.x << " " << curPoint.y << std::endl;
                 finalPath.push_front(curPoint);
                 curPoint = (paths[curPoint].second);
             }

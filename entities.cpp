@@ -575,7 +575,7 @@ void PathComponent::setTarget(const glm::vec2& point)
         NavMesh* mesh = &(GameWindow::getLevel().getMesh());
         auto time = SDL_GetTicks();
         path = mesh->getPath(getCenter(),point, entity->getComponent<RectComponent>()->getRect().z/2*sqrt(2));
-        std::cout << SDL_GetTicks() - time << std::endl;
+       // std::cout << SDL_GetTicks() - time << std::endl;
         if (path.size() > 0)
         {
             target = path.front();
