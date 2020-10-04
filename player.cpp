@@ -18,7 +18,6 @@ bool Player::updateSelect()
       //  std::cout << mousePos.x << " " << mousePos.y << std::endl;
         if (MouseManager::getJustClicked() != SDL_BUTTON_LEFT)
         {
-
             double width = mousePos.x - origin.x;
             double height = mousePos.y - origin.y;
             selection = absoluteValueRect({origin.x,origin.y, width, height});
@@ -34,6 +33,34 @@ bool Player::updateSelect()
         }
     }
     return false;
+}
+
+Player::BuildingButton::BuildingButton(const glm::vec4& rect, Player& player_,UnitAssembler& building_) :
+    Button(rect,nullptr,building_.getSprite(),{},nullptr,{0,0,0,0}),player(&player_), building(&building_)
+{
+
+}
+
+void Player::BuildingButton::press()
+{
+    if (player && building)
+    {
+        player->setCurrentBuilding(building);
+    }
+}
+
+Player::Player()
+{
+    //currentBuilding = &factAssembler;
+}
+
+void Player::init()
+{
+    buildingWindow = new Window({.2*RenderProgram::getScreenDimen().y,.2*RenderProgram::getScreenDimen().y}
+                          ,nullptr,{0,1,1,1});
+    addBuilding(factAssembler);
+    addBuilding(turretAssembler);
+    addResource(100);
 }
 
 int Player::getResource()
@@ -78,40 +105,42 @@ void Player::update()
         case BUILDING:
             auto mousePos = GameWindow::getCamera().toWorld(pairtoVec(MouseManager::getMousePos()));
             glm::vec4 color = selectColor;
-            auto assembler = FactoryAssembler();
-            glm::vec2 dimen = assembler.getDimen();
-            glm::vec4 structRect = {mousePos.x - dimen.x/2,mousePos.y - dimen.y/2,dimen.x, dimen.y};
-            bool collides = !GameWindow::getLevel().getMesh().notInWall(structRect);
-            if (!collides)
+            if(currentBuilding)
             {
-                Map* level = &GameWindow::getLevel();
-                RawQuadTree* tree = level->getTree();
-                auto vec = tree->getNearest(structRect);
-                int size = vec.size();
-                for (int i = 0; i < size; ++i)
+                glm::vec2 dimen = currentBuilding->getDimen();
+                glm::vec4 structRect = {mousePos.x - dimen.x/2,mousePos.y - dimen.y/2,dimen.x, dimen.y};
+                bool collides = !GameWindow::getLevel().getMesh().notInWall(structRect);
+                if (!collides)
                 {
-                    if (vec[i]->collides(structRect))
+                    Map* level = &GameWindow::getLevel();
+                    RawQuadTree* tree = level->getTree();
+                    auto vec = tree->getNearest(structRect);
+                    int size = vec.size();
+                    for (int i = 0; i < size; ++i)
                     {
-                        collides = true;
-                        break;
+                        if (vec[i]->collides(structRect))
+                        {
+                            collides = true;
+                            break;
+                        }
                     }
                 }
-            }
-            if (collides)
-            {
-                color = {1,0,0,1};
-            }
-            GameWindow::requestRect(structRect,color,true,0,0,0);
-            if (MouseManager::getJustClicked() == SDL_BUTTON_LEFT && !collides && getResource() >= assembler.getProdCost())
-            {
-                Object* ptr = (assembler.assemble());
-                RectComponent* rect = &ptr->getRect();
-                rect->setPos({mousePos.x - dimen.x/2, mousePos.y - dimen.y/2});
-                InactiveComponent* inactive = new InactiveComponent(assembler.getProdTime(),*ptr);
-                ptr->addComponent(*inactive);
-                GameWindow::getLevel().addUnit(*(ptr), ptr->getFriendly());
-                inactive->init();
-                addResource(-1*assembler.getProdCost());
+                if (collides)
+                {
+                    color = {1,0,0,1};
+                }
+                GameWindow::requestRect(structRect,color,true,0,0,0);
+                if (MouseManager::getJustClicked() == SDL_BUTTON_LEFT && !collides && getResource() >= currentBuilding->getProdCost())
+                {
+                    Object* ptr = (currentBuilding->assemble());
+                    RectComponent* rect = &ptr->getRect();
+                    rect->setPos({mousePos.x - dimen.x/2, mousePos.y - dimen.y/2});
+                    InactiveComponent* inactive = new InactiveComponent(currentBuilding->getProdTime(),*ptr);
+                    ptr->addComponent(*inactive);
+                    GameWindow::getLevel().addUnit(*(ptr), ptr->getFriendly());
+                    inactive->init();
+                    addResource(-1*currentBuilding->getProdCost());
+                }
             }
             break;
     }
@@ -122,9 +151,33 @@ void Player::update()
 
 }
 
+void Player::render(const glm::vec4& windowSize)
+{
+    glm::vec2 screenDimen = RenderProgram::getScreenDimen();
+    glm::vec2 mousePos = pairtoVec(MouseManager::getMousePos());
+    buildingWindow->update(mousePos.x,mousePos.y,GameWindow::interfaceZ,MouseManager::getJustClicked() == SDL_BUTTON_LEFT,
+                          GameWindow::getCamera().toAbsolute(windowSize));
+   // GameWindow::requestRect(windowSize,{0,1,1,1},true,0,GameWindow::interfaceZ,true);
+}
+
 const glm::vec4& Player::getSelection()
 {
     return selection;
+}
+
+void Player::setCurrentBuilding(UnitAssembler* building)
+{
+    currentBuilding = building;
+}
+
+void Player::addBuilding(UnitAssembler& building)
+{
+    buildings.push_back(&building);
+    glm::vec4 rect = buildingWindow->getRect();
+    int size = (buildingWindow->countButtons());
+    double butWidth = .25*rect.z;
+    double butHeight = .25*rect.a;
+    buildingWindow->addButton(*(new BuildingButton({butWidth*fmod(size,rect.z/butWidth),butHeight*(size/((int)(rect.z/butWidth))),butWidth,butHeight},*this,building)));
 }
 
 InactiveComponent::InactiveComponent(double duration, Entity& entity) : waitTime(duration), Component(entity), ComponentContainer<InactiveComponent>(entity)
@@ -156,40 +209,3 @@ void InactiveComponent::render()
     }
 }
 
-CreateEnergyComponent::CreateEnergyComponent(Player& player_, int frames, Entity& entity) : player(&player_), waitTime(frames), Component(entity), ComponentContainer<CreateEnergyComponent>(entity)
-{
-
-}
-
-void CreateEnergyComponent::update()
-{
-    if (player && alarm.framesPassed(waitTime))
-    {
-        player->addResource(1);
-        alarm.set();
-    }
-    else if (!alarm.isSet())
-    {
-        alarm.set();
-    }
-}
-
-Factory::Factory(int x, int y) : Structure(*(new ClickableComponent("Factory", *this)),*(new RectComponent({x,y,30,30}, *this)),
-                                           *(new RectRenderComponent({.5,.5,.5,1},*this)), *(new HealthComponent(*this,100)))
-{
-    addComponent(*(new CreateEnergyComponent(GameWindow::getPlayer(),1000, *this)));
-}
-
-FactoryAssembler::FactoryAssembler() : UnitAssembler("Factory",{30,30}, &defaultAnime, false, 100,1000)
-{
-    prodCost = 10;
-}
-
-Object* FactoryAssembler::assemble()
-{
-    Unit* stru = static_cast<Unit*>(UnitAssembler::assemble());
-    stru->setFriendly(true);
-    stru->addComponent(*(new CreateEnergyComponent(GameWindow::getPlayer(),1000,*stru)));
-
-    return stru;
-}

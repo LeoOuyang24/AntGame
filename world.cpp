@@ -21,14 +21,32 @@ Terrain::Terrain(int x, int y, int w, int h) : Object(*(new ClickableComponent("
     addComponent(*(new RepelComponent(*this)));
 }
 
-Shard::ShardComponent::ShardComponent(Entity& owner) : Component(owner), ComponentContainer<ShardComponent>(owner)
+void ItemComponent::onUse(Entity& other)
 {
 
 }
 
-void Shard::ShardComponent::collide(Entity& other)
+ItemComponent::ItemComponent(Entity& owner) : Component(owner), ComponentContainer<ItemComponent>(owner)
 {
-    static_cast<Object*>(entity)->setDead(true);
+
+}
+
+void ItemComponent::collide(Entity& other)
+{
+    if (static_cast<Object*>(&other)->getFriendly())
+    {
+        onUse(other);
+        static_cast<Object*>(entity)->setDead(true);
+    }
+}
+
+Shard::ShardComponent::ShardComponent(Entity& owner) : ItemComponent(owner), ComponentContainer<ShardComponent>(owner)
+{
+
+}
+
+void Shard::ShardComponent::onUse(Entity& other)
+{
     GameWindow::getLevel().findShard();
 }
 
@@ -42,6 +60,29 @@ Object* Shard::assemble()
     Object* stru = (ObjectAssembler::assemble());
     stru->addComponent(*(new ShardComponent(*stru)));
     return stru;
+}
+
+PickUpResource::PickUpResourceComponent::PickUpResourceComponent(int amount_, Entity& owner) : ItemComponent(owner),
+ComponentContainer<PickUpResource::PickUpResourceComponent>(owner), amount(amount_)
+{
+
+}
+
+void PickUpResource::PickUpResourceComponent::onUse(Entity& entity)
+{
+    GameWindow::getPlayer().addResource(amount);
+}
+
+PickUpResource::PickUpResource() : ObjectAssembler("Resource", {40,40},&resourceAnime,false)
+{
+
+}
+
+Object* PickUpResource::assemble()
+{
+    Object* obj = ObjectAssembler::assemble();
+    obj->addComponent(*(new PickUpResourceComponent(rand()%100 + 50,*obj)));
+    return obj;
 }
 
 Map::Map()
@@ -400,13 +441,21 @@ void Map::generateLevel() // Doesn't generate terrain on the bottom most row. It
             dists.push({line,empty});
         }
     }
-    Shard assembler;
-    glm::vec2 dimen = assembler.getDimen();
+    Shard shard;
+    PickUpResource resource;
+    glm::vec2 dimen = shard.getDimen();
     for (int i = 0; i < 5; ++i) //add shards
     {
         glm::vec2 chosen = emptySpots[rand()%emptySpots.size()];
-        addUnit(*(assembler.assemble()),chosen.x + fmod(rand(),(maxObjectSize/2 - dimen.x/2)),
+        addUnit(*(shard.assemble()),chosen.x + fmod(rand(),(maxObjectSize/2 - dimen.x/2)),
                 chosen.y + fmod(rand(),(maxObjectSize/2 - dimen.y/2)),false);
+    }
+    dimen = resource.getDimen();
+    for (int i = 0; i < rand()%100; ++i)
+    {
+            glm::vec2 chosen = emptySpots[rand()%emptySpots.size()];
+            addUnit(*(resource.assemble()),chosen.x + fmod(rand(),(maxObjectSize/2 - dimen.x/2)),
+            chosen.y + fmod(rand(),(maxObjectSize/2 - dimen.y/2)),false);
     }
     mainHill = std::static_pointer_cast<Anthill>(addUnit(*(new Anthill({chunkDimen/2,chunkDimen/2})),true));
    // addUnit(*(new Gate({chunkDimen/2, chunkDimen/2 + 100})));

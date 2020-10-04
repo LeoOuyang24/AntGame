@@ -1,6 +1,8 @@
 #ifndef PLAYER_H_INCLUDED
 #define PLAYER_H_INCLUDED
 
+#include "glInterface.h"
+
 #include "entities.h"
 
 class Factory;
@@ -16,13 +18,28 @@ class Player //tracks player stats (resources, money). Also handles player input
     glm::vec4 selection = {0,0,0,0};
     glm::vec2 origin; //last point the mouse was at
     Mode mode;
+    std::vector<UnitAssembler*> buildings; //list of structures we can create
+    Window* buildingWindow = nullptr;
+    UnitAssembler* currentBuilding = nullptr;
+    class BuildingButton : public Button
+    {
+        Player* player;
+        UnitAssembler* building;
+    public:
+        BuildingButton(const glm::vec4& rect, Player& player_, UnitAssembler& building_);
+        void press();
+    };
 public:
     static const glm::vec4 selectColor;
-
+    Player();
+    void init(); //initiaites the start state. Sets the starting amount of resources, starting buildings, etc.
     int getResource();
     void addResource(int r); //used to increase or decrease resources. Resources can't be negative
     void update();
+    void render(const glm::vec4& windowSize);
     const glm::vec4& getSelection();
+    void setCurrentBuilding(UnitAssembler* building);
+    void addBuilding(UnitAssembler& building);
 };
 
 class InactiveComponent : public Component, public ComponentContainer<InactiveComponent> //represents how long an entity is inactive for. Usually because a building is under construction
@@ -36,27 +53,6 @@ public:
     void render(); //what to render while this entity is inactive
 };
 
-class CreateEnergyComponent : public Component, public ComponentContainer<CreateEnergyComponent>
-{
-    DeltaTime alarm; //the timer for when to generate energy.
-    int waitTime = 0; //the number of frames before an energy is generated
-    Player* player;
-public:
-    CreateEnergyComponent(Player& player_, int frames, Entity& entity);
-    void update();
-};
 
-class Factory : public Structure
-{
-public:
-    Factory(int x, int y);
-};
-
-class FactoryAssembler : public UnitAssembler
-{
-public:
-    FactoryAssembler();
-    Object* assemble();
-};
 
 #endif // PLAYER_H_INCLUDED

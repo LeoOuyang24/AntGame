@@ -31,16 +31,40 @@ public:
     Terrain(int x, int y, int w, int h);
 };
 
+typedef void (*CollideFunction) (Entity&); //called when colliding when an entity
+class ItemComponent : public Component, public ComponentContainer<ItemComponent> //components that belong to objects that exist to be collided with once
+{
+protected:
+    virtual void onUse(Entity& other); //the item's use effect
+public:
+    ItemComponent(Entity& owner);
+    void collide(Entity& other);
+};
+
 class Shard : public ObjectAssembler
 {
-    class ShardComponent : public Component, public ComponentContainer<ShardComponent> //when touched, set this object to dead and increments the amount of shards found for the current chunk
+    class ShardComponent : public ItemComponent, public ComponentContainer<ShardComponent> //when touched, set this object to dead and increments the amount of shards found for the current chunk
     {
     public:
         ShardComponent(Entity& owner);
-        void collide(Entity& entity);
+        void onUse(Entity& entity);
     };
 public:
     Shard();
+    Object* assemble();
+};
+
+class PickUpResource : public ObjectAssembler
+{
+    class PickUpResourceComponent : public ItemComponent, public ComponentContainer<PickUpResourceComponent>
+    {
+        int amount = 0;
+    public:
+        PickUpResourceComponent(int amount_, Entity& owner);
+        void onUse(Entity& entity);
+    };
+public:
+    PickUpResource();
     Object* assemble();
 };
 
@@ -68,7 +92,7 @@ struct Map
     void reset();
     void setChangeLevel(bool l);
     bool getChangeLevel();
-        void findShard(); //finds a shard (increments foundShards by 1)
+    void findShard(); //finds a shard (increments foundShards by 1)
     int getFoundShards();
     Anthill* getAnthill();
     ~Map();

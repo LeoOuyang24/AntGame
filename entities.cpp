@@ -254,7 +254,7 @@ Object::~Object()
     //std::cout << "Object Destructor" << std::endl;
 }
 
-ObjectAssembler::ObjectAssembler( std::string name_, const glm::vec2& rect_,AnimationWrapper* anime, bool mov) : dimen(rect_), name(name_), sprite(anime), movable(mov)
+ObjectAssembler::ObjectAssembler( std::string name_, const glm::vec2& rect_,AnimationWrapper* anime, bool mov, bool friendly_) : dimen(rect_), name(name_), sprite(anime), movable(mov), friendly(friendly_)
 {
 
 }
@@ -281,7 +281,9 @@ bool ObjectAssembler::getMovable()
 
 Object* ObjectAssembler::assemble()
 {
-    return new Object(name,{0,0,dimen.x,dimen.y},sprite,movable);
+    Object* obj= new Object(name,{0,0,dimen.x,dimen.y},sprite,movable);
+    obj->setFriendly(friendly);
+    return obj;
 }
 
 InteractionComponent::InteractionComponent(Object& unit) : Component(unit), ComponentContainer<InteractionComponent>(&unit)
@@ -753,10 +755,17 @@ void AttackComponent::update()
   //  std::cout << ptr << std::endl;
     if (canAttack(ptr)) //attack if we are able to.
     {
+
         attack(ptr->getComponent<HealthComponent>());
         if (move)
         {
             move->setSpeed(0);
+            if (move->getTarget() != ptr->getCenter())
+            {
+                 /*there is a small chance that if an enemy enters our attack range at the same time that set it as a target,
+                  we won't have our move->getTarget = to the enemy target. We set it here so that AnimationComponent renders our angle correctly.*/
+                move->setTarget(ptr->getCenter()); //
+            }
         }
     }
     else //otherwise, move
@@ -778,10 +787,8 @@ void AttackComponent::setTarget(const glm::vec2& target, const std::shared_ptr<O
         }
         else
         {
-
             move->setTarget(target);
             targetUnit.reset();
-
         }
     }
 }

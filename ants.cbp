@@ -37,7 +37,7 @@
 			<Add directory="../../resources" />
 		</Compiler>
 		<Linker>
-			<Add option="-lmingw32 -lSDL2main  -lSDL2 -lopengl32" />
+			<Add option="-lmingw32 -lSDL2main -lSDL2 -lopengl32" />
 			<Add option="-lglu32 -lglew32 -lglew32mx" />
 			<Add library="../../freetype-2.9.1/objs/freetype.a" />
 			<Add directory="../../SDL stuff/SDL2-2.0.8/x86_64-w64-mingw32/lib" />

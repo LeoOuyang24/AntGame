@@ -395,10 +395,10 @@ void Manager::update()
         curTask->task.getInput();
         //std::cout << currentTask->getAnts().size() << std::endl;
     }
-    if (GameWindow::getLevel().getAnthill() && (!spawner.isSet() || spawner.framesPassed(std::min(60 - SDL_GetTicks()/1000,(Uint32)10))))
+    if (GameWindow::getLevel().getAnthill() && (!spawner.isSet() || spawner.timePassed(std::min(180000 - SDL_GetTicks(),(Uint32)10000))))
     {
         Map* map = &(GameWindow::getLevel());
-        spawnCreatures(*GameWindow::getLevel().getAnthill() , map->getRect(map->getCurrentChunk()).z/2, map->getRect(map->getCurrentChunk()).z);
+        spawnCreatures(*GameWindow::getLevel().getAnthill() , map->getRect(map->getCurrentChunk()).z/6, map->getRect(map->getCurrentChunk()).z/6);
         spawner.reset();
         spawner.set();
     }
@@ -609,19 +609,19 @@ GameWindow::GameWindow() : Window({0,0},nullptr,{0,0,0,0})
     gameOver->addButton(*(new QuitButton(*this)));
     manager.init(level.getRect(level.getCurrentChunk()));
     debug.init();
+    player.init();
   /*  auto ptr = evilMoonAssembler.assemble();
     ptr->getComponent<UnitAttackComponent>()->setLongTarget({0,0},&level.getUnit(level.getAnthill()));
     level.addUnit(*ptr,0,0,false);*/
 
    // level.addUnit(*(new Dummy(levelRect.z/2 - 100,levelRect.a/2)));
-    player.addResource(100);
 
     camera.center({levelRect.z/2,levelRect.a/2});
    // camera.setZoomTarget(.5);
    // manager.clear();
 }
 
-void GameWindow::update(int x, int y, bool clicked)
+void GameWindow::update(int x, int y, int z, bool clicked)
 {
    // PolyRender::requestPolygon({{0,0,0},{0,400,0},{100,100,0},{100,400,0}},{0,0,0,1});
     Anthill* hill = static_cast<Anthill*>(anthill.lock().get());
@@ -671,7 +671,7 @@ void GameWindow::update(int x, int y, bool clicked)
         PolyRender::render();
         SpriteManager::render();
 
-     /*  glDisable(GL_STENCIL_TEST);
+      /* glDisable(GL_STENCIL_TEST);
         glStencilFunc(GL_ALWAYS,1,0xFF);
         glStencilMask(0xFF);
         glEnable(GL_DEPTH_TEST); //anything rendered after this will be discarded if they are under the fog.*/
@@ -720,6 +720,7 @@ void GameWindow::renderSelectedUnits()
     const glm::vec4* cameraRect = &(camera.getRect());
     glm::vec2 screenDimen = RenderProgram::getScreenDimen();
     glm::vec4 wholeRect = {0,rect.a - menuHeight,rect.z, menuHeight};
+    player.render({wholeRect.x + wholeRect.z - 1.1*wholeRect.a, wholeRect.y - wholeRect.a, wholeRect.a,wholeRect.a});
     glm::vec4 selectedAntsRect = {0,wholeRect.y, .7*wholeRect.z, wholeRect.a};
     glm::vec4 selectedUnitRect = {selectedAntsRect.x + selectedAntsRect.z, wholeRect.y, wholeRect.z - selectedAntsRect.z, wholeRect.a};
     glm::vec2 margin = {.05*wholeRect.z,.2*menuHeight}; //the horizontal and vertical margins to render the selected ants and selected unit

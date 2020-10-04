@@ -50,7 +50,7 @@ void UnitAttackComponent::update()
 
 void UnitAttackComponent::setLongTarget(const glm::vec2& target, std::shared_ptr<Object>* unit)
 {
-    activated = true;
+    activated = true; //once moveComponent has set a target, our movecomponent gets permission to affect unitAttackComponent
     AttackComponent::setTarget(target,unit);
     if (unit)
     {
@@ -66,6 +66,7 @@ void UnitAttackComponent::setLongTarget(const glm::vec2& target, std::shared_ptr
 
 void UnitAttackComponent::setShortTarget(std::shared_ptr<Object>* unit)
 {
+    std::cout <<move->getTarget().x << " " << move->getTarget().y << std::endl;
     if (shortTarget.lock().get() != unit->get())
     {
         AttackComponent::setTarget(*unit);
@@ -390,6 +391,7 @@ void Anthill::StartSignal::press()
 Anthill::Anthill(const glm::vec2& pos) : Structure(*(new ProduceUnitComponent("Anthill",*this)), *(new RectComponent({pos.x,pos.y,64,64}, *this)),
                                                 *(new AntHillRender(*this)), *(new HealthComponent(*this, 100)))
 {
+    this->setFriendly(true);
  //   getClickable().addButton(*(new CreateAnt(*this)));
   //  getClickable().addButton(*(new StartSignal(*this)));
     //addComponent(*(new ResourceComponent(1000,*this)));

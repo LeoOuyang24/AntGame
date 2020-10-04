@@ -132,7 +132,7 @@ public:
     static void requestNGon(int n, const glm::vec2& center, double side, const glm::vec4& color, double angle, bool filled, float z, bool absolute = false); //easier way to render polygons without having to call getCamera();
     static void requestRect(const glm::vec4& rect, const glm::vec4& color, bool filled, double angle, float z, bool absolute = false); //if absolute is true, the coordinates are taken as screen coordinates
     GameWindow();
-    void update(int x, int y, bool clicked);
+    void update(int x, int y, int z, bool clicked);
     void renderTopBar();
     void renderSelectedUnits();
     static float getMenuHeight();

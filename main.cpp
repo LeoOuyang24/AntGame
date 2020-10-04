@@ -79,7 +79,7 @@ int main(int args, char* argsc[])
 
     const int screenWidth = 960;
     const int screenHeight = 960;
-    const int windowMode =  SDL_WINDOW_OPENGL;// | SDL_WINDOW_FULLSCREEN;
+    const int windowMode =  SDL_WINDOW_OPENGL ;
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
         return 1;
@@ -95,6 +95,9 @@ int main(int args, char* argsc[])
     RenderProgram::init(screenWidth,screenHeight);
     PolyRender::init(screenWidth,screenHeight);
     Font::init(screenWidth, screenHeight);
+
+    initSprites();
+
     SDL_Event e;
     bool quit = false;
     bool eventsEmpty = true;
@@ -103,7 +106,6 @@ int main(int args, char* argsc[])
     GameWindow game;
     interface.switchCurrent(&game);
 
-    initSprites();
 
    SpriteWrapper spr;
     spr.init("image.png");
@@ -144,6 +146,8 @@ int main(int args, char* argsc[])
        //drawRectangle(RenderProgram::lineProgram,{1,1,1},{0,0,  64,64},0);
        //glm::vec4 rect = {320,320,128,64};
       // spr.request({rect,0,NONE,{0,1,0,1}});
+      //SpriteWrapper* ptr = &anime;
+      //turretSprite.request({{0,0,64,64}});
        //PolyRender::requestRect(rect,{0,0,0,1},true,0,.1);
      //  Font::tnr.requestWrite({"hella",rect,0,{1,0,0,1},1});
    //  PolyRender::requestNGon(10,GameWindow::getCamera().toAbsolute(pairtoVec(MouseManager::getMousePos())),10,{1,0,0,1},0,true,3);
@@ -153,7 +157,7 @@ int main(int args, char* argsc[])
         SDL_GL_SwapWindow(window);
         DeltaTime::update();
         eventsEmpty = true;
-        fastPrint("Ticks: " + convert(DeltaTime::deltaTime) + "\n");
+       // fastPrint("Ticks: " + convert(DeltaTime::deltaTime) + "\n");
       //  std::cout << DeltaTime::deltaTime << std::endl;
     }
     game.close();

@@ -88,8 +88,9 @@ protected:
     std::string name;
     AnimationWrapper* sprite = nullptr;
     bool movable = false;
+    bool friendly = false;
 public:
-    ObjectAssembler(std::string name_, const glm::vec2& rect_, AnimationWrapper* anime, bool mov);
+    ObjectAssembler(std::string name_, const glm::vec2& rect_, AnimationWrapper* anime, bool mov, bool friendly_ = false);
     const glm::vec2& getDimen();
     std::string getName();
     AnimationWrapper* getSprite();

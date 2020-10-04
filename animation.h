@@ -5,8 +5,10 @@
 
 extern AnimationWrapper defaultAnime;
 extern AnimationWrapper shardAnime;
+extern AnimationWrapper resourceAnime;
 
 extern AnimationWrapper basicSoldierAnime;
+extern AnimationWrapper turretSprite;
 extern AnimationWrapper basicEnemyAnime;
 
 extern AnimationWrapper portalAnime;

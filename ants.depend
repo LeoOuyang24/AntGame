@@ -548,7 +548,7 @@
 1525710184 c:\users\leoou\onedrive\desktop\glm\glm\gtc\type_ptr.inl
 	<cstring>
 
-1598334701 c:\users\leoou\onedrive\desktop\resources\render.h
+1601012611 c:\users\leoou\onedrive\desktop\resources\render.h
 	<iostream>
 	<vector>
 	<map>
@@ -572,7 +572,7 @@
 	<memory>
 	"render.h"
 
-1586492667 source:c:\users\leoou\onedrive\desktop\resources\glinterface.cpp
+1601271376 source:c:\users\leoou\onedrive\desktop\resources\glinterface.cpp
 	<SDL.h>
 	"SDLhelper.h"
 	"glInterface.h"
@@ -915,12 +915,12 @@
 	<list>
 	"SDL.h"
 
-1576651359 c:\users\leoou\onedrive\desktop\resources\glinterface.h
+1601171281 c:\users\leoou\onedrive\desktop\resources\glinterface.h
 	<memory>
 	"FreeTypeHelper.h"
 	"render.h"
 
-1595117708 source:c:\users\leoou\onedrive\desktop\resources\render.cpp
+1601080228 source:c:\users\leoou\onedrive\desktop\resources\render.cpp
 	<sstream>
 	<fstream>
 	"stb_image.h"
@@ -970,7 +970,7 @@
 	<stack>
 	<unordered_map>
 
-1599427450 source:c:\users\leoou\onedrive\desktop\projects\ants\main.cpp
+1601079856 source:c:\users\leoou\onedrive\desktop\projects\ants\main.cpp
 	<iostream>
 	<time.h>
 	<typeinfo>
@@ -985,7 +985,7 @@
 	"game.h"
 	"animation.h"
 
-1596564634 source:c:\users\leoou\onedrive\desktop\projects\ants\sprites.cpp
+1599778462 source:c:\users\leoou\onedrive\desktop\projects\ants\sprites.cpp
 	"animation.h"
 
 1564186026 c:\users\leoou\onedrive\desktop\projects\ants\sprites.h
@@ -1004,7 +1004,7 @@
 	<typeinfo>
 	"glGame.h"
 
-1598760174 source:c:\users\leoou\onedrive\desktop\projects\ants\ants.cpp
+1601776486 source:c:\users\leoou\onedrive\desktop\projects\ants\ants.cpp
 	<cmath>
 	"render.h"
 	"vanilla.h"
@@ -1019,7 +1019,7 @@
 	"entities.h"
 	"friendlyAssemblers.h"
 
-1599357147 source:c:\users\leoou\onedrive\desktop\projects\ants\game.cpp
+1601775806 source:c:\users\leoou\onedrive\desktop\projects\ants\game.cpp
 	"SDLHelper.h"
 	"vanilla.h"
 	"game.h"
@@ -1028,7 +1028,7 @@
 	"navigation.h"
 	"enemyAssemblers.h"
 
-1598753112 c:\users\leoou\onedrive\desktop\projects\ants\game.h
+1600036379 c:\users\leoou\onedrive\desktop\projects\ants\game.h
 	"glInterface.h"
 	"glGame.h"
 	"vanilla.h"
@@ -1040,14 +1040,14 @@
 	"player.h"
 	"fog.h"
 
-1598311430 c:\users\leoou\onedrive\desktop\projects\ants\entities.h
+1599586956 c:\users\leoou\onedrive\desktop\projects\ants\entities.h
 	<deque>
 	"glInterface.h"
 	"SDLhelper.h"
 	"render.h"
 	"components.h"
 
-1599357303 source:c:\users\leoou\onedrive\desktop\projects\ants\entities.cpp
+1601777189 source:c:\users\leoou\onedrive\desktop\projects\ants\entities.cpp
 	"SDLHelper.h"
 	"render.h"
 	"entities.h"
@@ -1056,13 +1056,13 @@
 	"navigation.h"
 	"animation.h"
 
-1596678850 c:\users\leoou\onedrive\desktop\projects\ants\world.h
+1599775853 c:\users\leoou\onedrive\desktop\projects\ants\world.h
 	"glInterface.h"
 	"SDLhelper.h"
 	"components.h"
 	"entities.h"
 
-1598758058 source:c:\users\leoou\onedrive\desktop\projects\ants\world.cpp
+1599776253 source:c:\users\leoou\onedrive\desktop\projects\ants\world.cpp
 	<queue>
 	"world.h"
 	"ants.h"
@@ -1088,7 +1088,7 @@
 1589135255 c:\users\leoou\onedrive\desktop\projects\ants\asciartvromvrom.h
 	<iostream>
 
-1599503177 source:c:\users\leoou\onedrive\desktop\projects\ants\navigation.cpp
+1599503979 source:c:\users\leoou\onedrive\desktop\projects\ants\navigation.cpp
 	<algorithm>
 	<unordered_set>
 	"navigation.h"
@@ -1112,10 +1112,11 @@
 	"navigation.h"
 	"game.h"
 
-1596557135 c:\users\leoou\onedrive\desktop\projects\ants\player.h
+1600795331 c:\users\leoou\onedrive\desktop\projects\ants\player.h
+	"glInterface.h"
 	"entities.h"
 
-1598751807 source:c:\users\leoou\onedrive\desktop\projects\ants\player.cpp
+1601271411 source:c:\users\leoou\onedrive\desktop\projects\ants\player.cpp
 	"vanilla.h"
 	"FreeTypeHelper.h"
 	"player.h"
@@ -1123,7 +1124,7 @@
 	"navigation.h"
 	"animation.h"
 
-1596564657 c:\users\leoou\onedrive\desktop\projects\ants\animation.h
+1599778404 c:\users\leoou\onedrive\desktop\projects\ants\animation.h
 	"render.h"
 
 1594925144 c:\users\leoou\onedrive\desktop\projects\ants\fog.h
@@ -1132,13 +1133,15 @@
 	"game.h"
 	"fog.h"
 
-1598311301 source:c:\users\leoou\onedrive\desktop\projects\ants\friendlyassemblers.cpp
+1601771221 source:c:\users\leoou\onedrive\desktop\projects\ants\friendlyassemblers.cpp
 	"friendlyAssemblers.h"
 	"animation.h"
 	"ants.h"
+	"game.h"
 
-1596677432 c:\users\leoou\onedrive\desktop\projects\ants\friendlyassemblers.h
+1599779358 c:\users\leoou\onedrive\desktop\projects\ants\friendlyassemblers.h
 	"entities.h"
+	"player.h"
 
 1596679089 c:\users\leoou\onedrive\desktop\projects\ants\entities.tpp
 	"game.h"
