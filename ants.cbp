@@ -121,9 +121,12 @@
 		<Unit filename="resources/shaders/vertex/wordVertex.h" />
 		<Unit filename="sequence.cpp" />
 		<Unit filename="sequence.h" />
+		<Unit filename="shop.h" />
 		<Unit filename="sprites.cpp" />
 		<Unit filename="world.cpp" />
 		<Unit filename="world.h" />
+		<Unit filename="worldMap.cpp" />
+		<Unit filename="worldMap.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />

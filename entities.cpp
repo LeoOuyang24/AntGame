@@ -44,7 +44,7 @@ void ClickableComponent::update()
     const glm::vec4* unitRect = &(entity->getComponent<RectComponent>()->getRect());
     int size = buttons.size();
     bool stillClicked = false;
-    glm::vec2 mousePos = GameWindow::getCamera().toWorld({MouseManager::getMousePos().first, MouseManager::getMousePos().second});
+    glm::vec2 mousePos = pairtoVec({MouseManager::getMousePos().first, MouseManager::getMousePos().second});
     const glm::vec4* camRect = &(GameWindow::getCamera().getRect());
     if (clicked)
     {
@@ -67,18 +67,25 @@ void ClickableComponent::update()
                 buttonRect.x = unitRect->x + spacing.x;
                 buttonRect.y = unitRect->y + (unitRect->a+spacing.y)*downSpace - (rect->a +spacing.y)*(!downSpace && upSpace);
             }
-            buttons[i]->changeRect(buttonRect);
-            glm::vec4 disp = GameWindow::getCamera().getRect();
-            buttons[i]->render(-disp.x,-disp.y);
-            //GameWindow::requestRect(buttonRect,{0,1,0,1},true,0,0);
+            buttonRect = GameWindow::getCamera().toScreen(buttonRect);
+          //  buttons[i]->changeRect(GameWindow::getCamera().toScreen(buttonRect));
+            //glm::vec4 disp = GameWindow::getCamera().getRect();
+            buttons[i]->updateBlit(GameWindow::interfaceZ,buttonRect);
+             //   GameWindow::requestRect(buttonRect,{0,1,0,1},true,0,GameWindow::interfaceZ);
             if (pointInVec(buttonRect,mousePos.x,mousePos.y,0))
             {
                 if (MouseManager::getJustClicked() == SDL_BUTTON_LEFT)
                 {
                     stillClicked = true;
-                    buttons[i]->press();
+                  //  std::cout << "Clicked " << std::endl;
+                 //   buttons[i]->press();
                     break;
                 }
+            }
+            else
+            {
+              /*  std::cout << mousePos2.x << " " << mousePos2.y << " ";
+                printRect(buttonRect);*/
             }
             offset += rect->a + spacing.y;
         }
@@ -91,7 +98,7 @@ void ClickableComponent::update()
            // std::cout << stillClicked << " " << (MouseManager::getJustReleased() != SDL_BUTTON_LEFT && clicked) << std::endl;
         }*/
         //stillClicked = stillClicked ;//|| (MouseManager::getJustClicked() != SDL_BUTTON_LEFT && clicked);//  ||  becomeClicked;*/
-        clicked = stillClicked || (MouseManager::getJustClicked() == SDL_BUTTON_LEFT && pointInVec(*unitRect,mousePos.x,mousePos.y));
+        clicked = stillClicked || (MouseManager::getJustClicked() == SDL_BUTTON_LEFT && pointInVec(GameWindow::getCamera().toScreen(*unitRect),mousePos.x,mousePos.y));
 }
 void ClickableComponent::display(const glm::vec4& rect)
 {
@@ -251,7 +258,7 @@ void Object::setDead(bool isDead)
 }
 Object::~Object()
 {
-    //std::cout << "Object Destructor" << std::endl;
+    //std::cout << "Object Destructor: " << this << std::endl;
 }
 
 ObjectAssembler::ObjectAssembler( std::string name_, const glm::vec2& rect_,AnimationWrapper* anime, bool mov, bool friendly_) : dimen(rect_), name(name_), sprite(anime), movable(mov), friendly(friendly_)
@@ -324,7 +331,7 @@ HealthComponent::HealthComponent(Entity& entity, double health_,  int displaceme
 
 void HealthComponent::takeDamage(int amount, Object& attacker)
 {
-    lastAttacker = GameWindow::getLevel().getUnit(&attacker);
+    lastAttacker = GameWindow::getLevel()->getUnit(&attacker);
     addHealth(-1*amount);
 }
 
@@ -538,7 +545,7 @@ void CorpseComponent::onDeath()
     if (entity)
     {
         ResourceUnit* resource = new ResourceUnit(amount,entity->getComponent<RectComponent>()->getRect());
-        GameWindow::getLevel().addUnit(*(resource), false);
+        GameWindow::getLevel()->addUnit(*(resource), false);
     }
 }
 
@@ -574,7 +581,7 @@ void PathComponent::setTarget(const glm::vec2& point)
             std::cout << point.x << " " << point.y << std::endl;
         }*/
         path.clear();
-        NavMesh* mesh = &(GameWindow::getLevel().getMesh());
+        NavMesh* mesh = &(GameWindow::getLevel()->getMesh());
         auto time = SDL_GetTicks();
         path = mesh->getPath(getCenter(),point, entity->getComponent<RectComponent>()->getRect().z/2*sqrt(2));
        // std::cout << SDL_GetTicks() - time << std::endl;
@@ -642,8 +649,8 @@ void WanderMove::update()
         int maxDimen = std::max(rect.z,rect.a);
         double radius = rand()%(100 - 10) + maxDimen + 10;
         glm::vec2 point = {rect.x + rect.z/2 + cos(angle)*radius, rect.y + rect.a/2 + sin(angle)*radius}; //target point, currenlty randomly generated
-        Map* level = &(GameWindow::getLevel());
-        const glm::vec4* levelRect = &(level->getCurrentChunk().getRect());
+        Map* level = (GameWindow::getLevel());
+        const glm::vec4* levelRect = &(level->getRect());
         point.x = std::max(levelRect->x, std::min(point.x, levelRect->x + levelRect->z - rect.z)); //clamp point to levelREct
         point.y = std::max(levelRect->y, std::min(point.y, levelRect->y + levelRect->a - rect.a));
         setTarget(point);
@@ -729,7 +736,7 @@ bool AttackComponent::canAttack(Object* ptr)
     {
         RectComponent* otherRect = &ptr->getRect();
         return move && ptr->getComponent<HealthComponent>() && vecDistance(otherRect->getRect(),move->getRect()) <= range
-            && GameWindow::getLevel().getMesh().straightLine(glm::vec4(otherRect->getCenter(), move->getCenter())) ;
+            && GameWindow::getLevel()->getMesh().straightLine(glm::vec4(otherRect->getCenter(), move->getCenter())) ;
     }
     return false;
 }
@@ -760,11 +767,12 @@ void AttackComponent::update()
         if (move)
         {
             move->setSpeed(0);
-            if (move->getTarget() != ptr->getCenter())
+            if (!pointInVec(ptr->getRect().getRect(),move->getTarget().x, move->getTarget().y,0))
             {
+                //std::cout << "ASDF" << std::endl;
                  /*there is a small chance that if an enemy enters our attack range at the same time that set it as a target,
                   we won't have our move->getTarget = to the enemy target. We set it here so that AnimationComponent renders our angle correctly.*/
-                move->setTarget(ptr->getCenter()); //
+              //  move->setTarget(ptr->getCenter()); //
             }
         }
     }
@@ -801,7 +809,7 @@ AttackComponent::~AttackComponent()
 
 
 SeigeComponent::SeigeComponent(Unit& entity, Anthill& hill) : ApproachComponent(entity), ComponentContainer<SeigeComponent>(entity),
- targetHill(std::dynamic_pointer_cast<Anthill>(GameWindow::getLevel().getUnit(&hill)))
+ targetHill(std::dynamic_pointer_cast<Anthill>(GameWindow::getLevel()->getUnit(&hill)))
 {
 
 }
@@ -814,11 +822,11 @@ void SeigeComponent::update()
         {
             if (Object* u = owner->getComponent<HealthComponent>()->getLastAttacker())
             {
-                setTarget(GameWindow::getLevel().getUnit(u));
+                setTarget(GameWindow::getLevel()->getUnit(u));
             }
             else
             {
-                setTarget(GameWindow::getLevel().getUnit(targetHill.lock().get()));
+                setTarget(GameWindow::getLevel()->getUnit(targetHill.lock().get()));
             }
         }
     }
@@ -866,10 +874,10 @@ void ResourceEatComponent::update()
     {
         if (!targetPtr)
         {
-            Object* nearest = findNearestUnit<ResourceComponent>(500,false,*GameWindow::getLevel().getTree());
+            Object* nearest = findNearestUnit<ResourceComponent>(500,false,*GameWindow::getLevel()->getTree());
             if (nearest)
             {
-                setTarget((GameWindow::getLevel().getUnit((static_cast<Object*>(nearest)))));
+                setTarget((GameWindow::getLevel()->getUnit((static_cast<Object*>(nearest)))));
             }
         }
         else

@@ -17,21 +17,22 @@ ComponentContainer<UnitAttackComponent>(entity), notFriendly(f), searchRange(sea
 
 void UnitAttackComponent::update()
 {
-    if (ignore != IGNORE) //if we aren't ignoring, find nearby units to fight
+    if (ignore != IgnoreState::IGNORESTATE) //if we aren't ignoring, find nearby units to fight
     {
         Object* ent = shortTarget.lock().get();
-        if (!ent) //if we aren't already fighting something, find something nearby
+        Map* level = GameWindow::getLevel();
+        if (!ent && level) //if we aren't already fighting something, find something nearby
         {
-            Object* nearby = findNearestUnit<HealthComponent>(searchRange,notFriendly,*GameWindow::getLevel().getTree());
+            Object* nearby = findNearestUnit<HealthComponent>(searchRange,notFriendly,*(level->getTree()));
             if (nearby)
             {
-                setShortTarget(&GameWindow::getLevel().getUnit(nearby));
+                setShortTarget(&level->getUnit(nearby));
             }
             else if (activated && (longTarget.second != move->getTarget() || targetUnit.lock().get() != longTarget.first.lock().get())) //if there's nothing nearby to fight, set the target to the long target
             {
                 if (longTarget.first.lock().get())
                 {
-                    setTarget(longTarget.second,&GameWindow::getLevel().getUnit(longTarget.first.lock().get()));
+                    setTarget(longTarget.second,&level->getUnit(longTarget.first.lock().get()));
                 }
                 else
                 {
@@ -43,7 +44,7 @@ void UnitAttackComponent::update()
     }
     if (move->getCenter() == longTarget.second) //if we are at the target, set our state back to ignore
     {
-        ignore = IDLE;
+        ignore = IgnoreState::IDLE;
     }
     AttackComponent::update();
 }
@@ -61,12 +62,12 @@ void UnitAttackComponent::setLongTarget(const glm::vec2& target, std::shared_ptr
         longTarget.second = target;
         longTarget.first.reset();
     }
-    ignore = static_cast<IgnoreState>(std::min(ignore + 1,(int)IGNORE));
+    ignore = static_cast<IgnoreState>(std::min((int)ignore + 1,(int)IgnoreState::IGNORESTATE));
 }
 
 void UnitAttackComponent::setShortTarget(std::shared_ptr<Object>* unit)
 {
-    std::cout <<move->getTarget().x << " " << move->getTarget().y << std::endl;
+   // std::cout <<move->getTarget().x << " " << move->getTarget().y << std::endl;
     if (shortTarget.lock().get() != unit->get())
     {
         AttackComponent::setTarget(*unit);
@@ -327,8 +328,12 @@ void ProduceUnitComponent::update()
         auto vec4 = entity->getComponent<RectComponent>()->getRect();
         glm::vec2 center = {vec4.x + vec4.z + beingProduced->getDimen().x/2, vec4.y + vec4.a + beingProduced->getDimen().y/2};
 
-        GameWindow::getLevel().addUnit(*(beingProduced->assemble()),center.x +5*cos(rand()%360/180.0*M_PI),center.y +5*sin(rand()%360/180.0*M_PI), true);
-        GameWindow::getPlayer().addResource(-1*beingProduced->getProdCost());
+        Map* level = GameWindow::getLevel();
+        if (level)
+        {
+            level->addUnit(*(beingProduced->assemble()),center.x +5*cos(rand()%360/180.0*M_PI),center.y +5*sin(rand()%360/180.0*M_PI), true);
+            GameWindow::getPlayer().addResource(-1*beingProduced->getProdCost());
+        }
 
         beingProduced = nullptr;
         toProduce.pop_front();
@@ -409,7 +414,7 @@ void Anthill::createAnt()
         /*std::shared_ptr<Ant> ptr = ;
         std::cout << ptr.use_count() << std::endl;
         std::weak_ptr<Ant> weak = ptr;*/
-        GameWindow::getLevel().addUnit( *(new Ant({center.x +5*cos(rand()%360/180.0*M_PI),center.y +5*sin(rand()%360/180.0*M_PI),20,20},*this)), true);
+        GameWindow::getLevel()->addUnit( *(new Ant({center.x +5*cos(rand()%360/180.0*M_PI),center.y +5*sin(rand()%360/180.0*M_PI),20,20},*this)), true);
         //std::cout << ants.size() << std::endl;
     }
 }

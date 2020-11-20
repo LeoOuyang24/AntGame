@@ -13,6 +13,7 @@
 #include "debug.h"
 #include "player.h"
 #include "fog.h"
+#include "worldMap.h"
 
 extern SpriteWrapper frame;
 
@@ -101,7 +102,7 @@ class GameWindow : public Window //the gamewindow is mostly static because most 
 
     static float menuHeight;
     static Camera camera;
-    static Map level;
+    static std::weak_ptr<Map> level;
     static Manager manager;
     static Window* gameOver;
     static Debug debug;
@@ -111,7 +112,7 @@ class GameWindow : public Window //the gamewindow is mostly static because most 
     static bool renderAbsolute; //whether or not to renderAbsolute
 
     ObjPtr anthill; //pointer to the anthill. Keeps track of whether or not the player has lost
-
+    WindowSwitchButton* switchToMap = nullptr; //button that swaps back to the world map
     std::vector<std::shared_ptr<SequenceUnit>> labels;
     struct QuitButton : public Button
     {
@@ -126,13 +127,16 @@ public:
     const static glm::vec4& getSelection();
     static Camera& getCamera();
     static const Manager& getManager();
-    static Map& getLevel();
+    static Map* getLevel();
+    static void setLevel(std::shared_ptr<Map>& map);
     static Player& getPlayer();
     static FogMaker& getFogMaker();
+    void setWorldMap(WindowSwitchButton& butt);
     static void requestNGon(int n, const glm::vec2& center, double side, const glm::vec4& color, double angle, bool filled, float z, bool absolute = false); //easier way to render polygons without having to call getCamera();
     static void requestRect(const glm::vec4& rect, const glm::vec4& color, bool filled, double angle, float z, bool absolute = false); //if absolute is true, the coordinates are taken as screen coordinates
     GameWindow();
-    void update(int x, int y, int z, bool clicked);
+    void onSwitch(Window& from);
+    void updateTop(float z);
     void renderTopBar();
     void renderSelectedUnits();
     static float getMenuHeight();

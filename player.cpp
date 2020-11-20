@@ -59,7 +59,7 @@ void Player::init()
     buildingWindow = new Window({.2*RenderProgram::getScreenDimen().y,.2*RenderProgram::getScreenDimen().y}
                           ,nullptr,{0,1,1,1});
     addBuilding(factAssembler);
-    addBuilding(turretAssembler);
+   // addBuilding(turretAssembler);
     addResource(100);
 }
 
@@ -109,10 +109,10 @@ void Player::update()
             {
                 glm::vec2 dimen = currentBuilding->getDimen();
                 glm::vec4 structRect = {mousePos.x - dimen.x/2,mousePos.y - dimen.y/2,dimen.x, dimen.y};
-                bool collides = !GameWindow::getLevel().getMesh().notInWall(structRect);
+                bool collides = !GameWindow::getLevel()->getMesh().notInWall(structRect);
                 if (!collides)
                 {
-                    Map* level = &GameWindow::getLevel();
+                    Map* level = GameWindow::getLevel();
                     RawQuadTree* tree = level->getTree();
                     auto vec = tree->getNearest(structRect);
                     int size = vec.size();
@@ -125,7 +125,7 @@ void Player::update()
                         }
                     }
                 }
-                if (collides)
+                else
                 {
                     color = {1,0,0,1};
                 }
@@ -137,7 +137,7 @@ void Player::update()
                     rect->setPos({mousePos.x - dimen.x/2, mousePos.y - dimen.y/2});
                     InactiveComponent* inactive = new InactiveComponent(currentBuilding->getProdTime(),*ptr);
                     ptr->addComponent(*inactive);
-                    GameWindow::getLevel().addUnit(*(ptr), ptr->getFriendly());
+                    GameWindow::getLevel()->addUnit(*(ptr), ptr->getFriendly());
                     inactive->init();
                     addResource(-1*currentBuilding->getProdCost());
                 }
@@ -153,10 +153,8 @@ void Player::update()
 
 void Player::render(const glm::vec4& windowSize)
 {
-    glm::vec2 screenDimen = RenderProgram::getScreenDimen();
-    glm::vec2 mousePos = pairtoVec(MouseManager::getMousePos());
-    buildingWindow->update(mousePos.x,mousePos.y,GameWindow::interfaceZ,MouseManager::getJustClicked() == SDL_BUTTON_LEFT,
-                          GameWindow::getCamera().toAbsolute(windowSize));
+    buildingWindow->updateTop(GameWindow::interfaceZ,
+                          RenderProgram::toAbsolute(windowSize));
    // GameWindow::requestRect(windowSize,{0,1,1,1},true,0,GameWindow::interfaceZ,true);
 }
 
@@ -174,10 +172,15 @@ void Player::addBuilding(UnitAssembler& building)
 {
     buildings.push_back(&building);
     glm::vec4 rect = buildingWindow->getRect();
-    int size = (buildingWindow->countButtons());
+    int size = (buildingWindow->countPanels());
     double butWidth = .25*rect.z;
     double butHeight = .25*rect.a;
-    buildingWindow->addButton(*(new BuildingButton({butWidth*fmod(size,rect.z/butWidth),butHeight*(size/((int)(rect.z/butWidth))),butWidth,butHeight},*this,building)));
+    buildingWindow->addPanel(*(new BuildingButton({butWidth*fmod(size,rect.z/butWidth),butHeight*(size/((int)(rect.z/butWidth))),butWidth,butHeight},*this,building)));
+}
+
+void Player::addUnit(UnitAssembler& unit)
+{
+    units.push_back(&unit);
 }
 
 InactiveComponent::InactiveComponent(double duration, Entity& entity) : waitTime(duration), Component(entity), ComponentContainer<InactiveComponent>(entity)

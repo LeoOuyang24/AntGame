@@ -2,6 +2,7 @@
 #include <time.h>
 #include <typeinfo>
 #include <SDL.h>
+#include <SDL_syswm.h>
 
 #include "render.h"
 #include "SDLHelper.h"
@@ -12,6 +13,7 @@
 #include "entities.h"
 #include "ants.h"
 #include "game.h"
+#include "worldMap.h"
 #include "animation.h"
 
 struct A
@@ -19,6 +21,10 @@ struct A
     A()
     {
         std::cout << "CReated: " << this << "\n";
+    }
+    virtual void func()
+    {
+        std::cout << "I am A\n";
     }
     ~A()
     {
@@ -54,29 +60,16 @@ struct B2 : public B1, public B<B2>
 };
 
 
-struct C : public A, public B<C>
+struct C : public A
 {
-
-};
-
-struct Mirror
-{
-    std::shared_ptr<Mirror> self;
-    Mirror()
+    void func()
     {
-        self.reset(this);
-        std::cout << "Mirror created: " << this << std::endl;
-    }
-    ~Mirror()
-    {
-        std::cout << "Mirror dead: " << this << std::endl;
+        std::cout << "I am C\n";
     }
 };
-
 
 int main(int args, char* argsc[])
 {
-
     const int screenWidth = 960;
     const int screenHeight = 960;
     const int windowMode =  SDL_WINDOW_OPENGL ;
@@ -104,9 +97,12 @@ int main(int args, char* argsc[])
         //std::cout << tree.count() << std::endl;
     Interface interface;
     GameWindow game;
-    interface.switchCurrent(&game);
-
-
+    WorldMapWindow worldMap;
+    worldMap.generate();
+    interface.switchCurrent(&worldMap);
+    worldMap.addPanel(*(new WindowSwitchButton({.8*screenWidth,.8*screenHeight,.1*screenWidth,.1*screenHeight},
+                                                nullptr,interface,game,{"Switch!"},&Font::tnr,{1,0,1,1})));
+    game.setWorldMap(*(new WindowSwitchButton({0,0,0,0},nullptr,interface,worldMap,{},nullptr,{0,0,0,0})));
    SpriteWrapper spr;
     spr.init("image.png");
     AnimationWrapper anime;

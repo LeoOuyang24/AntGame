@@ -79,7 +79,7 @@ void AntManager::getInput()
         std::vector<Positional*> nearest;
         //RectPositional post(mouseClick);
         //tree.getNearest(nearest,post);
-        Map* map = &(GameWindow::getLevel());
+        Map* map = (GameWindow::getLevel());
         nearest = map->getTree()->getNearest(mouseClick);
         std::shared_ptr<Object>* newTarget = nullptr;
         if (justClicked)
@@ -243,7 +243,7 @@ void AntManager::updateAnts()
             resource = unitPtr->getComponent<ResourceComponent>();
             interact = unitPtr->getComponent<InteractionComponent>();
         }
-        Map* map = &(GameWindow::getLevel());
+        Map* map = (GameWindow::getLevel());
         repel = (KeyManager::getJustPressed() == SDLK_BACKQUOTE) != repel ;
        // bool lastRepel = repel && MouseManager::getJustClicked() != SDL_BUTTON_RIGHT; //whether or not we were repelling last frame.
 

@@ -70,8 +70,7 @@ public:
 
 struct Map
 {
-    class Chunk;
-    Map();
+    Map(const glm::vec4& rect);
     void init(const glm::vec4& region);
     void nextLevel();
 
@@ -81,13 +80,11 @@ struct Map
     std::shared_ptr<Object>& getUnit(Object* unit);
     void addTerrain(const glm::vec4& rect);
     void moveObject(Object& obj, double x, double y); //can move either ants or objects
-    void setCurrentChunk(Chunk& chunk);
-    ObjectStorage& getEntities(Chunk& chunk);
+    ObjectStorage& getEntities();
     NavMesh& getMesh(); //might be null if init hasn't been called
     void remove(Object& unit);
-    Chunk& getCurrentChunk();
     void render();
-    const glm::vec4& getRect(Chunk& chunk);
+    const glm::vec4& getRect();
     RawQuadTree* getTree();
     void reset();
     void setChangeLevel(bool l);
@@ -95,6 +92,7 @@ struct Map
     void findShard(); //finds a shard (increments foundShards by 1)
     int getFoundShards();
     Anthill* getAnthill();
+    static Map* generateLevel(const glm::vec4& rect = {0,0,chunkDimen,chunkDimen}); //generates terrain and shards. Should only be called when mesh is not null.
     ~Map();
 
     class Gate : public Object
@@ -110,24 +108,6 @@ struct Map
         Gate(int x, int y);
         ~Gate();
     };
-    class Chunk
-    {
-        //friend class Map;
-    public:
-        glm::vec4 rect = {0,0,0,0};
-        ObjectStorage entities;
-        SPStorage<Terrain> terrain;
-      //  std::vector<std::shared_ptr<Label>> labels;
-        std::shared_ptr<RawQuadTree> tree;
-        void update();
-
-        glm::vec4& getRect();
-        void remove(Object& unit);
-        void clear(); //removes all entities and terrain
-        Chunk(const glm::vec4& rect_);
-        ~Chunk();
-
-    };
 private:
 
     constexpr static int chunkDimen = 5000;
@@ -135,14 +115,16 @@ private:
     const static glm::vec4 playerArea; //area that walls can't spawn because the player's stuff will be there
     bool changeLevel = false; //whether or not to changeLevel
     std::weak_ptr<Anthill> mainHill;
+    ObjectStorage entities;
+    glm::vec4 rect;
+    SPStorage<Terrain> terrain;
+  //  std::vector<std::shared_ptr<Label>> labels;
+    std::shared_ptr<RawQuadTree> tree;
     int foundShards = 0;
 
     friend class GameWindow;
   //  glm::vec4 rect = {0,0,0,0};
     std::shared_ptr<NavMesh> mesh;
-    SPStorage<Chunk> levels;
-    Chunk* currentChunk = nullptr;
-    void generateLevel(); //generates terrain and shards. Should only be called when currentChunk and mesh are not null.
 };
 
 

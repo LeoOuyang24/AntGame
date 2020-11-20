@@ -74,7 +74,10 @@ void Debug::DebugGameWindow::update()
     if (addTerrain && MouseManager::getJustReleased() == SDL_BUTTON_LEFT)
     {
         auto rect = GameWindow::getSelection();
-        GameWindow::getLevel().addTerrain(GameWindow::getSelection());
+        if (GameWindow::getLevel())
+        {
+            GameWindow::getLevel()->addTerrain(GameWindow::getSelection());
+        }
     }
 }
 
@@ -85,7 +88,10 @@ Debug::Debug()
 
 void Debug::init()
 {
-    meshDB.mesh = &(GameWindow::getLevel().getMesh());
+    if (GameWindow::getLevel())
+    {
+        meshDB.mesh = &(GameWindow::getLevel()->getMesh());
+    }
 }
 
 void Debug::update()

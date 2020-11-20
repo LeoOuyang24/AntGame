@@ -556,7 +556,13 @@ glm::vec4 NavMesh::getRandomArea(const glm::vec2& origin, double minDist, double
 void NavMesh::removeWall(RectPositional& positional)
 {
     glm::vec4 rect = positional.getRect();
-    negativeTree.remove(positional);
+
+   negativeTree.remove(positional,[](const Positional& p1, const Positional& p2)
+                                {
+                                   glm::vec4 r1 =  static_cast<const RectPositional*>(&p1)->getRect();
+                                   glm::vec4 r2 = static_cast<const RectPositional*>(&p2)->getRect();
+                                    return  r1 == r2;
+                                });
     auto vec = nodeTree.getNearest({rect.x - 1, rect.y - 1, rect.z + 2, rect.a + 2}); //find nearest nodes. We use a slightly larger rect in case the rect is teh exact size of a quadtree node
     std::sort(vec.begin(),vec.end(), [](Positional* p1, Positional* p2){
               return p1->getPos().y < p2->getPos().y;

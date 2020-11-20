@@ -15,13 +15,13 @@ class UnitAttackComponent : public AttackComponent, public ComponentContainer<Un
     typedef std::pair<std::weak_ptr<Object>,glm::vec2> TargetInfo;
     std::weak_ptr<Object> shortTarget; //represents short-term target. Is attacked because it's in range
     TargetInfo longTarget; //represents a target that the player explicitly chose. Could be an empty position with no enemy to attack
-    enum IgnoreState
+    enum class IgnoreState
     {
         IDLE, //when the unit is idle
         ATTACK,  //unit attacks other units when nearby
-        IGNORE //unit ignores everything and moves towards its target
+        IGNORESTATE //unit ignores everything and moves towards its target. IGNORE raises a syntax error, so we use IGNORESTATE
     };
-    IgnoreState ignore = IDLE; //whether or not to ignore enemies that are nearby
+    IgnoreState ignore = IgnoreState::IDLE; //whether or not to ignore enemies that are nearby
     bool activated = false; //whether this component should affect MoveComponent. Exists solely to make sure our unit doesn't move to 0,0 upon spawn. Since all of our units are spawned at (0,0) and then moved, we can't just set the position in the constructor
     bool notFriendly = false; //the type of enemy to attack
     double searchRange = 0; //aggro range

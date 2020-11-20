@@ -47,7 +47,8 @@ Shard::ShardComponent::ShardComponent(Entity& owner) : ItemComponent(owner), Com
 
 void Shard::ShardComponent::onUse(Entity& other)
 {
-    GameWindow::getLevel().findShard();
+    if (GameWindow::getLevel())
+    GameWindow::getLevel()->findShard();
 }
 
 Shard::Shard() : ObjectAssembler("Shard", {40,40},&shardAnime, true)
@@ -85,37 +86,26 @@ Object* PickUpResource::assemble()
     return obj;
 }
 
-Map::Map()
+Map::Map(const glm::vec4& rect) : rect(rect)
 {
-
+    init(rect);
 }
 
 void Map::init(const glm::vec4& region)
 {
    // rect = region;
     nextLevel();
+    tree.reset(new RawQuadTree(region));
 
 }
 
 void Map::nextLevel()
 {
-    if (!currentChunk)
-    {
-         setCurrentChunk(*(new Chunk({0,0,chunkDimen,chunkDimen})));
-    }
-    else
-    {
-        currentChunk->clear();
-    }
-    if (!mesh.get())
-    {
-        mesh.reset(new NavMesh(currentChunk->rect,*(currentChunk->tree.get())));
-    }
-    else
-    {
-        mesh->reset();
-    }
-    generateLevel();
+    entities.clear();
+    terrain.clear();
+    tree.reset(new RawQuadTree(rect));
+    mesh.reset(new NavMesh(rect,*(tree.get())));
+//    generateLevel();
 }
 
 std::shared_ptr<Object> Map::addUnit(Object& entity, bool friendly)
@@ -124,8 +114,8 @@ std::shared_ptr<Object> Map::addUnit(Object& entity, bool friendly)
     //std::shared_ptr<Object> obj = std::shared_ptr<Object>((new Bug(200,200)));
     //obj.reset();
     entity.setFriendly(friendly);
-    currentChunk->entities[&entity] = ptr;
-    currentChunk->tree->add(entity.getRect());
+    entities[&entity] = ptr;
+    tree->add(entity.getRect());
     if (!entity.getMovable())
     {
         mesh->smartAddNode(entity.getRect().getRect());
@@ -147,7 +137,7 @@ std::shared_ptr<Object> Map::addUnit(Object& entity,int x, int y, bool friendly)
 void Map::addTerrain(const glm::vec4& rect)
 {
     Terrain* terr = (new Terrain(rect.x,rect.y,rect.z,rect.a));
-    currentChunk->terrain.emplace_back(terr);
+    terrain.emplace_back(terr);
     mesh->smartAddNode(rect);
 }
 
@@ -155,9 +145,9 @@ std::shared_ptr<Object>& Map::getUnit(Object* unit)
 {
     if (unit)
     {
-        if (currentChunk->entities.find(unit) != currentChunk->entities.end())
+        if (entities.find(unit) != entities.end())
         {
-            return currentChunk->entities[unit];
+            return entities[unit];
         }
         throw std::runtime_error("Map.GetUnit: Can't find unit!");
     }
@@ -170,15 +160,9 @@ std::shared_ptr<Object>& Map::getUnit(Object* unit)
 void Map::moveObject(Object& obj, double x, double y)
 {
     obj.getRect().setPos({x,y});
-    currentChunk->tree->update(obj.getRect(), *currentChunk->tree.get());
+    tree->update(obj.getRect(), *tree.get());
     //std::cout << obj.getCenter().x << std::endl;
    // std::cout << getChunk(obj).ants.size() << oldChunk->ants.size() << std::endl;
-}
-
-void Map::setCurrentChunk(Chunk& chunk)
-{
-    currentChunk = &chunk;
-    //GameWindow::getCamera().setBounds(&(chunk.rect));
 }
 
 void Map::remove(Object& unit)
@@ -188,20 +172,13 @@ void Map::remove(Object& unit)
         mesh->removeWall(unit.getRect());
 
     }
-    currentChunk->remove(unit);
+    tree->remove(unit.getRect());
+    entities.erase(&unit);
 }
 
-Map::Chunk& Map::getCurrentChunk()
+ObjectStorage& Map::getEntities()
 {
-    if (!currentChunk)
-    {
-        throw std::runtime_error("No current chunk!");
-    }
-    return *currentChunk;
-}
-ObjectStorage& Map::getEntities(Chunk& chunk)
-{
-    return chunk.entities;
+    return entities;
 }
 
 NavMesh& Map::getMesh()
@@ -216,7 +193,6 @@ NavMesh& Map::getMesh()
 
 void Map::render()
 {
-    glm::vec4 rect = getCurrentChunk().rect;
     int width = rect.z/100;
     for (int i = 0; i < rect.z/width; i++)
     {
@@ -226,23 +202,26 @@ void Map::render()
            // drawRectangle(RenderProgram::basicProgram,{i/(rect.z/width),j/(rect.a/width),1},{rect.x + i*width,rect.y + j*width,width,width},0);
         }
     }
-    currentChunk->update();
-    GameWindow::getFogMaker().requestRectFog(playerArea);
+    int size = terrain.size();
+   // std::cout << size << std::endl;
+    for (int i = 0; i < size; ++i)
+    {
+        terrain[i]->update();
+    }    GameWindow::getFogMaker().requestRectFog(playerArea);
   //  mesh->render();
 }
 
-const glm::vec4& Map::getRect(Chunk& chunk) //returns rect of the current Chunk
+const glm::vec4& Map::getRect() //returns rect of the current Chunk
 {
-   return chunk.rect;
+   return rect;
 }
 RawQuadTree* Map::getTree()
 {
-    return currentChunk->tree.get();
+    return tree.get();
 }
 
 void Map::reset()
 {
-    levels.clear();
     foundShards = 0;
 }
 
@@ -275,84 +254,9 @@ Anthill* Map::getAnthill()
     return mainHill.lock().get();
 }
 
-Map::~Map()
+Map* Map::generateLevel(const glm::vec4& levelRect) // Doesn't generate terrain on the bottom most row. It's simply too big a hassle to ensure that inaccessible areas don't spawn on the bottom row
 {
-
-}
-
-Map::Gate::NextAreaButton::NextAreaButton() : Button({0,0,64,16},nullptr,nullptr,{"Next Area!"},&Font::tnr,{0,1,0,1})
-{
-
-}
-
-void Map::Gate::NextAreaButton::press()
-{
-  Map* level = &(GameWindow::getLevel());
-    level->setChangeLevel(true);
-}
-
-Map::Gate::NextAreaButton::~NextAreaButton()
-{
-
-}
-
-Map::Gate::Gate(int x, int y) : Object(*(new ClickableComponent("Gate",*this)),*(new RectComponent({x,y,64,64},*this)), *(new AnimationComponent(&portalAnime,*this)))
-{
-    getClickable().addButton(*(new NextAreaButton()));
-}
-
-Map::Gate::~Gate()
-{
-
-}
-
-Map::Chunk::Chunk(const glm::vec4& rect_)
-{
-    this->rect = rect_;
-    tree.reset(new RawQuadTree(rect_));
-}
-
-void Map::Chunk::update()
-{
-    int size = terrain.size();
-   // std::cout << size << std::endl;
-    for (int i = 0; i < size; ++i)
-    {
-        terrain[i]->update();
-    }
-}
-
-
-glm::vec4& Map::Chunk::getRect()
-{
-    return rect;
-}
-
-void Map::Chunk::remove(Object& unit)
-{
-    tree->remove(unit.getRect());
-    entities.erase(&unit);
-}
-
-void Map::Chunk::clear()
-{
-    while (entities.size() > 0)
-    {
-        remove(*(entities.begin()->first));
-    }
-    terrain.clear();
-}
-
-Map::Chunk::~Chunk()
-{
-    clear();
-}
-
-const glm::vec4 Map::playerArea = {chunkDimen/2 - 1000,chunkDimen/2 - 1000,2000,2000};
-
-
-void Map::generateLevel() // Doesn't generate terrain on the bottom most row. It's simply too big a hassle to ensure that inaccessible areas don't spawn on the bottom row
-{
+    Map* chunk = new Map(levelRect);
     //currentChunk = new Chunk({0,0,chunkDimen,chunkDimen});
     glm::vec2 points = {chunkDimen/maxObjectSize,chunkDimen/maxObjectSize};
     //addTerrain({100,100,100,100});
@@ -386,7 +290,7 @@ void Map::generateLevel() // Doesn't generate terrain on the bottom most row. It
                 if (rand()%luck == 0 && (!poppedEmpty || spawned < popped.y - 1) && !pointInVec(playerArea,x,y,0)) //we have to get lucky, not be in the player area and either not hit the spawn limit or be before the line
                 {
 
-                    addTerrain({x,y,maxObjectSize,maxObjectSize});
+                    chunk->addTerrain({x,y,maxObjectSize,maxObjectSize});
                     luck/=2;
                     if (luck == 0)
                     {
@@ -447,16 +351,88 @@ void Map::generateLevel() // Doesn't generate terrain on the bottom most row. It
     for (int i = 0; i < 5; ++i) //add shards
     {
         glm::vec2 chosen = emptySpots[rand()%emptySpots.size()];
-        addUnit(*(shard.assemble()),chosen.x + fmod(rand(),(maxObjectSize/2 - dimen.x/2)),
+        chunk->addUnit(*(shard.assemble()),chosen.x + fmod(rand(),(maxObjectSize/2 - dimen.x/2)),
                 chosen.y + fmod(rand(),(maxObjectSize/2 - dimen.y/2)),false);
     }
     dimen = resource.getDimen();
     for (int i = 0; i < rand()%100; ++i)
     {
             glm::vec2 chosen = emptySpots[rand()%emptySpots.size()];
-            addUnit(*(resource.assemble()),chosen.x + fmod(rand(),(maxObjectSize/2 - dimen.x/2)),
+            chunk->addUnit(*(resource.assemble()),chosen.x + fmod(rand(),(maxObjectSize/2 - dimen.x/2)),
             chosen.y + fmod(rand(),(maxObjectSize/2 - dimen.y/2)),false);
     }
-    mainHill = std::static_pointer_cast<Anthill>(addUnit(*(new Anthill({chunkDimen/2,chunkDimen/2})),true));
+    chunk->mainHill = std::static_pointer_cast<Anthill>(chunk->addUnit(*(new Anthill({chunkDimen/2,chunkDimen/2})),true));
+    return chunk;
    // addUnit(*(new Gate({chunkDimen/2, chunkDimen/2 + 100})));
 }
+
+Map::~Map()
+{
+
+}
+
+Map::Gate::NextAreaButton::NextAreaButton() : Button({0,0,64,16},nullptr,nullptr,{"Next Area!"},&Font::tnr,{0,1,0,1})
+{
+
+}
+
+void Map::Gate::NextAreaButton::press()
+{
+    Map* level = (GameWindow::getLevel());
+    if (level)
+    {
+        level->setChangeLevel(true);
+    }
+}
+
+Map::Gate::NextAreaButton::~NextAreaButton()
+{
+
+}
+
+Map::Gate::Gate(int x, int y) : Object(*(new ClickableComponent("Gate",*this)),*(new RectComponent({x,y,64,64},*this)), *(new AnimationComponent(&portalAnime,*this)))
+{
+    getClickable().addButton(*(new NextAreaButton()));
+}
+
+Map::Gate::~Gate()
+{
+
+}
+
+/*Map::Chunk::Chunk(const glm::vec4& rect_)
+{
+    this->rect = rect_;
+    tree.reset(new RawQuadTree(rect_));
+}
+
+
+glm::vec4& Map::Chunk::getRect()
+{
+    return rect;
+}
+
+void Map::Chunk::remove(Object& unit)
+{
+    tree->remove(unit.getRect());
+    entities.erase(&unit);
+}
+
+void Map::Chunk::clear()
+{
+    while (entities.size() > 0)
+    {
+        remove(*(entities.begin()->first));
+    }
+    terrain.clear();
+}
+
+Map::Chunk::~Chunk()
+{
+    clear();
+}*/
+
+const glm::vec4 Map::playerArea = {chunkDimen/2 - 1000,chunkDimen/2 - 1000,2000,2000};
+
+
+

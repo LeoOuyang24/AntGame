@@ -1,4 +1,10 @@
-This document keeps track of all changes as well as considered changes made to the resources as well as why they were made. Consider this a "learning from the past" kind of document. 
+This document keeps track of considered changes made to the resources as well as why they were made. Consider this a "learning from the past" kind of document. 
+
+11/17/2020:
+	Big glInterface changes have been made. Windows and Buttons are now Panels, which can be added to windows. Panels have an update function that takes in a mouse position, z, and a scale rect, which is a glm::vec4 where the x,y is a displacement for the rect and the dimensions are the scaling dimensions. The reason for having the users explicitly pass the mouse position is so that they can decide how to calculate the mouse position, since in some cases, such as when the camera zooms in, the mouse position can be calculated in different ways. We could have them just pass in the scale rect and then we calculate the mouse position explicitly but this gives us a bit more flexibility. Honestly, I'm just too lazy to improve on it, since every change causes such a large cascade of changes.
+
+10/8/2020:
+	Decided to make the world map a separate Window rather than the same window as Game Window. While having 2 windows means we now need to faciliate communication between the 2, it also means that we can stay a bit more organized. We are almost certainly going to have to create a WorldMapWindow regardless, the question is purely if we want to have interface own the window or GameWindow to own the window.
 
 9/7/2020:
 	Added 2 optimizations to pathfinding algorithm. When a new best distance is found, we don't have to update the heap. We also now keep a set of visited nodes so we don't go from Node A to B then back to A.
