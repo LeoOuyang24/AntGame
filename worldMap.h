@@ -11,10 +11,11 @@ class ShopButton : public Button
     UnitAssembler* assembler = nullptr;
     Player* player = nullptr;
     bool isStructure = false; //whether or not this button will buy a structure
+    bool soldOut = false; //whether the player has bought this or not
 public:
     ShopButton(bool isStructure, Player& player, UnitAssembler& obj, const glm::vec4& rect);
     void press();
-    void render(bool hover, float x, float y, float z, float xScale, float yScale);
+    void update(float x, float y, float z, const glm::vec4& scale);
 };
 
 class WorldMapWindow : public Window

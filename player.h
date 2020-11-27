@@ -1,6 +1,8 @@
 #ifndef PLAYER_H_INCLUDED
 #define PLAYER_H_INCLUDED
 
+#include <set>
+
 #include "glInterface.h"
 
 #include "entities.h"
@@ -18,7 +20,7 @@ class Player //tracks player stats (resources, money). Also handles player input
     glm::vec4 selection = {0,0,0,0};
     glm::vec2 origin; //last point the mouse was at
     Mode mode;
-    std::vector<UnitAssembler*> buildings; //list of structures we can create
+    std::set<UnitAssembler*> buildings; //list of structures we can create
     std::vector<UnitAssembler*> units; //list of units we can produce
     Window* buildingWindow = nullptr;
     UnitAssembler* currentBuilding = nullptr;
@@ -30,12 +32,15 @@ class Player //tracks player stats (resources, money). Also handles player input
         BuildingButton(const glm::vec4& rect, Player& player_, UnitAssembler& building_);
         void press();
     };
+    int gold = 100;
 public:
     static const glm::vec4 selectColor;
     Player();
     void init(); //initiaites the start state. Sets the starting amount of resources, starting buildings, etc.
     int getResource();
     void addResource(int r); //used to increase or decrease resources. Resources can't be negative
+    int getGold();
+    void addGold(int g);
     void update();
     void render(const glm::vec4& windowSize);
     const glm::vec4& getSelection();

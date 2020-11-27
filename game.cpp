@@ -719,6 +719,8 @@ void GameWindow::renderTopBar()
                                                                                     , -1,.6}),0,{1,1,1,1},GameWindow::fontZ});
     Font::tnr.requestWrite({"Shards: " + convert(level.lock().get()->getFoundShards()),camera.toAbsolute({screenDimen.x - .2*screenDimen.x, .03*screenDimen.y
                                                                                     , -1,.6}),0,{1,1,1,1},GameWindow::fontZ});
+    Font::tnr.requestWrite({"Gold: " + convert(player.getGold()),camera.toAbsolute({screenDimen.x - .2*screenDimen.x, .05*screenDimen.y
+                                                                                    , -1,.6}),0,{1,1,1,1},GameWindow::fontZ});
 
 }
 

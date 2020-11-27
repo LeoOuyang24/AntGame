@@ -90,7 +90,8 @@ protected:
     bool movable = false;
     bool friendly = false;
 public:
-    ObjectAssembler(std::string name_, const glm::vec2& rect_, AnimationWrapper* anime, bool mov, bool friendly_ = false);
+    const int goldCost = 0;
+    ObjectAssembler(std::string name_, const glm::vec2& rect_, AnimationWrapper* anime, bool mov, bool friendly_ = false, int goldCost = 10);
     const glm::vec2& getDimen();
     std::string getName();
     AnimationWrapper* getSprite();

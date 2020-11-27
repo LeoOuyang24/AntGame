@@ -382,6 +382,7 @@ void Map::Gate::NextAreaButton::press()
     if (level)
     {
         level->setChangeLevel(true);
+        GameWindow::getPlayer().addGold(10);
     }
 }
 

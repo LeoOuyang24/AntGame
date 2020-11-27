@@ -261,7 +261,8 @@ Object::~Object()
     //std::cout << "Object Destructor: " << this << std::endl;
 }
 
-ObjectAssembler::ObjectAssembler( std::string name_, const glm::vec2& rect_,AnimationWrapper* anime, bool mov, bool friendly_) : dimen(rect_), name(name_), sprite(anime), movable(mov), friendly(friendly_)
+ObjectAssembler::ObjectAssembler( std::string name_, const glm::vec2& rect_,AnimationWrapper* anime, bool mov, bool friendly_, int goldCost_) :
+    dimen(rect_), name(name_), sprite(anime), movable(mov), friendly(friendly_), goldCost(goldCost_)
 {
 
 }

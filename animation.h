@@ -3,6 +3,9 @@
 
 #include "render.h"
 
+extern SpriteWrapper coinIcon;
+extern SpriteWrapper redX;
+
 extern AnimationWrapper defaultAnime;
 extern AnimationWrapper shardAnime;
 extern AnimationWrapper resourceAnime;

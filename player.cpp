@@ -58,7 +58,7 @@ void Player::init()
 {
     buildingWindow = new Window({.2*RenderProgram::getScreenDimen().y,.2*RenderProgram::getScreenDimen().y}
                           ,nullptr,{0,1,1,1});
-    addBuilding(factAssembler);
+   // addBuilding(factAssembler);
    // addBuilding(turretAssembler);
     addResource(100);
 }
@@ -71,6 +71,16 @@ int Player::getResource()
 void Player::addResource(int r)
 {
     resource = std::max(resource + r,0);
+}
+
+int Player::getGold()
+{
+    return gold;
+}
+
+void Player::addGold(int g)
+{
+    gold = std::max(gold + g, 0);
 }
 
 void Player::update()
@@ -170,12 +180,15 @@ void Player::setCurrentBuilding(UnitAssembler* building)
 
 void Player::addBuilding(UnitAssembler& building)
 {
-    buildings.push_back(&building);
-    glm::vec4 rect = buildingWindow->getRect();
-    int size = (buildingWindow->countPanels());
-    double butWidth = .25*rect.z;
-    double butHeight = .25*rect.a;
-    buildingWindow->addPanel(*(new BuildingButton({butWidth*fmod(size,rect.z/butWidth),butHeight*(size/((int)(rect.z/butWidth))),butWidth,butHeight},*this,building)));
+    if (buildings.find(&building) == buildings.end())
+    {
+        buildings.insert(&building);
+        glm::vec4 rect = buildingWindow->getRect();
+        int size = (buildingWindow->countPanels());
+        double butWidth = .25*rect.z;
+        double butHeight = .25*rect.a;
+        buildingWindow->addPanel(*(new BuildingButton({butWidth*fmod(size,rect.z/butWidth),butHeight*(size/((int)(rect.z/butWidth))),butWidth,butHeight},*this,building)));
+    }
 }
 
 void Player::addUnit(UnitAssembler& unit)

@@ -1,5 +1,8 @@
 #include "animation.h"
 
+SpriteWrapper coinIcon;
+SpriteWrapper redX;
+
 AnimationWrapper defaultAnime;
 AnimationWrapper shardAnime;
 AnimationWrapper resourceAnime;
@@ -10,6 +13,9 @@ AnimationWrapper portalAnime;
 
 void initSprites()
 {
+    coinIcon.init("sprites/gold_icon.png");
+    redX.init("sprites/redX.png");
+
     defaultAnime.init(new BaseAnimation("sprites/oldMan.png",.001,6,1));
     shardAnime.init(new BaseAnimation("sprites/orb.png", .01, 12,8,{0,0,6,4}));
     resourceAnime.init(new BaseAnimation("sprites/orb.png",.01,12,8,{.5,.5,6,4}));

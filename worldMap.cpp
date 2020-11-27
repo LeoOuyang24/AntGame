@@ -1,35 +1,52 @@
 #include "worldMap.h"
 #include "game.h"
+#include "animation.h"
 
-ShopButton::ShopButton(bool isStructure, Player& player, UnitAssembler& obj,const glm::vec4& rect) : Button(rect,nullptr,nullptr,{},nullptr,{0,1,0,1}), isStructure(isStructure), assembler(&obj), player(&player)
+ShopButton::ShopButton(bool isStructure, Player& player, UnitAssembler& obj,const glm::vec4& rect) : Button(rect,nullptr,nullptr,{},nullptr,{0,1,0,0}), isStructure(isStructure), assembler(&obj),
+                                                                                                    player(&player)
 {
 
 }
 
 void ShopButton::press()
 {
-    if (player && assembler)
+    if (player && assembler && !soldOut)
     {
-
-        if (isStructure)
+        if (assembler->goldCost <= player->getGold())
         {
-            player->addBuilding(*assembler);
-        }
-        else
-        {
-            player->addUnit(*assembler);
+            soldOut = true;
+            player->addGold(-1*assembler->goldCost);
+            if (isStructure)
+            {
+                player->addBuilding(*assembler);
+            }
+            else
+            {
+                player->addUnit(*assembler);
+            }
         }
     }
 }
 
-void ShopButton::render(bool hover, float x, float y, float z, float xScale, float yScale)
+void ShopButton::update(float x, float y, float z, const glm::vec4& scale)
 {
-    glm::vec4 renderRect = scale({x,y,xScale,yScale});
+    glm::vec4 renderRect = this->scale(scale);
+    float finalZ = z + baseZ + .01;
     if(assembler)
     {
-        assembler->getSprite()->request({renderRect},{0,0});
+        assembler->getSprite()->request({renderRect,0, NONE, {1,1,1,1},&RenderProgram::basicProgram,finalZ},{0,0});
+        Font::tnr.requestWrite({convert(assembler->goldCost),{renderRect.x,renderRect.y + renderRect.a*1.1, renderRect.z*.8,renderRect.z*.2},
+                               0, {0,0,0,1},finalZ});
     }
-    PolyRender::requestRect({renderRect.x*.8,renderRect.y*.8,1.4*renderRect.z,1.4*renderRect.a},{0,1,0,1},true,0,z);
+    PolyRender::requestRect(renderRect,{0,0,1,1},false,0,z + baseZ);
+    coinIcon.request({{renderRect.x + renderRect.z*.8,renderRect.y + renderRect.a*1.1, renderRect.z*.2, renderRect.z*.2}, 0, NONE, {1,1,1,1},
+                     &RenderProgram::basicProgram, finalZ});
+    if (soldOut)
+    {
+      //  std::cout << "ASDF" << std::endl;
+        redX.request({renderRect,0, NONE, {1,1,1,1}, &RenderProgram::basicProgram, finalZ + .01});
+    }
+   Button::update(x,y,z,scale);
 }
 
 WorldMapWindow::LevelButton::LevelButton(WorldMapWindow& window, Map& level, const glm::vec4& rect) : Button(rect,nullptr,nullptr,{},nullptr,{1,1,0,1}), window(&window), level(&level)
@@ -82,8 +99,10 @@ void WorldMapWindow::addLevel(Map& level)
 
 WorldMapWindow::WorldMapWindow() : Window({0,0,0,0},nullptr,{0,0,1,1})
 {
-    shopWindow = new Window({0,0,rect.z*.9,rect.a*.9},nullptr,{0,1,1,1});
-    addPanel(*(new OnOffButton(OnOffMode::DYNAMIC,*shopWindow,{100,100,100,100},nullptr,{"Shop"},&Font::tnr,{1,1,1,1})));
+    shopWindow = new Window({.1*rect.z,.1*rect.a,rect.z*.8,rect.a*.8},nullptr,{0,0,0,1},1);
+    addPanel(*(shopWindow));
+    shopWindow->setDoUpdate(false);
+  //  addPanel(*(new OnOffButton(OnOffMode::DYNAMIC,*shopWindow,{100,100,100,100},nullptr,{"Shop"},&Font::tnr,{1,1,1,1})));
 }
 
 void WorldMapWindow::generate()
