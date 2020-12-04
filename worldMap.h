@@ -29,6 +29,7 @@ class WorldMapWindow : public Window
         void press();
         void render(bool hover, float x, float y, float z, float xScale, float yScale);
     };
+
     friend LevelButton;
     std::unordered_map<Map*,std::shared_ptr<Map>> levels;
     Map* currentLevel = nullptr;
@@ -40,6 +41,13 @@ public:
     void generate();
     Map* getCurrentLevel();
     void switchTo(Window& swapTo);
+    class WorldSwitchToGame : public CondSwitchButton
+    {
+        WorldMapWindow* worldMap =nullptr;
+    public:
+        WorldSwitchToGame(const glm::vec4& box, Interface& interface, Window& to, WorldMapWindow& worldMap);
+        bool doSwitch();
+    };
 };
 
 #endif // WORLDMAP_H_INCLUDED

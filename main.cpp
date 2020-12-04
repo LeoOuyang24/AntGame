@@ -108,8 +108,8 @@ int main(int args, char* argsc[])
     shopWindow.addPanel(*(new Message({.8*screenWidth,.1*screenHeight,128,64},nullptr,{"Player Gold: "},&Font::tnr,{1,1,1,0},
                                       [](){return "Player Gold: " + convert(GameWindow::getPlayer().getGold());})));
 
-    worldMap.addPanel(*(new WindowSwitchButton({.8*screenWidth,.8*screenHeight,.1*screenWidth,.1*screenHeight},
-                                                nullptr,interface,game,{"Switch!"},&Font::tnr,{1,0,1,1})));
+    worldMap.addPanel(*(new WorldMapWindow::WorldSwitchToGame({.8*screenWidth,.8*screenHeight,.1*screenWidth,.1*screenHeight},
+                                                interface,game,worldMap)));
     worldMap.addPanel(*(new WindowSwitchButton({100,100,100,100},nullptr,interface,shopWindow,{"Shop"},&Font::tnr,{1,1,1,1})));
 
     game.setWorldMap(*(new WindowSwitchButton({0,0,0,0},nullptr,interface,worldMap,{},nullptr,{0,0,0,0})));

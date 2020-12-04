@@ -83,6 +83,7 @@ void WorldMapWindow::LevelButton::render(bool hover,float x, float y, float z, f
     }
 }
 
+
 void WorldMapWindow::setCurrentLevel(Map& level)
 {
     currentLevel = &level;
@@ -124,4 +125,15 @@ void WorldMapWindow::switchTo(Window& swapTo)
 {
     GameWindow::setLevel(levels[currentLevel]);
     currentLevel = nullptr;
+}
+
+WorldMapWindow::WorldSwitchToGame::WorldSwitchToGame(const glm::vec4& box, Interface& interface, Window& to, WorldMapWindow& worldMap) :
+                                                CondSwitchButton(box,nullptr,interface,to,{"Switch"},&Font::tnr,{1,0,1,1},nullptr), worldMap(&worldMap)
+{
+
+}
+
+bool WorldMapWindow::WorldSwitchToGame::doSwitch()
+{
+    return worldMap && worldMap->getCurrentLevel();
 }
