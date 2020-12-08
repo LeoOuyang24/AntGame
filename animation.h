@@ -12,7 +12,9 @@ extern AnimationWrapper resourceAnime;
 
 extern AnimationWrapper basicSoldierAnime;
 extern AnimationWrapper turretSprite;
+extern AnimationWrapper greenCross;
 extern AnimationWrapper basicEnemyAnime;
+extern AnimationWrapper blasterAnime;
 
 extern AnimationWrapper portalAnime;
 

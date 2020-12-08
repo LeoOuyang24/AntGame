@@ -6,6 +6,7 @@
 #include "ants.h"
 #include "navigation.h"
 #include "animation.h"
+#include "friendlyAssemblers.h"
 
 void renderMeter(const glm::vec3& xyWidth, const glm::vec4& color, double current, double maximum, float z)
 {
@@ -20,6 +21,11 @@ void renderTimeMeter(const glm::vec4& rect, const glm::vec4& color, DeltaTime& a
     double time = std::min(SDL_GetTicks() - alarm.getTime(),duration); //amount of time passed
     PolyRender::requestRect({rect.x,rect.y,rect.z*(time)/duration,rect.a},color,true,0,z);
     Font::tnr.requestWrite({convert ((duration - time)/1000.0),rect,0,{0,0,0,1},z+.01f});
+}
+
+Unit* convertPosToUnit(Positional* pos)
+{
+    return static_cast<Unit*>(&static_cast<RectComponent*>(pos)->getEntity());
 }
 
 ClickableComponent::ClickableComponent(std::string name, Entity& entity) : Component(entity), ComponentContainer<ClickableComponent>(&entity), name(name)
@@ -428,10 +434,20 @@ Manager* Unit::getManager()
     return manager;
 }
 
-UnitAssembler::UnitAssembler( std::string name_,const glm::vec2& rect_, AnimationWrapper* wrap, bool mov, double maxHealth_, double prodTime_) :
-     ObjectAssembler( name_,rect_, wrap, mov), maxHealth(maxHealth_), prodTime(prodTime_)
+UnitAssembler::UnitAssembler( std::string name_,const glm::vec2& rect_, AnimationWrapper* wrap, bool mov, double maxHealth_, double prodTime_, bool friendly_, int goldCost) :
+     ObjectAssembler( name_,rect_, wrap, mov,friendly_,goldCost), maxHealth(maxHealth_), prodTime(prodTime_)
 {
-
+    if (friendly)
+    {
+        if (movable) //if is a unit, add to units
+        {
+            allUnits.push_back(this);
+        }
+        else //add to structures
+        {
+            allStructures.push_back(this);
+        }
+    }
 }
 
 double UnitAssembler::getMaxHealth()

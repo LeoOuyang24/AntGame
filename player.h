@@ -21,7 +21,7 @@ class Player //tracks player stats (resources, money). Also handles player input
     glm::vec2 origin; //last point the mouse was at
     Mode mode;
     std::set<UnitAssembler*> buildings; //list of structures we can create
-    std::vector<UnitAssembler*> units; //list of units we can produce
+    std::set<UnitAssembler*> units; //list of units we can produce
     Window* buildingWindow = nullptr;
     UnitAssembler* currentBuilding = nullptr;
     class BuildingButton : public Button
@@ -47,6 +47,7 @@ public:
     void setCurrentBuilding(UnitAssembler* building);
     void addBuilding(UnitAssembler& building);
     void addUnit(UnitAssembler& unit);
+    std::set<UnitAssembler*>& getUnits();
 };
 
 class InactiveComponent : public Component, public ComponentContainer<InactiveComponent> //represents how long an entity is inactive for. Usually because a building is under construction

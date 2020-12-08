@@ -10,12 +10,22 @@ class ShopButton : public Button
 {
     UnitAssembler* assembler = nullptr;
     Player* player = nullptr;
-    bool isStructure = false; //whether or not this button will buy a structure
     bool soldOut = false; //whether the player has bought this or not
 public:
-    ShopButton(bool isStructure, Player& player, UnitAssembler& obj, const glm::vec4& rect);
+    ShopButton(Player& player, UnitAssembler& obj, const glm::vec4& rect);
     void press();
     void update(float x, float y, float z, const glm::vec4& scale);
+    void changeAssembler(UnitAssembler* assembler); //allows us to update the shopbuttons in a shop instead of adding new ones
+};
+
+class ShopWindow : public Window
+{
+    static constexpr int shopItems = 16;
+    ShopButton* buttons[shopItems];
+public:
+    ShopWindow();
+    void onSwitch(Window& previous);
+    //don't need a destructor to clear buttons because we add the buttons as panels
 };
 
 class WorldMapWindow : public Window
@@ -27,27 +37,29 @@ class WorldMapWindow : public Window
     public:
         LevelButton(WorldMapWindow& window, Map& level, const glm::vec4& rect);
         void press();
-        void render(bool hover, float x, float y, float z, float xScale, float yScale);
+        void update(float x, float y, float z,const glm::vec4& blit);
     };
 
-    friend LevelButton;
+
     std::unordered_map<Map*,std::shared_ptr<Map>> levels;
     Map* currentLevel = nullptr;
-    Window* shopWindow;
     void setCurrentLevel(Map& level);
     void addLevel(Map& level);
+    void switchToGame(); //called when switching to the gamewindow
 public:
     WorldMapWindow();
     void generate();
     Map* getCurrentLevel();
-    void switchTo(Window& swapTo);
     class WorldSwitchToGame : public CondSwitchButton
     {
         WorldMapWindow* worldMap =nullptr;
     public:
         WorldSwitchToGame(const glm::vec4& box, Interface& interface, Window& to, WorldMapWindow& worldMap);
         bool doSwitch();
+        void press();
     };
+    friend LevelButton;
+    friend WorldSwitchToGame;
 };
 
 #endif // WORLDMAP_H_INCLUDED

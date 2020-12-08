@@ -98,16 +98,14 @@ int main(int args, char* argsc[])
     Interface interface;
     GameWindow game;
     WorldMapWindow worldMap;
-    worldMap.generate();
-    Window shopWindow = Window({0,0,0,0},nullptr,{.5,.5,0,1},1);
-
     interface.switchCurrent(&worldMap);
+    worldMap.generate();
 
-    shopWindow.addPanel(*(new ShopButton(true,GameWindow::getPlayer(),factAssembler,{10,10,64,64})));
-    shopWindow.addPanel(*(new WindowSwitchButton({.1*screenWidth,.8*screenHeight,64,64},nullptr,interface,worldMap,{"Map"},&Font::tnr,{1,1,1,1})));
+    ShopWindow shopWindow;
+
+    shopWindow.addPanel(*(new WindowSwitchButton({.05*screenWidth,.9*screenHeight,64,64},nullptr,interface,worldMap,{"Map"},&Font::tnr,{1,1,1,1})));
     shopWindow.addPanel(*(new Message({.8*screenWidth,.1*screenHeight,128,64},nullptr,{"Player Gold: "},&Font::tnr,{1,1,1,0},
                                       [](){return "Player Gold: " + convert(GameWindow::getPlayer().getGold());})));
-
     worldMap.addPanel(*(new WorldMapWindow::WorldSwitchToGame({.8*screenWidth,.8*screenHeight,.1*screenWidth,.1*screenHeight},
                                                 interface,game,worldMap)));
     worldMap.addPanel(*(new WindowSwitchButton({100,100,100,100},nullptr,interface,shopWindow,{"Shop"},&Font::tnr,{1,1,1,1})));
@@ -117,7 +115,6 @@ int main(int args, char* argsc[])
     spr.init("image.png");
     AnimationWrapper anime;
     anime.init(new BaseAnimation("oldMan.png",-1, 6,1));
-
   //  glClearColor(0,0,1,1);
   //  Font comic = Font("betterComicSans.ttf");
   //  FontManager::addFont(comic);

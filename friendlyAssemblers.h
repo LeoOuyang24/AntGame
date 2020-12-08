@@ -15,12 +15,17 @@ public:
     void update();
 };
 
-void initAssemblers();
-
 class AntAssembler : public UnitAssembler
 {
 public:
     AntAssembler();
+    Object* assemble();
+};
+
+class BlasterAssembler : public UnitAssembler
+{
+public:
+    BlasterAssembler();
     Object* assemble();
 };
 
@@ -38,8 +43,35 @@ public:
     Object* assemble();
 };
 
+class HealUnitComponent : public Component
+{
+    double HPps  = 0;//HP per second
+    double radius = 0;
+    DeltaTime healthTimer; //keeps track of when we radiate another burst of health
+public:
+    HealUnitComponent(double rate, double radius, Entity& ent);
+    void update();
+};
+
+class HealBuildingAssembler : public UnitAssembler
+{
+
+public:
+    HealBuildingAssembler();
+    Object* assemble();
+};
+
+extern std::vector<UnitAssembler*> allUnits; //vector of all units and structures
+extern std::vector<UnitAssembler*> allStructures;
+
 extern AntAssembler antAssembler;
 extern FactoryAssembler factAssembler;
 extern TurretAssembler turretAssembler;
+extern HealBuildingAssembler healBuildingAssembler;
+extern BlasterAssembler blastAssembler;
+
+void initAssemblers();
+
+UnitAssembler* getRandomAnyAssembler();
 
 #endif // FRIENDLYASSEMBLERS_H_INCLUDED

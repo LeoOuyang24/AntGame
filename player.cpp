@@ -6,6 +6,7 @@
 #include "game.h"
 #include "navigation.h"
 #include "animation.h"
+#include "enemyAssemblers.h"
 
 const glm::vec4 Player::selectColor = {1,1,1,.5};
 
@@ -60,6 +61,7 @@ void Player::init()
                           ,nullptr,{0,1,1,1});
    // addBuilding(factAssembler);
    // addBuilding(turretAssembler);
+   //addBuilding(evilMoonAssembler);
     addResource(100);
 }
 
@@ -180,9 +182,9 @@ void Player::setCurrentBuilding(UnitAssembler* building)
 
 void Player::addBuilding(UnitAssembler& building)
 {
-    if (buildings.find(&building) == buildings.end())
+    if (buildings.insert(&building).second) //insert the element if it's not already in the set. If it's new, add the buildingButton
     {
-        buildings.insert(&building);
+
         glm::vec4 rect = buildingWindow->getRect();
         int size = (buildingWindow->countPanels());
         double butWidth = .25*rect.z;
@@ -193,7 +195,12 @@ void Player::addBuilding(UnitAssembler& building)
 
 void Player::addUnit(UnitAssembler& unit)
 {
-    units.push_back(&unit);
+    units.insert(&unit);
+}
+
+std::set<UnitAssembler*>& Player::getUnits()
+{
+    return units;
 }
 
 InactiveComponent::InactiveComponent(double duration, Entity& entity) : waitTime(duration), Component(entity), ComponentContainer<InactiveComponent>(entity)

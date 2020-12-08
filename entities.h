@@ -13,6 +13,9 @@ typedef std::deque<glm::vec2> Path;
 
 void renderMeter(const glm::vec3& xyWidth, const glm::vec4& color, double current, double maximum, float z);
 void renderTimeMeter(const glm::vec4& rect, const glm::vec4& color, DeltaTime& alarm, double duration, float z);
+class Unit;
+Unit* convertPosToUnit(Positional* pos); //static casts pos to rectcomponent and casts owner to Unit
+
 
 class ClickableComponent : public Component, public ComponentContainer<ClickableComponent> //clickable component handles user inputs, like when the user selects the unit or presses a button
 {
@@ -158,7 +161,7 @@ protected:
     double maxHealth = 0;
     int prodCost = 0;
 public:
-    UnitAssembler( std::string name_,const glm::vec2& rect_, AnimationWrapper* anime, bool mov, double maxHealth_, double prodTime_);
+    UnitAssembler( std::string name_,const glm::vec2& rect_, AnimationWrapper* anime, bool mov, double maxHealth_, double prodTime_, bool friendly_ = false, int goldCost = 10);
     double getMaxHealth();
     double getProdTime();
     int getProdCost();

@@ -8,8 +8,12 @@ AnimationWrapper shardAnime;
 AnimationWrapper resourceAnime;
 AnimationWrapper basicSoldierAnime;
 AnimationWrapper turretSprite;
+AnimationWrapper greenCross;
 AnimationWrapper basicEnemyAnime;
+AnimationWrapper blasterAnime;
+
 AnimationWrapper portalAnime;
+
 
 void initSprites()
 {
@@ -23,6 +27,8 @@ void initSprites()
     basicSoldierAnime.init(new BaseAnimation("sprites/astronaut.png", .01, 3,1));
     turretSprite.init(new BaseAnimation("sprites/turret.png",0,1,1));
     basicEnemyAnime.init(new BaseAnimation("sprites/evilMoon.png", .01,3,1));
+    greenCross.init(new BaseAnimation("sprites/greencross.png",0,1,1));
+    blasterAnime.init(new BaseAnimation("sprites/blaster.png",0.3,3,1));
 
     portalAnime.init(new BaseAnimation("sprites/portal.png",.01,3,2));
 }

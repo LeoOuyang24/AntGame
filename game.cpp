@@ -395,9 +395,9 @@ void Manager::update()
         //std::cout << currentTask->getAnts().size() << std::endl;
     }
     Map* level = GameWindow::getLevel();
-    if (level && level->getAnthill() && (!spawner.isSet() || spawner.timePassed(std::min(180000 - SDL_GetTicks(),(Uint32)100))))
+    if (level && level->getAnthill() && (!spawner.isSet() || spawner.timePassed(std::min(180000 - SDL_GetTicks(),(Uint32)1000))))
     {
-        //spawnCreatures(*level->getAnthill() , level->getRect().z/6, level->getRect().z/6);
+        spawnCreatures(*level->getAnthill() , level->getRect().z/6, level->getRect().z/6);
         spawner.reset();
         spawner.set();
     }

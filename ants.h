@@ -15,13 +15,7 @@ class UnitAttackComponent : public AttackComponent, public ComponentContainer<Un
     typedef std::pair<std::weak_ptr<Object>,glm::vec2> TargetInfo;
     std::weak_ptr<Object> shortTarget; //represents short-term target. Is attacked because it's in range
     TargetInfo longTarget; //represents a target that the player explicitly chose. Could be an empty position with no enemy to attack
-    enum class IgnoreState
-    {
-        IDLE, //when the unit is idle
-        ATTACK,  //unit attacks other units when nearby
-        IGNORESTATE //unit ignores everything and moves towards its target. IGNORE raises a syntax error, so we use IGNORESTATE
-    };
-    IgnoreState ignore = IgnoreState::IDLE; //whether or not to ignore enemies that are nearby
+
     bool activated = false; //whether this component should affect MoveComponent. Exists solely to make sure our unit doesn't move to 0,0 upon spawn. Since all of our units are spawned at (0,0) and then moved, we can't just set the position in the constructor
     bool notFriendly = false; //the type of enemy to attack
     double searchRange = 0; //aggro range
@@ -102,17 +96,20 @@ public:
     virtual ~AntHillRender();
 };
 
+class ProduceUnitComponent;
+class ProduceUnitButton : public Button
+{
+    UnitAssembler* assembler;
+    ProduceUnitComponent* owner = nullptr;
+public:
+    ProduceUnitButton(UnitAssembler& obj, ProduceUnitComponent* own);
+    void press();
+};
+
 class ProduceUnitComponent : public ClickableComponent, public ComponentContainer<ProduceUnitComponent> //has the ability to create units
 {
 
-    class ProduceUnitButton : public Button
-    {
-        UnitAssembler* assembler;
-        ProduceUnitComponent* owner = nullptr;
-    public:
-        ProduceUnitButton(UnitAssembler& obj, ProduceUnitComponent* own);
-        void press();
-    };
+
     DeltaTime produceTimer; //tracks how much time has passed for the unit currently in production
     UnitAssembler* beingProduced = nullptr; //unit currently in production
     std::deque<UnitAssembler*> toProduce; //queue of objects to produce Does not own the UnitAssemblers
@@ -142,6 +139,7 @@ class Anthill : public Structure
 public:
     Anthill(const glm::vec2& pos);
     void createAnt();
+    void setButtons(); //based on what units the player owns, adds buttons to create such units
     virtual ~Anthill();
 
 };

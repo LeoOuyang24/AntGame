@@ -2,7 +2,7 @@
 #include "game.h"
 #include "animation.h"
 
-ShopButton::ShopButton(bool isStructure, Player& player, UnitAssembler& obj,const glm::vec4& rect) : Button(rect,nullptr,nullptr,{},nullptr,{0,1,0,0}), isStructure(isStructure), assembler(&obj),
+ShopButton::ShopButton(Player& player, UnitAssembler& obj,const glm::vec4& rect) : Button(rect,nullptr,nullptr,{},nullptr,{0,1,0,0}),  assembler(&obj),
                                                                                                     player(&player)
 {
 
@@ -16,7 +16,7 @@ void ShopButton::press()
         {
             soldOut = true;
             player->addGold(-1*assembler->goldCost);
-            if (isStructure)
+            if (!assembler->getMovable())
             {
                 player->addBuilding(*assembler);
             }
@@ -49,6 +49,38 @@ void ShopButton::update(float x, float y, float z, const glm::vec4& scale)
    Button::update(x,y,z,scale);
 }
 
+void ShopButton::changeAssembler(UnitAssembler* assembler)
+{
+    this->assembler = assembler;
+}
+
+ShopWindow::ShopWindow() : Window({0,0},nullptr,{.5,.5,1,1},0)
+{
+    // buttons = new ShopButton*[shopItems];
+    int margin = .05*rect.z;
+    glm::vec4 shopRect = {.2*rect.z,.2*rect.a,.6*rect.z,.6*rect.a}; //rect where all the buttons will go
+    int numButtons = sqrt(shopItems); //number of buttons per row and column
+    glm::vec2 buttDimen = {shopRect.z/numButtons,shopRect.a/numButtons}; //dimen of the space of buttons and margins, not the dimensions of the buttons
+    for (int i = 0; i < shopItems; ++i)
+    {
+        buttons[i] = new ShopButton(GameWindow::getPlayer(),antAssembler,{
+                                    shopRect.x + buttDimen.x*(i%numButtons),
+                                    shopRect.y + buttDimen.y*(i/numButtons),
+                                     buttDimen.x - margin,buttDimen.y - margin});
+        addPanel(*buttons[i]);
+    }
+  //  onSwitch(*this);
+}
+
+void ShopWindow::onSwitch(Window& previous)
+{
+    for (int i = 0; i < shopItems; ++i)
+    {
+        UnitAssembler* newAss = getRandomAnyAssembler();
+        buttons[i]->changeAssembler(newAss);
+    }
+}
+
 WorldMapWindow::LevelButton::LevelButton(WorldMapWindow& window, Map& level, const glm::vec4& rect) : Button(rect,nullptr,nullptr,{},nullptr,{1,1,0,1}), window(&window), level(&level)
 {
 
@@ -56,31 +88,20 @@ WorldMapWindow::LevelButton::LevelButton(WorldMapWindow& window, Map& level, con
 
 void WorldMapWindow::LevelButton::press()
 {
-    if (window && level)
+    if (window && level && !level->getChangeLevel()) //if we haven't already beaten this level
     {
         window->setCurrentLevel(*level);
     }
 }
 
-void WorldMapWindow::LevelButton::render(bool hover,float x, float y, float z, float xScale, float yScale)
+void WorldMapWindow::LevelButton::update(float x, float y, float z, const glm::vec4& blit)
 {
-    glm::vec4 renderRect = scale({x,y,xScale,yScale});
-    glm::vec4 color = {0,1,1,1};
-    if (hover )
-    {
-        color *= .5;
-        color.a = 1;
-    }
     if (level->getChangeLevel())
     {
-        color.g = 0;
-        color.b = 0;
+        backgroundColor.g = 0;
+        backgroundColor.b = 0;
     }
-    PolyRender::requestNGon(20,{renderRect.x + renderRect.z/2, renderRect.y + renderRect.a/2},10,color,0,true,z);
-    if (window && level && window->getCurrentLevel() == level)
-    {
-        PolyRender::requestNGon(20,{renderRect.x + renderRect.z/2, renderRect.y + renderRect.a/2},11,{1,1,0,1},0,true,z);
-    }
+    Button::update(x,y,z,blit);
 }
 
 
@@ -98,11 +119,19 @@ void WorldMapWindow::addLevel(Map& level)
     addPanel(*(new LevelButton(*this,level,{10 + (width+10)*(levels.size()%((int)(screenDimen.x/width))),levels.size()/(screenDimen.x/width),width,height})));
 }
 
+void WorldMapWindow::switchToGame()
+{
+    GameWindow::setLevel(levels[currentLevel]);
+    if (currentLevel)
+    {
+        currentLevel->getAnthill()->setButtons();
+    }
+    currentLevel = nullptr;
+}
+
+
 WorldMapWindow::WorldMapWindow() : Window({0,0,0,0},nullptr,{0,0,1,1})
 {
-    shopWindow = new Window({.1*rect.z,.1*rect.a,rect.z*.8,rect.a*.8},nullptr,{0,0,0,1},1);
-    addPanel(*(shopWindow));
-    shopWindow->setDoUpdate(false);
   //  addPanel(*(new OnOffButton(OnOffMode::DYNAMIC,*shopWindow,{100,100,100,100},nullptr,{"Shop"},&Font::tnr,{1,1,1,1})));
 }
 
@@ -121,11 +150,6 @@ Map* WorldMapWindow::getCurrentLevel()
     return currentLevel;
 }
 
-void WorldMapWindow::switchTo(Window& swapTo)
-{
-    GameWindow::setLevel(levels[currentLevel]);
-    currentLevel = nullptr;
-}
 
 WorldMapWindow::WorldSwitchToGame::WorldSwitchToGame(const glm::vec4& box, Interface& interface, Window& to, WorldMapWindow& worldMap) :
                                                 CondSwitchButton(box,nullptr,interface,to,{"Switch"},&Font::tnr,{1,0,1,1},nullptr), worldMap(&worldMap)
@@ -136,4 +160,13 @@ WorldMapWindow::WorldSwitchToGame::WorldSwitchToGame(const glm::vec4& box, Inter
 bool WorldMapWindow::WorldSwitchToGame::doSwitch()
 {
     return worldMap && worldMap->getCurrentLevel();
+}
+
+void WorldMapWindow::WorldSwitchToGame::press()
+{
+    if (worldMap)
+    {
+        worldMap->switchToGame();
+    }
+    WindowSwitchButton::press();
 }
