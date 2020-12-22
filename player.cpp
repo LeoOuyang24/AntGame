@@ -37,7 +37,7 @@ bool Player::updateSelect()
 }
 
 Player::BuildingButton::BuildingButton(const glm::vec4& rect, Player& player_,UnitAssembler& building_) :
-    Button(rect,nullptr,building_.getSprite(),{},nullptr,{0,0,0,0}),player(&player_), building(&building_)
+    Button(rect,nullptr,building_.sprite,{},nullptr,{0,0,0,0}),player(&player_), building(&building_)
 {
 
 }
@@ -61,7 +61,8 @@ void Player::init()
                           ,nullptr,{0,1,1,1});
    // addBuilding(factAssembler);
    // addBuilding(turretAssembler);
-   //addBuilding(evilMoonAssembler);
+   addUnit(antAssembler);
+   addBuilding(evilMoonAssembler);
     addResource(100);
 }
 
@@ -119,7 +120,7 @@ void Player::update()
             glm::vec4 color = selectColor;
             if(currentBuilding)
             {
-                glm::vec2 dimen = currentBuilding->getDimen();
+                glm::vec2 dimen = currentBuilding->dimen;
                 glm::vec4 structRect = {mousePos.x - dimen.x/2,mousePos.y - dimen.y/2,dimen.x, dimen.y};
                 bool collides = !GameWindow::getLevel()->getMesh().notInWall(structRect);
                 if (!collides)
@@ -142,16 +143,16 @@ void Player::update()
                     color = {1,0,0,1};
                 }
                 GameWindow::requestRect(structRect,color,true,0,0,0);
-                if (MouseManager::getJustClicked() == SDL_BUTTON_LEFT && !collides && getResource() >= currentBuilding->getProdCost())
+                if (MouseManager::getJustClicked() == SDL_BUTTON_LEFT && !collides && getResource() >= currentBuilding->prodCost)
                 {
                     Object* ptr = (currentBuilding->assemble());
                     RectComponent* rect = &ptr->getRect();
                     rect->setPos({mousePos.x - dimen.x/2, mousePos.y - dimen.y/2});
-                    InactiveComponent* inactive = new InactiveComponent(currentBuilding->getProdTime(),*ptr);
+                    InactiveComponent* inactive = new InactiveComponent(currentBuilding->prodTime,*ptr);
                     ptr->addComponent(*inactive);
                     GameWindow::getLevel()->addUnit(*(ptr), ptr->getFriendly());
                     inactive->init();
-                    addResource(-1*currentBuilding->getProdCost());
+                    addResource(-1*currentBuilding->prodCost);
                 }
             }
             break;

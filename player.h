@@ -5,7 +5,7 @@
 
 #include "glInterface.h"
 
-#include "entities.h"
+#include "friendlyAssemblers.h"
 
 class Factory;
 

@@ -63,14 +63,14 @@ NavMesh::Neighbors& NavMesh::NavMeshNode::getNextTo()
 
 void NavMesh::NavMeshNode::render() const
 {
-    Camera* cam = &(GameWindow::getCamera());
+    /*Camera* cam = &(GameWindow::getCamera());
     for (auto it = nextTo.begin(); it != nextTo.end(); ++it)
     {
         glm::vec2 center = cam->toScreen({rect.x + rect.z/2, rect.y + rect.a/2});
         glm::vec2 otherCenter = cam->toScreen({it->first->getRect().x + it->first->getRect().z/2, it->first->getRect().y + it->first->getRect().a/2});
        // PolyRender::requestLine({center.x,center.y,otherCenter.x,otherCenter.y},{center.x,0,otherCenter.x,1},1);
         PolyRender::requestRect(GameWindow::getCamera().toScreen({it->second.x,it->second.y - 10*(center.y > otherCenter.y),it->second.z,10}),{1,1,1,1},true,0,1);
-    }
+    }*/
 }
 
 NavMesh::NavMeshNode::~NavMeshNode()
@@ -209,6 +209,34 @@ void NavMesh::splitNode(NavMeshNode& node, const glm::vec4& overlap)
             right->addNode(*bottom);
         }
     }
+}
+
+glm::vec2 NavMesh::displacePoint(const glm::vec2& point, const glm::vec4& line, const glm::vec4& nodeRect, double width)
+{
+    glm::vec2 nextPoint = point;
+    if (nextPoint.x == line.x + width) //on right side of obstacle
+    {
+        if ((nextPoint.y == nodeRect.y && nextPoint.x == nodeRect.x + width) || (nextPoint.y == nodeRect.y + nodeRect.a && nextPoint.x > nodeRect.x + width) ) //top right of obstacle
+        {
+            nextPoint.y -= width;
+        }
+        else //bot right
+        {
+            nextPoint.y += width;
+        }
+    }
+    else if (nextPoint.x == line.z - width) //on left side of obstacle
+    {
+         if ((nextPoint.y == nodeRect.y && nextPoint.x == nodeRect.x + nodeRect.z - width) || (nextPoint.y == nodeRect.y + nodeRect.a && nodeRect.x + nodeRect.z -width > nextPoint.x)) //top left
+         {
+             nextPoint.y -= width;
+         }
+         else //bot left
+         {
+             nextPoint.y += width;
+         }
+    }
+    return nextPoint;
 }
 
 NavMesh::NavMesh(const glm::vec4& bounds_, RawQuadTree& tree_) : bounds(bounds_), negativeTree(bounds), nodeTree(bounds)
@@ -382,10 +410,13 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
             return {start,end}; //if both the start and end is in the same node then just move lol
         }
         std::unordered_set<NavMeshNode*> visited; //set of visited nodes
+        std::unordered_map<glm::vec2,NavMeshNode*,HashPoint> pointAndNodes; //map of points to their nodes. If a point is on the border of two nodes, it's the node that the previous point is not a part of
         std::unordered_map<glm::vec2,std::pair<double,glm::vec2>,HashPoint> paths; //shortest distance from start to paths as well as the closest point that leads to it. Used for backtracking. A node can lie on many nodes so we also keep track the nodes we've visited
         typedef std::pair<glm::vec2,NavMeshNode*> HeapPair ; //an important type for pathfinding
         MinHeap<HeapPair> heap; //finds the next node to process. We have to also store what node the point is associated with since the points all lie on the border of two nodes.
         heap.add({start,startNode},0);
+        pointAndNodes[end] = endNode;
+        pointAndNodes[start] = startNode;
         //double bestDist = -1; //the distance of the best path found so far. -1 until one path is found
        // glm::vec2 bestPoint = {0,0}; //the last point of the best path found so far. origin until one path is found
         glm::vec2 curPoint; //current point to analyze
@@ -400,7 +431,7 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
             curNode = heap.peak().second;
             const glm::vec4* curRect = &(curNode->getRect());
           //  GameWindow::requestRect(curNode->getRect(),{0,0,1,1},true,0,.1,false);
-         // GameWindow::requestNGon(10,curPoint,10,{0,1,0,1},0,true,.9,false);
+            //GameWindow::requestNGon(10,curPoint,10,{0,1,0,1},0,true,.9,false);
             heap.pop();
             if (curNode == endNode ) //if we are in the endNode, we can go directly to the end. This may not be the shortest path, so we keep searching
             {
@@ -444,42 +475,37 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
                 b = {it->second.z - width, it->second.a}; //the endpoints of the intersection line segment.
                 glm::vec2 midpoint;  //this is not actually the midpoint, but rather the point on the intersection line we think will be closest to the goal
                 midpoint = lineLineIntersectExtend(curPoint,end,a,b);//this ensures that if there is a direct path to the end, we work towards it.
-             //   GameWindow::requestRect(*nodeRect,{0,1,0,1},true,0,1,0);
+                //GameWindow::requestNGon(10,midpoint,10,{.5,1,0,1},0,true,.9,false);
+               // PolyRender::requestLine(glm::vec4(GameWindow::getCamera().toScreen(midpoint),GameWindow::getCamera().toScreen(curPoint)),{1,.5,.5,1},10);
+                //GameWindow::requestRect((it)->first->getRect(),{0,1,0,1},true,0,1,0);
 
                 if (!lineInLine(midpoint,end,a,b)) //if the midpoint isn't on the intersection, choose one of the endpoints
                 {
                     midpoint = pointDistance(end,a) + pointDistance(curPoint,a) < pointDistance(end,b) + pointDistance(curPoint,b) ? a : b;
                 }
+                else
+                {
+                    midpoint = pointDistance(end,midpoint) + pointDistance(curPoint,midpoint) < pointDistance(end,a) + pointDistance(curPoint,a) ? midpoint : a;
+                    midpoint = pointDistance(end,midpoint) + pointDistance(curPoint,midpoint) < pointDistance(end,b) + pointDistance(curPoint,b) ? midpoint : b;
+                }
                 const glm::vec4* nodeRect = &(it->first->getRect());
-                if (midpoint.x == a.x) //on right side of obstacle
-                {
-                    if ((midpoint.y == curRect->y && curRect->x == it->second.x) || (midpoint.y == nodeRect->y && nodeRect->x == it->second.x)) //top right
-                    {
-                        midpoint.y -= width;
-                    }
-                    else //bot right
-                    {
-                        midpoint.y += width;
-                    }
-                }
-                else if (midpoint.x == b.x) //on left side of obstacle
-                {
-                     if ((midpoint.y == curRect->y && curRect->x + curRect->z == it->second.z) || (midpoint.y == nodeRect->y && nodeRect->x + nodeRect->z == it->second.z)) //top left
-                     {
-                         midpoint.y -= width;
-                     }
-                     else //bot left
-                     {
-                         midpoint.y += width;
-                     }
-                }
+                midpoint = displacePoint(midpoint,it->second,*nodeRect,width);
+                //std::cout << it->first << std::endl;
+                //printRect(*nodeRect);
+
                 double newDistance = pointDistance(curPoint,midpoint) + std::get<0>(paths[curPoint]);
                 bool newPoint = paths.count(midpoint) == 0;
                 //if we found the new shortest distance from start to this point, update.
-                if (newPoint ||(!newPoint && paths[midpoint].first > newDistance)) //add a never before visited point/node to the heap or update if we found a new short distance
+                if (newPoint ||paths[midpoint].first > newDistance) //add a never before visited point/node to the heap or update if we found a new short distance
                 {
                     paths[midpoint].first = newDistance;
                     paths[midpoint].second = curPoint;
+                   /* if (pointAndNodes.find(midpoint) != pointAndNodes.end())
+                    {
+                        fastPrint("Replaced: ");
+                        std::cout << midpoint.x << " " << midpoint.y << std::endl;
+                    }*/
+                    pointAndNodes[midpoint] = it->first;
                     if (newPoint)
                     {
                         //the final score that also uses the heuristic
@@ -494,11 +520,40 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
         if (heap.size() != 0) //the end node is always guaranteed to be still in the heap if a path was found.
         {
            // std::cout << "Repeat\n";
-            while (curPoint != start )
+           glm::vec2 shortCut = curPoint; //shortcut is the last point that we know curPoint can move to without hitting a wall that has yet to be added to finalPath
+           finalPath.push_back(curPoint); //curPoint is the last point that was added to our final Path
+            while (curPoint != start && shortCut != start)
             {
-               // std::cout << paths.count(curPoint) << " " << curPoint.x << " " << curPoint.y << std::endl;
-                finalPath.push_front(curPoint);
-                curPoint = (paths[curPoint].second);
+                //std::cout << paths.count(curPoint) << " " << curPoint.x << " " << curPoint.y << std::endl;
+                glm::vec2 nextPoint = paths[shortCut].second; //nextPoint is the nextPoint to process.
+                //std::cout << shortCut.x << " " << shortCut.y << " " << &(pointAndNodes[shortCut]->getNextTo()) << "\n";
+                if (pointAndNodes[shortCut]->getNextTo().count(pointAndNodes[nextPoint])!= 0) //this is only false in the beginning since the end point and the second-last point are both in the endNode
+                {
+
+                    glm::vec4 line = pointAndNodes[shortCut]->getNextTo()[pointAndNodes[nextPoint]] - glm::vec4(width,0,width,0);
+
+                    if (!lineInLine(curPoint,nextPoint,{line.x,line.y},{line.z,line.a}) || (curPoint.x < line.x || curPoint.x > line.z)) //if we can't move to nextPoint, then shortCut is the furthest we can move.
+                        {
+                            if (Debug::getRenderPath())
+                            {
+                                GameWindow::requestNGon(10,shortCut,10,{1,1,0,1},0,true,1,false);
+                            }
+                            finalPath.push_front(shortCut);
+                            curPoint = shortCut;
+                        }
+                        else
+                        {
+                            if (Debug::getRenderPath())
+                            {
+                                GameWindow::requestNGon(10,shortCut,10,{1,0,1,1},0,true,1,false);
+                            }
+                        }
+                        /*PolyRender::requestLine(glm::vec4({GameWindow::getCamera().toScreen({line.x,line.y}),
+                                                          GameWindow::getCamera().toScreen({line.z,line.a})}),{1,1,0,1},1);*/
+                }
+                    shortCut = nextPoint;
+                  //  GameWindow::requestNGon(10,shortCut,10,{.5,1,0,1},0,true,.9,false);
+
             }
 
             finalPath.push_front(start);
@@ -523,12 +578,16 @@ bool NavMesh::straightLine(const glm::vec4& line)
     for (int i = 0; i < size; ++i)
     {
         glm::vec4 wallRect = (static_cast<RectPositional*>(vec[i]))->getRect();
-        if (lineInVec(a,b,wallRect,0) && !pointInVec(wallRect,a.x,a.y,0) && !pointInVec(wallRect,b.x,b.y,0))
+        bool intersect = lineInVec(a,b,wallRect,0);
+        //std::cout << "Points: ";
+        //printRect(line);
+        //printRect(wallRect);
+        if (intersect && !pointInVec(wallRect,a.x,a.y,0) && !pointInVec(wallRect,b.x,b.y,0))//sometimes, buildings may target or be targeted so we want to make sure we don't mind if the line starts or ends in a wall.
         {
-             //sometimes, buildings may target or be targeted so we want to make sure we don't mind if the line starts or ends in a wall.
             return false;
         }
     }
+    //PolyRender::requestLine(glm::vec4(GameWindow::getCamera().toScreen(a),GameWindow::getCamera().toScreen(b)),{1,0,0,1},10);
     return true;
 }
 

@@ -16,7 +16,7 @@ void ShopButton::press()
         {
             soldOut = true;
             player->addGold(-1*assembler->goldCost);
-            if (!assembler->getMovable())
+            if (!assembler->movable)
             {
                 player->addBuilding(*assembler);
             }
@@ -34,7 +34,7 @@ void ShopButton::update(float x, float y, float z, const glm::vec4& scale)
     float finalZ = z + baseZ + .01;
     if(assembler)
     {
-        assembler->getSprite()->request({renderRect,0, NONE, {1,1,1,1},&RenderProgram::basicProgram,finalZ},{0,0});
+        assembler->sprite->request({renderRect,0, NONE, {1,1,1,1},&RenderProgram::basicProgram,finalZ},{0,0});
         Font::tnr.requestWrite({convert(assembler->goldCost),{renderRect.x,renderRect.y + renderRect.a*1.1, renderRect.z*.8,renderRect.z*.2},
                                0, {0,0,0,1},finalZ});
     }
@@ -76,7 +76,7 @@ void ShopWindow::onSwitch(Window& previous)
 {
     for (int i = 0; i < shopItems; ++i)
     {
-        UnitAssembler* newAss = getRandomAnyAssembler();
+        UnitAssembler* newAss = getRandomAssembler(allShopItems);
         buttons[i]->changeAssembler(newAss);
     }
 }

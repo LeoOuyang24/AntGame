@@ -10,21 +10,7 @@
 class Anthill;
 class AntManager;
 
-class UnitAttackComponent : public AttackComponent, public ComponentContainer<UnitAttackComponent>
-{
-    typedef std::pair<std::weak_ptr<Object>,glm::vec2> TargetInfo;
-    std::weak_ptr<Object> shortTarget; //represents short-term target. Is attacked because it's in range
-    TargetInfo longTarget; //represents a target that the player explicitly chose. Could be an empty position with no enemy to attack
 
-    bool activated = false; //whether this component should affect MoveComponent. Exists solely to make sure our unit doesn't move to 0,0 upon spawn. Since all of our units are spawned at (0,0) and then moved, we can't just set the position in the constructor
-    bool notFriendly = false; //the type of enemy to attack
-    double searchRange = 0; //aggro range
-public:
-    UnitAttackComponent(float damage_, int endLag_, double range_,double searchRange_,bool f, Entity& entity);
-    void update();
-    void setLongTarget(const glm::vec2& point, std::shared_ptr<Object>* unit); //sets longTarget. Essentially only used when the player sets the target. Ignores the point if a target unit is provided
-    void setShortTarget(std::shared_ptr<Object>* unit); //sets shortTarget. Only used when there is a nearby enemy
-};
 
 class CommandableComponent : public Component, public ComponentContainer<CommandableComponent> //represents that can be commanded by AntManagers
 {

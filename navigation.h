@@ -53,6 +53,7 @@ class NavMesh //a navigation mesh of rectangle
 
     void removeNode(NavMeshNode& node); //deletes node from both the vector and the nodeTree
     void splitNode(NavMeshNode& node, const glm::vec4& overlap); //creates new nodes and adds them to neighbors based on how overlap splits node. Does NOT delete node
+    glm::vec2 displacePoint(const glm::vec2& point,const glm::vec4& line, const glm::vec4& nodeRect, double width); //Helper Function for getPath(). given a node's Rect and its boundary, this function predicts where walls are and moves the point accordingly.
 public:
     NavMesh(const glm::vec4& bounds_, RawQuadTree& tree_);
     void init(ObjectStorage& storage); //initialize the mesh with given the vector of objects

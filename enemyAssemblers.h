@@ -1,7 +1,7 @@
 #ifndef ENEMYASSEMBLERS_H_INCLUDED
 #define ENEMYASSEMBLERS_H_INCLUDED
 
-#include "entities.h"
+#include "friendlyAssemblers.h"
 
 class EvilMoonAssembler : public UnitAssembler
 {

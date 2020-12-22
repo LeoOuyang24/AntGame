@@ -115,7 +115,10 @@ std::shared_ptr<Object> Map::addUnit(Object& entity, bool friendly)
     //obj.reset();
     entity.setFriendly(friendly);
     entities[&entity] = ptr;
-    tree->add(entity.getRect());
+    if (!entity.getComponent<ProjectileComponent>())
+    {
+        tree->add(entity.getRect());
+    }
     if (!entity.getMovable())
     {
         mesh->smartAddNode(entity.getRect().getRect());
@@ -174,6 +177,18 @@ void Map::remove(Object& unit)
     }
     tree->remove(unit.getRect());
     entities.erase(&unit);
+}
+
+void Map::clearEnemies()
+{
+    auto end = entities.end();
+    for (auto i = entities.begin(); i != end; ++i)
+    {
+        if (i->first->getFriendly() == false)
+        {
+            i->first->setDead(true);
+        }
+    }
 }
 
 ObjectStorage& Map::getEntities()
@@ -347,14 +362,14 @@ Map* Map::generateLevel(const glm::vec4& levelRect) // Doesn't generate terrain 
     }
     Shard shard;
     PickUpResource resource;
-    glm::vec2 dimen = shard.getDimen();
+    glm::vec2 dimen = shard.dimen;
     for (int i = 0; i < 5; ++i) //add shards
     {
         glm::vec2 chosen = emptySpots[rand()%emptySpots.size()];
         chunk->addUnit(*(shard.assemble()),chosen.x + fmod(rand(),(maxObjectSize/2 - dimen.x/2)),
                 chosen.y + fmod(rand(),(maxObjectSize/2 - dimen.y/2)),false);
     }
-    dimen = resource.getDimen();
+    dimen = resource.dimen;
     for (int i = 0; i < rand()%100; ++i)
     {
             glm::vec2 chosen = emptySpots[rand()%emptySpots.size()];
@@ -391,7 +406,7 @@ Map::Gate::NextAreaButton::~NextAreaButton()
 
 }
 
-Map::Gate::Gate(int x, int y) : Object(*(new ClickableComponent("Gate",*this)),*(new RectComponent({x,y,64,64},*this)), *(new AnimationComponent(&portalAnime,*this)))
+Map::Gate::Gate(int x, int y) : Object(*(new ClickableComponent("Gate",*this)),*(new RectComponent({x,y,64,64},*this)), *(new AnimationComponent(portalAnime,*this)))
 {
     getClickable().addButton(*(new NextAreaButton()));
 }

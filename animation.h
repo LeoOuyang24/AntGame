@@ -15,6 +15,7 @@ extern AnimationWrapper turretSprite;
 extern AnimationWrapper greenCross;
 extern AnimationWrapper basicEnemyAnime;
 extern AnimationWrapper blasterAnime;
+extern AnimationWrapper tankRocketAnime;
 
 extern AnimationWrapper portalAnime;
 

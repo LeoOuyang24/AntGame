@@ -9,100 +9,6 @@
 #include "game.h"
 #include "animation.h"
 
-UnitAttackComponent::UnitAttackComponent(float damage_, int endLag_, double range_,double searchRange_, bool f, Entity& entity) : AttackComponent(damage_,endLag_,range_,entity),
-ComponentContainer<UnitAttackComponent>(entity), notFriendly(f), searchRange(searchRange_), activated(false) //coincidentally, activated should always be the same value as f
-{
-
-}
-
-void UnitAttackComponent::update()
-{
-
-    Object* ent = shortTarget.lock().get();
-    Map* level = GameWindow::getLevel();
-    if (!ent && level) //if we aren't already fighting something, find something nearby
-    {
-        Object* nearby = findNearestUnit<HealthComponent>(searchRange,notFriendly,*(level->getTree()));
-        if (nearby && nearby != longTarget.first.lock().get())
-        {
-            setShortTarget(&level->getUnit(nearby));
-        }
-        else if (activated && (longTarget.second != move->getTarget() || targetUnit.lock().get() != longTarget.first.lock().get())) //if there's nothing nearby to fight, set the target to the long target
-        {
-            if (longTarget.first.lock().get())
-            {
-                setTarget(longTarget.second,&level->getUnit(longTarget.first.lock().get()));
-            }
-            else
-            {
-                setTarget(longTarget.second,nullptr);
-            }
-        }
-
-    }
-   /* if (shortTarget.lock().get())
-    {
-        glm::vec4 selfRect = entity->getComponent<RectComponent>()->getRect();
-        glm::vec4 otherRect = shortTarget.lock().get()->getComponent<RectComponent>()->getRect();
-        PolyRender::requestLine(glm::vec4(GameWindow::getCamera().toScreen(
-                                {selfRect.x + selfRect.z/2, selfRect.y + selfRect.a/2}),
-                                GameWindow::getCamera().toScreen(
-                                {otherRect.x + otherRect.z/2, otherRect.y + otherRect.a/2})),
-                                {1,0,1,1},3);
-    }
-    if (move->getCenter() == longTarget.second) //if we are at the target, set our state back to ignore
-    {
-        ignore = IgnoreState::IDLE;
-    }*/
-    AttackComponent::update();
-}
-
-void UnitAttackComponent::setLongTarget(const glm::vec2& target, std::shared_ptr<Object>* unit)
-{
-    activated = true; //once moveComponent has set a target, we gets permission to affect moveComponent
-    //AttackComponent::setTarget(target,unit);
-    //std::cout << target.x << " " << target.y << " " << unit->get() << std::endl;
-    if (unit)
-    {
-        longTarget.first = *unit;
-        //std::cout << longTarget.first.lock().get() << std::endl;
-    }
-    else
-    {
-        longTarget.second = target;
-        longTarget.first.reset();
-    }
-}
-
-void UnitAttackComponent::setShortTarget(std::shared_ptr<Object>* unit)
-{
-   // std::cout <<move->getTarget().x << " " << move->getTarget().y << std::endl;
-    if (shortTarget.lock().get() != unit->get())
-    {
-        AttackComponent::setTarget(*unit);
-        if (unit )
-        {
-            shortTarget = *unit;
-           /* if (entity)
-            {
-                CommandableComponent* command = entity->getComponent<CommandableComponent>();
-                if (command)
-                {
-                    AntManager* curTask = command->getCurrentTask();
-                    if (curTask)
-                    {
-                        curTask->setShortTarget(*unit);
-                    }
-                }
-            }*/
-        }
-        else
-        {
-            shortTarget.reset();
-        }
-    }
-
-}
 
 CommandableComponent::CommandableComponent(Entity& entity) : Component(entity), ComponentContainer<CommandableComponent>(entity)
 {
@@ -237,7 +143,7 @@ Ant::AntClickable::~AntClickable()
 }
 
 Ant::Ant(const glm::vec4& rect, Anthill& home) : Unit(*(new ClickableComponent("Ant",*this)), *(new AntMoveComponent(&home,.5,rect,*this)),
-                                                      *(new AnimationComponent(&(basicSoldierAnime),*this)), *(new HealthComponent(*this, 10)))
+                                                      *(new AnimationComponent((basicSoldierAnime),*this)), *(new HealthComponent(*this, 10)))
 {
     health->setVisible(false);
 }
@@ -302,7 +208,7 @@ AntHillRender::~AntHillRender()
 }
 
 ProduceUnitButton::ProduceUnitButton(UnitAssembler& obj, ProduceUnitComponent* own) : assembler(&obj),owner(own), Button({0,0,64,16},nullptr,nullptr,
-                                                                                                           {"Create " + obj.getName(),{0,0,0,0},0,{0,0,0,1},GameWindow::fontZ},&Font::tnr,
+                                                                                                           {"Create " + obj.name,{0,0,0,0},0,{0,0,0,1},GameWindow::fontZ},&Font::tnr,
                                                                                                            {0,1,0,1})
 {
 
@@ -323,7 +229,7 @@ ProduceUnitComponent::ProduceUnitComponent(std::string name, Unit& entity) : Cli
 
 void ProduceUnitComponent::produceUnit(UnitAssembler& assembler)
 {
-    if (toProduce.size() < 10 && GameWindow::getPlayer().getResource() >= assembler.getProdCost())
+    if (toProduce.size() < 10 && GameWindow::getPlayer().getResource() >= assembler.prodCost)
     {
         toProduce.push_back(&assembler);
     }
@@ -332,16 +238,16 @@ void ProduceUnitComponent::produceUnit(UnitAssembler& assembler)
 void ProduceUnitComponent::update()
 {
     ClickableComponent::update();
-    if (beingProduced && produceTimer.timePassed(beingProduced->getProdTime()) && GameWindow::getPlayer().getResource() >= beingProduced->getProdCost() ) //if something is in production and is done, put it into the real world
+    if (beingProduced && produceTimer.timePassed(beingProduced->prodTime) && GameWindow::getPlayer().getResource() >= beingProduced->prodCost)  //if something is in production and is done, put it into the real world
     {
         auto vec4 = entity->getComponent<RectComponent>()->getRect();
-        glm::vec2 center = {vec4.x + vec4.z + beingProduced->getDimen().x/2, vec4.y + vec4.a + beingProduced->getDimen().y/2};
+        glm::vec2 center = {vec4.x + vec4.z + beingProduced->dimen.x/2, vec4.y + vec4.a + beingProduced->dimen.y/2};
 
         Map* level = GameWindow::getLevel();
         if (level)
         {
             level->addUnit(*(beingProduced->assemble()),center.x +5*cos(rand()%360/180.0*M_PI),center.y +5*sin(rand()%360/180.0*M_PI), true);
-            GameWindow::getPlayer().addResource(-1*beingProduced->getProdCost());
+            GameWindow::getPlayer().addResource(-1*beingProduced->prodCost);
         }
 
         beingProduced = nullptr;
@@ -356,7 +262,7 @@ void ProduceUnitComponent::update()
     {
         glm::vec4 rect = entity->getComponent<RectComponent>()->getRect();
         PolyRender::requestRect(GameWindow::getCamera().toScreen({rect.x,rect.y + rect.a + 10,
-                                                                 (SDL_GetTicks() - produceTimer.getTime())/beingProduced->getProdTime()*rect.z, 13}),
+                                                                 (SDL_GetTicks() - produceTimer.getTime())/beingProduced->prodTime*rect.z, 13}),
                                                                 {.5,.5,.5,1},true,0,0);
     }
 
@@ -368,13 +274,13 @@ void ProduceUnitComponent::display(const glm::vec4& rect)
     for (int it = 0; it < size; ++it)
     {
         glm::vec4 renderRect = GameWindow::getCamera().toAbsolute({rect.x + .1*rect.z,rect.y + .1*rect.a*(it),.1*rect.a,.1*rect.a});
-        toProduce[it]->getSprite()->request({renderRect,0,NONE,
+        toProduce[it]->sprite->request({renderRect,0,NONE,
                                             {1,1,1,1},&RenderProgram::basicProgram,GameWindow::fontZ} ,{});
         if (it == 0)
         {
               renderTimeMeter({renderRect.x+renderRect.z+.1*rect.a, renderRect.y,
                     rect.z - (renderRect.x + renderRect.z + .1*rect.a), .1*rect.a},
-                    {.5,.5,.5,1},produceTimer,beingProduced->getProdTime(),GameWindow::interfaceZ);
+                    {.5,.5,.5,1},produceTimer,beingProduced->prodTime,GameWindow::interfaceZ);
         }
     }
 }

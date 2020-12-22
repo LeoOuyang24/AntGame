@@ -17,7 +17,7 @@ void Debug::DebugNavMesh::DebugNavMesh::update()
                             ptr->render();
                             });
     }
-    if (renderPath)
+    if (Debug::getRenderPath())
     {
         auto mousePos = MouseManager::getMousePos();
         Camera* cam = &(GameWindow::getCamera());
@@ -32,7 +32,7 @@ void Debug::DebugNavMesh::DebugNavMesh::update()
        if (left != right)
        {
 
-           auto path = mesh->getPath(left,right, (KeyManager::findNumber(SDLK_F4) != -1 )*10);
+           auto path = mesh->getPath(left,right, (KeyManager::findNumber(SDLK_F4) != -1 )*10*sqrt(2));
             showPath(path);
           // GameWindow::requestNGon(10,right,2,{0,1,0,1},0,true,0,false);
        }
@@ -79,7 +79,23 @@ void Debug::DebugGameWindow::update()
             GameWindow::getLevel()->addTerrain(GameWindow::getSelection());
         }
     }
+    if (KeyManager::getJustPressed() == SDLK_F5)
+    {
+        Debug::spawnCreatures = !Debug::spawnCreatures;
+        std::string on = "ON";
+        if (!Debug::spawnCreatures)
+        {
+            on = "OFF";
+            GameWindow::getLevel()->clearEnemies();
+        }
+
+        fastPrint("Spawning creature status turned " + on + "\n");
+
+    }
 }
+
+bool Debug::spawnCreatures = true;
+bool Debug::renderPath = true;
 
 Debug::Debug()
 {
@@ -103,7 +119,7 @@ void Debug::update()
         break;
     case SDLK_F2:
         std::cout << "Rendering Path" << std::endl;
-        meshDB.renderPath = !meshDB.renderPath;
+        renderPath = !renderPath;
         break;
     case SDLK_F3:
         std::cout << "Generating Terrain" << "\n";
@@ -112,4 +128,14 @@ void Debug::update()
     }
     meshDB.update();
     gameDB.update();
+}
+
+bool Debug::getSpawnCreatures()
+{
+    return spawnCreatures;
+}
+
+bool Debug::getRenderPath()
+{
+    return renderPath;
 }

@@ -6,6 +6,7 @@
 
 #include "components.h"
 #include "entities.h"
+#include "friendlyAssemblers.h"
 
 class NavMesh;
 
@@ -76,13 +77,13 @@ struct Map
 
     std::shared_ptr<Object> addUnit(Object& entity,  bool friendly = false);//this method returns the shared_ptr in case any other class wants to share ownership. friendly determines if the unit is an enemy or not
     std::shared_ptr<Object> addUnit(Object& entity,  int x, int y, bool friendly = false);
-
     std::shared_ptr<Object>& getUnit(Object* unit);
     void addTerrain(const glm::vec4& rect);
     void moveObject(Object& obj, double x, double y); //can move either ants or objects
     ObjectStorage& getEntities();
     NavMesh& getMesh(); //might be null if init hasn't been called
     void remove(Object& unit);
+    void clearEnemies();
     void render();
     const glm::vec4& getRect();
     RawQuadTree* getTree();

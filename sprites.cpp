@@ -11,6 +11,7 @@ AnimationWrapper turretSprite;
 AnimationWrapper greenCross;
 AnimationWrapper basicEnemyAnime;
 AnimationWrapper blasterAnime;
+AnimationWrapper tankRocketAnime;
 
 AnimationWrapper portalAnime;
 
@@ -29,6 +30,8 @@ void initSprites()
     basicEnemyAnime.init(new BaseAnimation("sprites/evilMoon.png", .01,3,1));
     greenCross.init(new BaseAnimation("sprites/greencross.png",0,1,1));
     blasterAnime.init(new BaseAnimation("sprites/blaster.png",0.3,3,1));
+    tankRocketAnime.init(new BaseAnimation("sprites/blastRocket.png",0,1,1));
+
 
     portalAnime.init(new BaseAnimation("sprites/portal.png",.01,3,2));
 }

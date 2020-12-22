@@ -38,7 +38,7 @@ class AnimationComponent : public RenderComponent, public ComponentContainer<Ani
     AnimationWrapper* sprite = nullptr;
     AnimationParameter animeParam;
 public:
-    AnimationComponent(AnimationWrapper* anime, Entity& entity );
+    AnimationComponent(AnimationWrapper& anime, Entity& entity );
     void render(const SpriteParameter& param);
     void update();
 };
@@ -58,12 +58,14 @@ class Object : public Entity//environment objects. Can be seen, have a hitbox, a
 {
     friend class EntityAssembler;
 protected:
-    bool dead = false;
-    const bool movable = false; //whether or not the object moves when pushed by another unit. False for structures, true for units
-    bool friendly = false; //whether or not the player can target the unit
+
     ClickableComponent* clickable = nullptr;
     RectComponent* rect = nullptr;
     RenderComponent* render = nullptr;
+    bool dead = false; //whether or not to remove the object
+    const bool movable = false; //whether or not the object moves when pushed by another unit. False for structures, true for units
+    bool friendly = false; //whether or not the player can target the unit
+    bool isProjectile = false; //whether or not the object is a projectile. Biggest difference is that projectiles aren't added to quadtrees
 public:
     Object(ClickableComponent& click, RectComponent& rect, RenderComponent& render, bool mov = true);
     Object(std::string name, const glm::vec4& rect, AnimationWrapper* rapper, bool mov = true);
@@ -84,24 +86,7 @@ public:
     virtual ~Object();
 };
 
-class ObjectAssembler
-{
-protected:
-    glm::vec2 dimen;
-    std::string name;
-    AnimationWrapper* sprite = nullptr;
-    bool movable = false;
-    bool friendly = false;
-public:
-    const int goldCost = 0;
-    ObjectAssembler(std::string name_, const glm::vec2& rect_, AnimationWrapper* anime, bool mov, bool friendly_ = false, int goldCost = 10);
-    const glm::vec2& getDimen();
-    std::string getName();
-    AnimationWrapper* getSprite();
-    bool getMovable();
-    virtual Object* assemble();
 
-};
 
 class InteractionComponent : public Component, public ComponentContainer<InteractionComponent> //objects that can be interacted with
 {
@@ -154,19 +139,6 @@ public:
 
 };
 
-class UnitAssembler : public ObjectAssembler
-{
-protected:
-    double prodTime = 0; //milliseconds it takes to produce this unit
-    double maxHealth = 0;
-    int prodCost = 0;
-public:
-    UnitAssembler( std::string name_,const glm::vec2& rect_, AnimationWrapper* anime, bool mov, double maxHealth_, double prodTime_, bool friendly_ = false, int goldCost = 10);
-    double getMaxHealth();
-    double getProdTime();
-    int getProdCost();
-    Object* assemble();
-};
 
 class RepelComponent : public Component, public ComponentContainer<RepelComponent> //component that repels objects on collision
 {
@@ -280,12 +252,12 @@ class AttackComponent : public ApproachComponent, public ComponentContainer<Atta
 {
 protected:
     double range = 0;
-    float damage = 0;
+    double damage = 0;
     int endLag = 0; //how much time must pass before the attack can be reused.
     DeltaTime attackTimer;
     virtual bool canAttack(Object* ptr); //returns true if we can attack the target.
 public:
-    AttackComponent(float damage_, int endLag_, double range_, Entity& unit);
+    AttackComponent(double damage_, int endLag_, double range_, Entity& unit);
     virtual void attack(HealthComponent* health); //this is a pointer so you can legally pass in a null pointer. This function will make sure it's not null
     virtual void update();
     using ApproachComponent::setTarget;
@@ -304,25 +276,6 @@ public:
     ~SeigeComponent();
 };
 
-class Mushroom : public Unit
-{
-public:
-    Mushroom(int x, int y);
-};
-
-class Dummy : public Unit
-{
-public:
-    Dummy(int x, int y);
-};
-
-class Bug : public Unit
-{
-public:
-    Bug(int x, int y);
-    ~Bug();
-};
-
 class ResourceEatComponent : public ApproachComponent, public ComponentContainer<ResourceEatComponent> //finds and eats the nearest ResourceCountComponent, including anthills
 {
 public:
@@ -331,5 +284,40 @@ public:
     virtual ~ResourceEatComponent();
 };
 
+class ProjectileComponent : public MoveComponent, public ComponentContainer<ProjectileComponent>
+{
+    bool friendly = false;
+public:
+    ProjectileComponent(bool friendly,const glm::vec2& target, double speed, const glm::vec4& rect, Unit& entity);
+    ProjectileComponent(bool friendly, const glm::vec2& target, double xspeed, double yspeed, const glm::vec4& rect, Unit& entity);
+    virtual void collide(Entity& other);
+    virtual void update();
+
+};
+
+class UnitAttackComponent : public AttackComponent, public ComponentContainer<UnitAttackComponent>
+{
+    typedef std::pair<std::weak_ptr<Object>,glm::vec2> TargetInfo;
+    std::weak_ptr<Object> shortTarget; //represents short-term target. Is attacked because it's in range
+    TargetInfo longTarget; //represents a target that the player explicitly chose. Could be an empty position with no enemy to attack
+
+    bool activated = false; //whether this component should affect MoveComponent. Exists solely to make sure our unit doesn't move to 0,0 upon spawn. Since all of our units are spawned at (0,0) and then moved, we can't just set the position in the constructor
+    bool notFriendly = false; //the type of enemy to attack
+    double searchRange = 0; //aggro range
+public:
+    UnitAttackComponent(double damage_, int endLag_, double range_,double searchRange_,bool f, Entity& entity);
+    void update();
+    void setLongTarget(const glm::vec2& point, std::shared_ptr<Object>* unit); //sets longTarget. Essentially only used when the player sets the target. Ignores the point if a target unit is provided
+    void setShortTarget(std::shared_ptr<Object>& unit); //sets shortTarget. Only used when there is a nearby enemy
+};
+
+class ProjectileAssembler;
+class ProjectileAttackComponent : public UnitAttackComponent, public ComponentContainer<ProjectileAttackComponent> //attack component that shoots a projectile
+{
+    ProjectileAssembler* assembler = nullptr;
+public:
+    ProjectileAttackComponent(ProjectileAssembler& ass, double damage, int endLag, double range, double searchRange_,bool f, Unit& entity);
+    virtual void attack(HealthComponent* health);
+};
 
 #endif // ENTITIES_H_INCLUDED

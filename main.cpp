@@ -91,6 +91,8 @@ int main(int args, char* argsc[])
 
     initSprites();
 
+    std::cout << lineInLine({2426, 2992},{2667, 2992}, {2541, 3023}, {2559.43, 2717.66}) << std::endl;
+
     SDL_Event e;
     bool quit = false;
     bool eventsEmpty = true;

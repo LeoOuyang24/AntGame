@@ -11,7 +11,6 @@ struct Debug //class to hold all debug controls
     struct DebugNavMesh //for debugging NavMesh
     {
         bool renderNodes = false; //whether or not to render all the NavMesh nodes
-        bool renderPath = false; //whether or not to render left and right and their path
         glm::vec2 left = {1,1}, right = {1,1};
         NavMesh* mesh = nullptr;
         void update();
@@ -25,7 +24,12 @@ struct Debug //class to hold all debug controls
     Debug();
     void init();
     void update();
+    static bool getSpawnCreatures();
+    static bool getRenderPath();
+
 private:
+    static bool spawnCreatures;
+    static bool renderPath; //whether or not to render left and right and their path
     DebugNavMesh meshDB;
     DebugGameWindow gameDB;
 

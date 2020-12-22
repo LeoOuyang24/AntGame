@@ -62,7 +62,7 @@ void AntManager::setShortTarget(std::shared_ptr<Object>& obj)
             UnitAttackComponent* attack = ant->getComponent<UnitAttackComponent>();
             if (attack)
             {
-                attack->setShortTarget(&obj);
+                attack->setShortTarget(obj);
             }
         }
     }

@@ -121,7 +121,7 @@ ClickableComponent::~ClickableComponent()
 
 }
 
-AnimationComponent::AnimationComponent(AnimationWrapper* anime, Entity& entity ) :  RenderComponent(entity), ComponentContainer<AnimationComponent>(entity), sprite(anime)
+AnimationComponent::AnimationComponent(AnimationWrapper& anime, Entity& entity ) :  RenderComponent(entity), ComponentContainer<AnimationComponent>(entity), sprite(&anime)
 {
 
 }
@@ -156,6 +156,10 @@ void AnimationComponent::update()
                     angle = atan2( move->getCenter().y - target->getCenter().y , move->getCenter().x -  target->getCenter().x ) + M_PI/2;
                 }
             }
+        }
+        if (entity->getComponent<ProjectileComponent>())
+        {
+          //  std::cout << angle << std::endl;
         }
         render({GameWindow::getCamera().toScreen(rect->getRect()),angle,NONE});
     }
@@ -192,7 +196,7 @@ Object::Object(ClickableComponent& click, RectComponent& rect_, RenderComponent&
 }
 
 Object::Object(std::string name, const glm::vec4& vec, AnimationWrapper* rapper, bool mov) : Entity(), movable(mov),
-    clickable(new ClickableComponent(name, *this)), rect(new RectComponent(vec, *this)), render(new AnimationComponent(rapper, *this))
+    clickable(new ClickableComponent(name, *this)), rect(new RectComponent(vec, *this)), render(new AnimationComponent(*rapper, *this))
 {
     addComponent(*(clickable));
     addComponent(*(rect));
@@ -218,6 +222,7 @@ void Object::addRender(RenderComponent* rend)
     addComponent(*rend);
     render = rend;
 }
+
 RectComponent& Object::getRect() const
 {
     return *rect;
@@ -267,38 +272,6 @@ Object::~Object()
     //std::cout << "Object Destructor: " << this << std::endl;
 }
 
-ObjectAssembler::ObjectAssembler( std::string name_, const glm::vec2& rect_,AnimationWrapper* anime, bool mov, bool friendly_, int goldCost_) :
-    dimen(rect_), name(name_), sprite(anime), movable(mov), friendly(friendly_), goldCost(goldCost_)
-{
-
-}
-
-const glm::vec2& ObjectAssembler::getDimen()
-{
-    return dimen;
-}
-
-std::string ObjectAssembler::getName()
-{
-    return name;
-}
-
-AnimationWrapper* ObjectAssembler::getSprite()
-{
-    return sprite;
-}
-
-bool ObjectAssembler::getMovable()
-{
-    return movable;
-}
-
-Object* ObjectAssembler::assemble()
-{
-    Object* obj= new Object(name,{0,0,dimen.x,dimen.y},sprite,movable);
-    obj->setFriendly(friendly);
-    return obj;
-}
 
 InteractionComponent::InteractionComponent(Object& unit) : Component(unit), ComponentContainer<InteractionComponent>(&unit)
 {
@@ -434,41 +407,7 @@ Manager* Unit::getManager()
     return manager;
 }
 
-UnitAssembler::UnitAssembler( std::string name_,const glm::vec2& rect_, AnimationWrapper* wrap, bool mov, double maxHealth_, double prodTime_, bool friendly_, int goldCost) :
-     ObjectAssembler( name_,rect_, wrap, mov,friendly_,goldCost), maxHealth(maxHealth_), prodTime(prodTime_)
-{
-    if (friendly)
-    {
-        if (movable) //if is a unit, add to units
-        {
-            allUnits.push_back(this);
-        }
-        else //add to structures
-        {
-            allStructures.push_back(this);
-        }
-    }
-}
 
-double UnitAssembler::getMaxHealth()
-{
-    return maxHealth;
-}
-
-double UnitAssembler::getProdTime()
-{
-    return prodTime;
-}
-
-int UnitAssembler::getProdCost()
-{
-    return prodCost;
-}
-
-Object* UnitAssembler::assemble()
-{
-    return new Unit(name,{0,0,dimen.x,dimen.y}, sprite, movable, maxHealth);
-}
 
 RepelComponent::RepelComponent(Object& unit) : Component(unit), ComponentContainer<RepelComponent>(unit)
 {
@@ -593,10 +532,18 @@ void PathComponent::setTarget(const glm::vec2& point)
 {
     if (getTarget() != point)
     {
+      //  std::cout << point.x << " " << point.y << std::endl;
+
        /* if (MouseManager::getJustClicked() != SDL_BUTTON_RIGHT)
         {
             std::cout << point.x << " " << point.y << std::endl;
         }*/
+        if (pointDistance(point,getTarget()) < 2) //if our new target is very similar to our old target, just replace the old target
+        {
+            //std::cout << "ASDF" << std::endl;
+        //    path.pop_back();
+          //  path.push_back(point);
+        }
         path.clear();
         NavMesh* mesh = &(GameWindow::getLevel()->getMesh());
         auto time = SDL_GetTicks();
@@ -630,7 +577,7 @@ void PathComponent::addPoint(const glm::vec2& point)
 
 void PathComponent::update()
 {
-    //Debug::DebugNavMesh::showPath(path);
+    Debug::DebugNavMesh::showPath(path);
     if (atTarget())
     {
         if (path.size() > 1) //if we haven't reached the end of the path, select the next point
@@ -641,10 +588,6 @@ void PathComponent::update()
         } //otherwise, we're done
     }
     MoveComponent::update();
-    if (speed == 0)
-    {
-        std::cout << getCenter().x << " " << getCenter().y << " " << target.x << " " << target.y << std::endl;
-    }
 
 }
 
@@ -749,6 +692,7 @@ ApproachComponent::~ApproachComponent()
 
 bool AttackComponent::canAttack(Object* ptr)
 {
+
     if (ptr)
     {
         RectComponent* otherRect = &ptr->getRect();
@@ -758,7 +702,7 @@ bool AttackComponent::canAttack(Object* ptr)
     return false;
 }
 
-AttackComponent::AttackComponent(float damage_, int endLag_, double range_, Entity& unit) : ApproachComponent(unit), ComponentContainer<AttackComponent>(&unit),
+AttackComponent::AttackComponent(double damage_, int endLag_, double range_, Entity& unit) : ApproachComponent(unit), ComponentContainer<AttackComponent>(&unit),
                                                                                             damage(damage_), range(range_), endLag(endLag_)
 {
 
@@ -779,7 +723,6 @@ void AttackComponent::update()
   //  std::cout << ptr << std::endl;
     if (canAttack(ptr)) //attack if we are able to.
     {
-
         attack(ptr->getComponent<HealthComponent>());
         if (move)
         {
@@ -847,33 +790,9 @@ void SeigeComponent::update()
             }
         }
     }
-}
 
+}
 SeigeComponent::~SeigeComponent()
-{
-
-}
-
-Mushroom::Mushroom(int x, int y) : Unit(*(new ClickableComponent("Mushroom", *this)), *(new RectComponent({x,y,10,10},*this)),*(new RectRenderComponent({0,.5,1,1},*this)),*(new HealthComponent(*this,1)))
-{
-    addComponent(*(new ResourceComponent(rand()%5,*this)));
-    health->setVisible(false);
-}
-
-Dummy::Dummy(int x, int y) : Unit(*(new ClickableComponent("Dummy", *this)), *(new RectComponent({x,y,32,32},*this)), *(new RectRenderComponent({1,.5,1,1},*this)),
-                                  *(new HealthComponent(*this, 50)))
-{
-
-}
-
-Bug::Bug(int x, int y) : Unit(*(new ClickableComponent("Bug", *this)), *(new PathComponent(.02,{x,y,20,20},*this)), *(new AnimationComponent(&basicEnemyAnime,*this)),*(new HealthComponent(*this, 100)))
-{
-    //getComponent<MoveComponent>()->setTarget({0,0});
-    addComponent(*(new AttackComponent(1, 50, 0,*this)));
-   // addComponent(*(new ResourceEatComponent(*this)));
-}
-
-Bug::~Bug()
 {
 
 }
@@ -911,4 +830,146 @@ void ResourceEatComponent::update()
 ResourceEatComponent::~ResourceEatComponent()
 {
 
+}
+
+ProjectileComponent::ProjectileComponent(bool friendly,const glm::vec2& target, double speed, const glm::vec4& rect, Unit& entity) : MoveComponent(speed, rect, entity),
+                        ComponentContainer<ProjectileComponent>(entity), friendly(friendly)
+{
+    setTarget(target);
+}
+
+ProjectileComponent::ProjectileComponent(bool friendly,const glm::vec2& target, double xspeed, double yspeed, const glm::vec4& rect, Unit& entity) : MoveComponent(sqrt(xspeed*xspeed + yspeed*yspeed),rect,entity),
+                        ComponentContainer<ProjectileComponent>(entity), friendly(friendly)
+{
+    setTarget(target);
+}
+
+void ProjectileComponent::collide(Entity& other)
+{
+    Unit* unit = static_cast<Unit*>(entity);
+    if (unit && friendly != static_cast<Unit*>(&other)->getFriendly() ) //if we collided with an enemy (or friendly unit if enemy projectile)
+    {
+        unit->setDead(true);
+    }
+}
+
+void ProjectileComponent::update()
+{
+    MoveComponent::update();
+    if (atTarget())
+    {
+        static_cast<Unit*>(entity)->setDead(true);
+    }
+
+}
+
+UnitAttackComponent::UnitAttackComponent(double damage_, int endLag_, double range_,double searchRange_, bool f, Entity& entity) : AttackComponent(damage_,endLag_,range_,entity),
+ComponentContainer<UnitAttackComponent>(entity), notFriendly(f), searchRange(searchRange_), activated(false) //coincidentally, activated should always be the same value as f
+{
+
+}
+
+void UnitAttackComponent::update()
+{
+
+    Object* ent = shortTarget.lock().get();
+    Map* level = GameWindow::getLevel();
+    if (!ent && level) //if we aren't already fighting something, find something nearby
+    {
+        Object* nearby = findNearestUnit<HealthComponent>(searchRange,notFriendly,*(level->getTree()));
+        if (nearby && nearby != longTarget.first.lock().get() &&
+            entity && GameWindow::getLevel()->getMesh().straightLine(glm::vec4(nearby->getRect().getCenter(),entity->getComponent<RectComponent>()->getCenter())))
+        {
+            setShortTarget(level->getUnit(nearby));
+        }
+        else if (activated && (longTarget.second != move->getTarget() || targetUnit.lock().get() != longTarget.first.lock().get())) //if there's nothing nearby to fight, set the target to the long target
+        {
+            if (longTarget.first.lock().get())
+            {
+            //    std::cout << longTarget.first.lock().get() << std::endl;
+                setTarget(longTarget.second,&level->getUnit(longTarget.first.lock().get()));
+            }
+            else
+            {
+               // std::cout << longTarget.second.x << " " << longTarget.second.y << std::endl;
+                setTarget(longTarget.second,nullptr);
+            }
+        }
+
+    }
+   /* if (shortTarget.lock().get())
+    {
+        glm::vec4 selfRect = entity->getComponent<RectComponent>()->getRect();
+        glm::vec4 otherRect = shortTarget.lock().get()->getComponent<RectComponent>()->getRect();
+        PolyRender::requestLine(glm::vec4(GameWindow::getCamera().toScreen(
+                                {selfRect.x + selfRect.z/2, selfRect.y + selfRect.a/2}),
+                                GameWindow::getCamera().toScreen(
+                                {otherRect.x + otherRect.z/2, otherRect.y + otherRect.a/2})),
+                                {1,0,1,1},3);
+    }
+    if (move->getCenter() == longTarget.second) //if we are at the target, set our state back to ignore
+    {
+        ignore = IgnoreState::IDLE;
+    }*/
+    AttackComponent::update();
+}
+
+void UnitAttackComponent::setLongTarget(const glm::vec2& target, std::shared_ptr<Object>* unit)
+{
+    activated = true; //once moveComponent has set a target, we gets permission to affect moveComponent
+    //AttackComponent::setTarget(target,unit);
+    //std::cout << target.x << " " << target.y << " " << unit->get() << std::endl;
+    if (unit)
+    {
+        longTarget.first = *unit;
+        //std::cout << longTarget.first.lock().get() << std::endl;
+    }
+    else
+    {
+        longTarget.second = target;
+        longTarget.first.reset();
+    }
+}
+
+void UnitAttackComponent::setShortTarget(std::shared_ptr<Object>& unit)
+{
+    if (shortTarget.lock().get() != unit.get())
+    {
+        std::cout << "Short" <<std::endl;
+        AttackComponent::setTarget(unit);
+        if (unit )
+        {
+            shortTarget = unit;
+           /* if (entity)
+            {
+                CommandableComponent* command = entity->getComponent<CommandableComponent>();
+                if (command)
+                {
+                    AntManager* curTask = command->getCurrentTask();
+                    if (curTask)
+                    {
+                        curTask->setShortTarget(*unit);
+                    }
+                }
+            }*/
+        }
+        else
+        {
+            shortTarget.reset();
+        }
+    }
+
+}
+
+
+ProjectileAttackComponent::ProjectileAttackComponent(ProjectileAssembler& ass, double damage, int endLag, double range,double searchRange_,bool f,  Unit& entity) :
+        UnitAttackComponent(damage,endLag,range,searchRange_,f, entity), ComponentContainer<ProjectileAttackComponent>(entity),assembler(&ass)
+{
+
+}
+
+void ProjectileAttackComponent::attack(HealthComponent* health)
+{
+    Object* unit = assembler->assemble(entity->getComponent<RectComponent>()->getCenter(),targetUnit.lock().get()->getRect().getCenter());
+    GameWindow::getLevel()->addUnit(*unit,true);
 }
