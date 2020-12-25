@@ -113,8 +113,8 @@ Object* BlasterAssembler::assemble()
     ent->addClickable((new Ant::AntClickable(name,*ent)));
     ent->addRender((new AnimationComponent(*sprite,*ent)));
     ent->addHealth(new HealthComponent(*ent,maxHealth));
-    ent->addComponent(*(new UnitAttackComponent(1,1,300,300,!friendly,*ent)));
-    //ent->addComponent(*(new ProjectileAttackComponent(rocket,10,100,300,300,!friendly,*ent)));
+    //ent->addComponent(*(new UnitAttackComponent(1,1,300,300,!friendly,*ent)));
+    ent->addComponent(*(new ProjectileAttackComponent(rocket,10,100,300,300,!friendly,*ent)));
     ent->addComponent(*(new CommandableComponent(*ent)));
     return ent;
 }

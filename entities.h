@@ -193,6 +193,7 @@ public:
     void setPos(const glm::vec2& pos);
     virtual void setTarget(const glm::vec2& point);
     const glm::vec2& getTarget(); //gets the final target. //atTarget() returns whether this object is at the next point, not the final point
+    glm::vec2 getNextTarget(); //gets the next point to move to
     void addPoint(const glm::vec2& point); //add a point to the path
     virtual void update();
 };

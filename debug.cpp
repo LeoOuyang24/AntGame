@@ -95,7 +95,7 @@ void Debug::DebugGameWindow::update()
 }
 
 bool Debug::spawnCreatures = true;
-bool Debug::renderPath = true;
+bool Debug::renderPath = false;
 
 Debug::Debug()
 {

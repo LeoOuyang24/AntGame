@@ -475,7 +475,6 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
                 b = {it->second.z - width, it->second.a}; //the endpoints of the intersection line segment.
                 glm::vec2 midpoint;  //this is not actually the midpoint, but rather the point on the intersection line we think will be closest to the goal
                 midpoint = lineLineIntersectExtend(curPoint,end,a,b);//this ensures that if there is a direct path to the end, we work towards it.
-                //GameWindow::requestNGon(10,midpoint,10,{.5,1,0,1},0,true,.9,false);
                // PolyRender::requestLine(glm::vec4(GameWindow::getCamera().toScreen(midpoint),GameWindow::getCamera().toScreen(curPoint)),{1,.5,.5,1},10);
                 //GameWindow::requestRect((it)->first->getRect(),{0,1,0,1},true,0,1,0);
 
@@ -492,7 +491,10 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
                 midpoint = displacePoint(midpoint,it->second,*nodeRect,width);
                 //std::cout << it->first << std::endl;
                 //printRect(*nodeRect);
-
+                if (Debug::getRenderPath())
+                {
+                    GameWindow::requestNGon(10,midpoint,1,{.5,1,0,1},0,true,.9,false);
+                }
                 double newDistance = pointDistance(curPoint,midpoint) + std::get<0>(paths[curPoint]);
                 bool newPoint = paths.count(midpoint) == 0;
                 //if we found the new shortest distance from start to this point, update.
@@ -530,13 +532,26 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
                 if (pointAndNodes[shortCut]->getNextTo().count(pointAndNodes[nextPoint])!= 0) //this is only false in the beginning since the end point and the second-last point are both in the endNode
                 {
 
-                    glm::vec4 line = pointAndNodes[shortCut]->getNextTo()[pointAndNodes[nextPoint]] - glm::vec4(width,0,width,0);
-
-                    if (!lineInLine(curPoint,nextPoint,{line.x,line.y},{line.z,line.a}) || (curPoint.x < line.x || curPoint.x > line.z)) //if we can't move to nextPoint, then shortCut is the furthest we can move.
+                    glm::vec4 line = pointAndNodes[shortCut]->getNextTo()[pointAndNodes[nextPoint]];// - glm::vec4(width,0,width,0);
+                    glm::vec4 nodeRect = pointAndNodes[nextPoint]->getRect();
+                    if ((!lineInLine(curPoint,nextPoint,{line.x,line.y},{line.z,line.a})
+                         &&
+                         (std::max(curPoint.y,nextPoint.y) >= line.y && std::min(curPoint.y,nextPoint.y) <= line.y))
+                        /*||
+                        (!lineInLine({nodeRect.x,nodeRect.y},{nodeRect.x + nodeRect.z,nodeRect.y},nextPoint,curPoint)
+                          &&
+                        !lineInLine({nodeRect.x, nodeRect.y + nodeRect.a},{nodeRect.x + nodeRect.z, nodeRect.y + nodeRect.a},nextPoint,curPoint))*/
+                        ||
+                        ((nextPoint.x < line.x || nextPoint.x > line.z) ||
+                         (curPoint.x < line.x || curPoint.x > line.z)
+                                     )) //if we can't move to nextPoint, then shortCut is the furthest we can move.
                         {
+
                             if (Debug::getRenderPath())
                             {
-                                GameWindow::requestNGon(10,shortCut,10,{1,1,0,1},0,true,1,false);
+                                GameWindow::requestNGon(10,shortCut,1,{1,1,0,1},0,true,1,false);
+                                                PolyRender::requestLine(glm::vec4({GameWindow::getCamera().toScreen({line.x,line.y}),
+                              GameWindow::getCamera().toScreen({line.z,line.a})}),{1,1,0,1},2);
                             }
                             finalPath.push_front(shortCut);
                             curPoint = shortCut;
@@ -545,11 +560,10 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
                         {
                             if (Debug::getRenderPath())
                             {
-                                GameWindow::requestNGon(10,shortCut,10,{1,0,1,1},0,true,1,false);
+                                GameWindow::requestNGon(10,shortCut,1,{1,0,1,1},0,true,1,false);
                             }
                         }
-                        /*PolyRender::requestLine(glm::vec4({GameWindow::getCamera().toScreen({line.x,line.y}),
-                                                          GameWindow::getCamera().toScreen({line.z,line.a})}),{1,1,0,1},1);*/
+
                 }
                     shortCut = nextPoint;
                   //  GameWindow::requestNGon(10,shortCut,10,{.5,1,0,1},0,true,.9,false);

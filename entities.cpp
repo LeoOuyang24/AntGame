@@ -145,7 +145,17 @@ void AnimationComponent::update()
         {
             if (!move->atTarget() )
             {
-                angle = atan2(move->getCenter().y - move->getTarget().y,move->getCenter().x - move->getTarget().x) + M_PI/2;
+                glm::vec2 target;
+                PathComponent* path = entity->getComponent<PathComponent>();
+                if (path)
+                {
+                    target = path->getNextTarget();
+                }
+                else
+                {
+                    target = move->getTarget();
+                }
+                angle = atan2(move->getCenter().y - target.y,move->getCenter().x - target.x) + M_PI/2;
             }
             else
             {
@@ -568,6 +578,15 @@ const glm::vec2& PathComponent::getTarget()
         return target;
     }
     return path.back();
+}
+
+glm::vec2 PathComponent::getNextTarget()
+{
+    if (path.size() == 0)
+    {
+        return target;
+    }
+    return path.front();
 }
 
 void PathComponent::addPoint(const glm::vec2& point)
