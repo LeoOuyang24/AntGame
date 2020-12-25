@@ -146,30 +146,50 @@ void AnimationComponent::update()
             if (!move->atTarget() )
             {
                 glm::vec2 target;
-                PathComponent* path = entity->getComponent<PathComponent>();
-                if (path)
+                if (move->getVelocity() == 0) //typically happens if we are attacking a unit
                 {
-                    target = path->getNextTarget();
+                    AttackComponent* approach = entity->getComponent<AttackComponent>();
+                    if ( approach)
+                    {
+                        Object* targetUnit = approach->getTargetUnit();
+                        if (targetUnit)
+                        {
+                            target = targetUnit->getCenter();
+                        }
+                    }
                 }
                 else
                 {
-                    target = move->getTarget();
+                    PathComponent* path = entity->getComponent<PathComponent>();
+                    if (path)
+                    {
+                        target = path->getNextTarget();
+                    }
+                    else
+                    {
+
+                        target = move->getTarget();
+
+                    }
                 }
+
+                GameWindow::requestNGon(10,target,1,{1,1,1,1},0,true,10);
                 angle = atan2(move->getCenter().y - target.y,move->getCenter().x - target.x) + M_PI/2;
+
             }
-            else
+           /* else
             {
                 ApproachComponent* approach = entity->getComponent<ApproachComponent>();
-                Object* target = approach->getTargetUnit();
-                if ( approach && target)
+                if ( approach)
                 {
-                    angle = atan2( move->getCenter().y - target->getCenter().y , move->getCenter().x -  target->getCenter().x ) + M_PI/2;
+                    Object* target = approach->getTargetUnit();
+                    if (target)
+                    {
+                       angle = atan2( move->getCenter().y - target->getCenter().y , move->getCenter().x -  target->getCenter().x ) + M_PI/2;
+                    }
                 }
-            }
-        }
-        if (entity->getComponent<ProjectileComponent>())
-        {
-          //  std::cout << angle << std::endl;
+
+            }*/
         }
         render({GameWindow::getCamera().toScreen(rect->getRect()),angle,NONE});
     }
@@ -344,7 +364,7 @@ void HealthComponent::setVisible(bool value)
 void HealthComponent::update()
 {
     RectComponent* rectComp = entity->getComponent<RectComponent>();
-    if (rectComp && visible)
+    if (rectComp && visible && !entity->getComponent<ProjectileComponent>())
     {
         const glm::vec4* rect = &(rectComp->getRect());
         //GameWindow::requestRect({rect->x ,rect->y - displacement, rect->z, 0},{1,0,0,1},true,0,0);
@@ -596,7 +616,10 @@ void PathComponent::addPoint(const glm::vec2& point)
 
 void PathComponent::update()
 {
-    Debug::DebugNavMesh::showPath(path);
+    if (Debug::getRenderPath())
+    {
+        Debug::DebugNavMesh::showPath(path);
+    }
     if (atTarget())
     {
         if (path.size() > 1) //if we haven't reached the end of the path, select the next point
@@ -861,6 +884,7 @@ ProjectileComponent::ProjectileComponent(bool friendly,const glm::vec2& target, 
                         ComponentContainer<ProjectileComponent>(entity), friendly(friendly)
 {
     setTarget(target);
+
 }
 
 void ProjectileComponent::collide(Entity& other)
@@ -954,9 +978,8 @@ void UnitAttackComponent::setShortTarget(std::shared_ptr<Object>& unit)
 {
     if (shortTarget.lock().get() != unit.get())
     {
-        std::cout << "Short" <<std::endl;
         AttackComponent::setTarget(unit);
-        if (unit )
+        if (unit.get())
         {
             shortTarget = unit;
            /* if (entity)
