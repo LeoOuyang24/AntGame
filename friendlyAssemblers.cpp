@@ -35,17 +35,18 @@ Object* UnitAssembler::assemble()
     return new Unit(name,{0,0,dimen.x,dimen.y}, sprite, movable, maxHealth);
 }
 
-ProjectileAssembler::ProjectileAssembler(std::string name_,const glm::vec2& rect_, AnimationWrapper* anime, double maxHealth_, double prodTime_, int prodCost, bool friendly_, int goldCost) :
-                                        UnitAssembler(name_,rect_,anime,false,maxHealth_,prodTime_,prodCost,friendly_,goldCost)
+ProjectileAssembler::ProjectileAssembler(double damage_, std::string name_,const glm::vec2& rect_, AnimationWrapper* anime, double maxHealth_, double prodTime_, int prodCost, bool friendly_, int goldCost) :
+                                        damage(damage_),UnitAssembler(name_,rect_,anime,true,maxHealth_,prodTime_,prodCost,friendly_,goldCost)
 {
 
 }
 
-Object* ProjectileAssembler::assemble(const glm::vec2& point, const glm::vec2& target)
+Object* ProjectileAssembler::assemble(Object& shooter, const glm::vec2& point, const glm::vec2& target)
 {
     Object* obj = assemble();
     obj->getRect().setPos(point);
     obj->getComponent<MoveComponent>()->setTarget(target);
+    obj->getComponent<ProjectileComponent>()->setShooter(shooter);
     return obj;
 }
 
@@ -69,9 +70,8 @@ void CreateEnergyComponent::update()
 
 
 
-AntAssembler::AntAssembler() : UnitAssembler("Ant",{20,20},&basicSoldierAnime,true,10, 0000,true,10)
+AntAssembler::AntAssembler() : UnitAssembler("Ant",{20,20},&basicSoldierAnime,true,10, 0000,10,true,10)
 {
-    prodCost = 10;
 }
 
 Object* AntAssembler::assemble()
@@ -86,7 +86,24 @@ Object* AntAssembler::assemble()
     return ent;
 }
 
-BlasterAssembler::BlasterRocket::BlasterRocket() : ProjectileAssembler("BlasterTankRocket",dimen,&tankRocketAnime,1,1,1,true)
+BlasterAssembler::BlasterRocket::ExplodingRocketComponent::ExplodingRocketComponent(const glm::vec2& target, const glm::vec2& pos, Unit& entity) :
+                                                        ProjectileComponent(10,true,target,1,{pos.x,pos.y,16,8},entity)
+{
+
+}
+
+void BlasterAssembler::BlasterRocket::ExplodingRocketComponent::collide(Entity& other)
+{
+    auto vec = GameWindow::getLevel()->getTree()->getNearest(other.getComponent<RectComponent>()->getCenter(),100);
+    int size = vec.size();
+   // std::cout << size << std::endl;
+    for (int i = 0; i < size; ++i)
+    {
+        ProjectileComponent::collide(*convertPosToUnit(vec[i]));
+    }
+}
+
+BlasterAssembler::BlasterRocket::BlasterRocket() : ProjectileAssembler(1,"BlasterTankRocket",{8,16},&tankRocketAnime,1,1,1,true)
 {
 
 }
@@ -94,7 +111,7 @@ BlasterAssembler::BlasterRocket::BlasterRocket() : ProjectileAssembler("BlasterT
 Object* BlasterAssembler::BlasterRocket::assemble()
 {
     Unit* rocket = new Unit(movable);
-    rocket->addRect((new ProjectileComponent(friendly,{0,0},1,{0,0,dimen.x,dimen.y},*rocket)));
+    rocket->addRect((new BlasterRocket::ExplodingRocketComponent({0,0},{0,0},*rocket)));
     rocket->addClickable((new ClickableComponent(name,*rocket)));
     rocket->addRender((new AnimationComponent(*sprite,*rocket)));
     rocket->addHealth((new HealthComponent(*rocket,maxHealth)));
@@ -114,7 +131,7 @@ Object* BlasterAssembler::assemble()
     ent->addRender((new AnimationComponent(*sprite,*ent)));
     ent->addHealth(new HealthComponent(*ent,maxHealth));
     //ent->addComponent(*(new UnitAttackComponent(1,1,300,300,!friendly,*ent)));
-    ent->addComponent(*(new ProjectileAttackComponent(rocket,10,100,300,300,!friendly,*ent)));
+    ent->addComponent(*(new ProjectileAttackComponent(rocket,1000,300,300,!friendly,*ent)));
     ent->addComponent(*(new CommandableComponent(*ent)));
     return ent;
 }

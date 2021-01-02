@@ -256,7 +256,7 @@ protected:
     double damage = 0;
     int endLag = 0; //how much time must pass before the attack can be reused.
     DeltaTime attackTimer;
-    virtual bool canAttack(Object* ptr); //returns true if we can attack the target.
+    virtual bool canAttack(Object* ptr); //returns true if we can attack the target. Doesn't take into account attackTimer because even if we are waiting for the timer to tick down, we should still stop moving
 public:
     AttackComponent(double damage_, int endLag_, double range_, Entity& unit);
     virtual void attack(HealthComponent* health); //this is a pointer so you can legally pass in a null pointer. This function will make sure it's not null
@@ -288,9 +288,12 @@ public:
 class ProjectileComponent : public MoveComponent, public ComponentContainer<ProjectileComponent>
 {
     bool friendly = false;
+    double damage = 0;
+    Object* shooter = nullptr; //not the actual projectile unit, but whoever spawned the projectile unit. Primarily used to communicate who shot the projectile
 public:
-    ProjectileComponent(bool friendly,const glm::vec2& target, double speed, const glm::vec4& rect, Unit& entity);
-    ProjectileComponent(bool friendly, const glm::vec2& target, double xspeed, double yspeed, const glm::vec4& rect, Unit& entity);
+    ProjectileComponent(double damage, bool friendly,const glm::vec2& target, double speed, const glm::vec4& rect, Unit& entity);
+    ProjectileComponent(double damage, bool friendly, const glm::vec2& target, double xspeed, double yspeed, const glm::vec4& rect, Unit& entity);
+    void setShooter(Object& obj);
     virtual void collide(Entity& other);
     virtual void update();
 
@@ -317,7 +320,7 @@ class ProjectileAttackComponent : public UnitAttackComponent, public ComponentCo
 {
     ProjectileAssembler* assembler = nullptr;
 public:
-    ProjectileAttackComponent(ProjectileAssembler& ass, double damage, int endLag, double range, double searchRange_,bool f, Unit& entity);
+    ProjectileAttackComponent(ProjectileAssembler& ass, int endLag, double range, double searchRange_,bool f, Unit& entity);
     virtual void attack(HealthComponent* health);
 };
 

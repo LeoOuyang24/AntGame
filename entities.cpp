@@ -752,11 +752,7 @@ AttackComponent::AttackComponent(double damage_, int endLag_, double range_, Ent
 
 void AttackComponent::attack(HealthComponent* health)
 {
-    if (entity && health && (attackTimer.timePassed(endLag) || !attackTimer.isSet()))
-    {
-        health->takeDamage(damage,*static_cast<Unit*>(entity));
-        attackTimer.set();
-    }
+    health->takeDamage(damage,*static_cast<Unit*>(entity));
 }
 
 void AttackComponent::update()
@@ -765,7 +761,11 @@ void AttackComponent::update()
   //  std::cout << ptr << std::endl;
     if (canAttack(ptr)) //attack if we are able to.
     {
-        attack(ptr->getComponent<HealthComponent>());
+        if (attackTimer.timePassed(endLag) || !attackTimer.isSet())
+        {
+            attack(ptr->getComponent<HealthComponent>());
+            attackTimer.set();
+        }
         if (move)
         {
             move->setSpeed(0);
@@ -874,25 +874,39 @@ ResourceEatComponent::~ResourceEatComponent()
 
 }
 
-ProjectileComponent::ProjectileComponent(bool friendly,const glm::vec2& target, double speed, const glm::vec4& rect, Unit& entity) : MoveComponent(speed, rect, entity),
-                        ComponentContainer<ProjectileComponent>(entity), friendly(friendly)
+ProjectileComponent::ProjectileComponent(double damage, bool friendly,const glm::vec2& target, double speed, const glm::vec4& rect, Unit& entity) : MoveComponent(speed, rect, entity),
+                        ComponentContainer<ProjectileComponent>(entity), damage(damage), friendly(friendly)
 {
     setTarget(target);
 }
 
-ProjectileComponent::ProjectileComponent(bool friendly,const glm::vec2& target, double xspeed, double yspeed, const glm::vec4& rect, Unit& entity) : MoveComponent(sqrt(xspeed*xspeed + yspeed*yspeed),rect,entity),
-                        ComponentContainer<ProjectileComponent>(entity), friendly(friendly)
+ProjectileComponent::ProjectileComponent(double damage, bool friendly,const glm::vec2& target, double xspeed, double yspeed, const glm::vec4& rect, Unit& entity) : MoveComponent(sqrt(xspeed*xspeed + yspeed*yspeed),rect,entity),
+                        ComponentContainer<ProjectileComponent>(entity), damage(damage),friendly(friendly)
 {
     setTarget(target);
 
+}
+
+void ProjectileComponent::setShooter(Object& obj)
+{
+    shooter = &obj;
 }
 
 void ProjectileComponent::collide(Entity& other)
 {
     Unit* unit = static_cast<Unit*>(entity);
-    if (unit && friendly != static_cast<Unit*>(&other)->getFriendly() ) //if we collided with an enemy (or friendly unit if enemy projectile)
+    Unit* otherUnit = static_cast<Unit*>(&other);
+    if (unit && friendly != otherUnit->getFriendly() ) //if we collided with an enemy (or friendly unit if enemy projectile)
     {
         unit->setDead(true);
+        if (shooter)
+        {
+            otherUnit->getHealth().takeDamage(damage,*shooter);
+        }
+        else
+        {
+            otherUnit->getHealth().takeDamage(damage,*unit);
+        }
     }
 }
 
@@ -1004,14 +1018,14 @@ void UnitAttackComponent::setShortTarget(std::shared_ptr<Object>& unit)
 }
 
 
-ProjectileAttackComponent::ProjectileAttackComponent(ProjectileAssembler& ass, double damage, int endLag, double range,double searchRange_,bool f,  Unit& entity) :
-        UnitAttackComponent(damage,endLag,range,searchRange_,f, entity), ComponentContainer<ProjectileAttackComponent>(entity),assembler(&ass)
+ProjectileAttackComponent::ProjectileAttackComponent(ProjectileAssembler& ass, int endLag, double range,double searchRange_,bool f,  Unit& entity) :
+        UnitAttackComponent(0,endLag,range,searchRange_,f, entity), ComponentContainer<ProjectileAttackComponent>(entity),assembler(&ass)
 {
 
 }
 
 void ProjectileAttackComponent::attack(HealthComponent* health)
 {
-    Object* unit = assembler->assemble(entity->getComponent<RectComponent>()->getCenter(),targetUnit.lock().get()->getRect().getCenter());
+    Object* unit = assembler->assemble(*static_cast<Object*>(entity),entity->getComponent<RectComponent>()->getCenter(),targetUnit.lock().get()->getRect().getCenter());
     GameWindow::getLevel()->addUnit(*unit,true);
 }

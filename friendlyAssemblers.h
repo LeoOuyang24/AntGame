@@ -18,18 +18,19 @@ struct ObjectAssembler
 
 struct UnitAssembler : public ObjectAssembler
 {
-    double prodTime = 0; //milliseconds it takes to produce this unit
-    double maxHealth = 0;
-    int prodCost = 0;
+    const double prodTime = 0; //milliseconds it takes to produce this unit
+    const double maxHealth = 0;
+    const int prodCost = 0;
     UnitAssembler( std::string name_,const glm::vec2& rect_, AnimationWrapper* anime, bool mov, double maxHealth_, double prodTime_, int prodCost = 10, bool friendly_ = false, int goldCost = 10);
     virtual Object* assemble();
 };
 
 struct ProjectileAssembler : public UnitAssembler
 {
-    ProjectileAssembler(std::string name_,const glm::vec2& rect_, AnimationWrapper* anime, double maxHealth_, double prodTime_, int prodCost = 10, bool friendly_ = false, int goldCost = 10);
+    const double damage = 0;
+    ProjectileAssembler(double damage_, std::string name_,const glm::vec2& rect_, AnimationWrapper* anime, double maxHealth_, double prodTime_, int prodCost = 10, bool friendly_ = false, int goldCost = 10);
     using UnitAssembler::assemble;
-    Object* assemble(const glm::vec2& point, const glm::vec2& target);
+    Object* assemble(Object& shooter, const glm::vec2& point, const glm::vec2& target);
 };
 
 class Player;
@@ -54,6 +55,12 @@ class BlasterAssembler : public UnitAssembler
 {
     class BlasterRocket : public ProjectileAssembler
     {
+        class ExplodingRocketComponent : public ProjectileComponent
+        {
+        public:
+            ExplodingRocketComponent(const glm::vec2& target, const glm::vec2& pos, Unit& entity);
+            void collide(Entity& other);
+        } ;
     public:
         BlasterRocket();
         Object* assemble();

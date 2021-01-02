@@ -2,19 +2,14 @@
 <CodeBlocks_layout_file>
 	<FileVersion major="1" minor="0" />
 	<ActiveTarget name="Debug" />
-	<File name="sequence.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="..\..\resources\SDLhelper.cpp" open="0" top="0" tabpos="8" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="2934" topLine="117" />
+			<Cursor1 position="4049" topLine="24" />
 		</Cursor>
 	</File>
-	<File name="..\..\resources\glGame.h" open="0" top="0" tabpos="11" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="world.h" open="1" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="2666" topLine="57" />
-		</Cursor>
-	</File>
-	<File name="antManager.cpp" open="0" top="0" tabpos="8" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="9311" topLine="227" />
+			<Cursor1 position="185" topLine="0" />
 		</Cursor>
 	</File>
 	<File name="..\..\resources\SDLhelper.h" open="0" top="0" tabpos="9" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -22,57 +17,7 @@
 			<Cursor1 position="1004" topLine="1" />
 		</Cursor>
 	</File>
-	<File name="components.cpp" open="0" top="0" tabpos="8" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="2290" topLine="84" />
-		</Cursor>
-	</File>
-	<File name="sprites.cpp" open="0" top="0" tabpos="15" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="425" topLine="5" />
-		</Cursor>
-	</File>
-	<File name="components.h" open="1" top="0" tabpos="12" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="1949" topLine="93" />
-		</Cursor>
-	</File>
-	<File name="..\..\resources\shaders\vertex\vertexShader.h" open="0" top="0" tabpos="16" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="345" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="world.h" open="1" top="0" tabpos="9" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="185" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="..\..\resources\glInterface.h" open="0" top="0" tabpos="8" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="5513" topLine="94" />
-		</Cursor>
-	</File>
-	<File name="enemyAssemblers.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="655" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="world.cpp" open="1" top="0" tabpos="11" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="12020" topLine="378" />
-		</Cursor>
-	</File>
-	<File name="..\..\resources\render.cpp" open="0" top="0" tabpos="13" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="40358" topLine="1119" />
-		</Cursor>
-	</File>
-	<File name="antManager.h" open="0" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="882" topLine="10" />
-		</Cursor>
-	</File>
-	<File name="worldMap.cpp" open="1" top="0" tabpos="10" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="worldMap.cpp" open="0" top="0" tabpos="10" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="1025" topLine="21" />
 		</Cursor>
@@ -82,54 +27,34 @@
 			<Cursor1 position="151" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="worldMap.h" open="0" top="0" tabpos="11" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="animation.h" open="0" top="0" tabpos="14" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="1671" topLine="22" />
+			<Cursor1 position="505" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="fog.h" open="0" top="0" tabpos="10" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="..\..\resources\render.cpp" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="413" topLine="0" />
+			<Cursor1 position="7959" topLine="192" />
 		</Cursor>
 	</File>
-	<File name="..\..\resources\shaders\vertex\simpleVertex.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="antManager.cpp" open="0" top="0" tabpos="8" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="164" topLine="0" />
+			<Cursor1 position="9311" topLine="227" />
 		</Cursor>
 	</File>
-	<File name="friendlyAssemblers.cpp" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="antManager.h" open="0" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="4734" topLine="139" />
+			<Cursor1 position="882" topLine="10" />
 		</Cursor>
 	</File>
-	<File name="..\..\resources\shaders\vertex\polygonVertex.h" open="0" top="0" tabpos="17" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="..\..\resources\glGame.h" open="0" top="0" tabpos="11" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="266" topLine="0" />
+			<Cursor1 position="2666" topLine="57" />
 		</Cursor>
 	</File>
-	<File name="..\..\resources\FreeTypeHelper.cpp" open="0" top="0" tabpos="10" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="world.cpp" open="0" top="0" tabpos="11" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="5837" topLine="171" />
-		</Cursor>
-	</File>
-	<File name="..\..\resources\vanilla.cpp" open="0" top="0" tabpos="16" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="5714" topLine="162" />
-		</Cursor>
-	</File>
-	<File name="..\..\resources\glInterface.cpp" open="0" top="0" tabpos="9" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="7052" topLine="226" />
-		</Cursor>
-	</File>
-	<File name="navigation.cpp" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="5994" topLine="198" />
-		</Cursor>
-	</File>
-	<File name="game.cpp" open="1" top="0" tabpos="8" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="11135" topLine="267" />
+			<Cursor1 position="3022" topLine="106" />
 		</Cursor>
 	</File>
 	<File name="..\..\resources\render.h" open="0" top="0" tabpos="12" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -137,9 +62,9 @@
 			<Cursor1 position="12277" topLine="33" />
 		</Cursor>
 	</File>
-	<File name="player.cpp" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="..\..\resources\vanilla.cpp" open="0" top="0" tabpos="16" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="4831" topLine="129" />
+			<Cursor1 position="5714" topLine="162" />
 		</Cursor>
 	</File>
 	<File name="player.h" open="0" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -147,84 +72,34 @@
 			<Cursor1 position="588" topLine="1" />
 		</Cursor>
 	</File>
-	<File name="navigation.h" open="0" top="0" tabpos="7" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="friendlyAssemblers.cpp" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="715" topLine="7" />
+			<Cursor1 position="3749" topLine="86" />
 		</Cursor>
 	</File>
-	<File name="main.cpp" open="0" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="worldMap.h" open="0" top="0" tabpos="11" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="2154" topLine="117" />
+			<Cursor1 position="1671" topLine="22" />
 		</Cursor>
 	</File>
-	<File name="..\..\resources\FreeTypeHelper.h" open="0" top="0" tabpos="11" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="2399" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="..\..\resources\SDLhelper.cpp" open="0" top="0" tabpos="8" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="4049" topLine="24" />
-		</Cursor>
-	</File>
-	<File name="..\..\resources\vanilla.h" open="0" top="0" tabpos="15" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="12449" topLine="554" />
-		</Cursor>
-	</File>
-	<File name="animation.h" open="0" top="0" tabpos="14" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="505" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="ants.h" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="ants.h" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="604" topLine="9" />
 		</Cursor>
 	</File>
-	<File name="debug.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="friendlyAssemblers.h" open="0" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="505" topLine="0" />
+			<Cursor1 position="2336" topLine="42" />
 		</Cursor>
 	</File>
-	<File name="entities.cpp" open="1" top="1" tabpos="7" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="navigation.h" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="25333" topLine="840" />
+			<Cursor1 position="715" topLine="38" />
 		</Cursor>
 	</File>
-	<File name="friendlyAssemblers.h" open="1" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="components.cpp" open="0" top="0" tabpos="8" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="1597" topLine="43" />
-		</Cursor>
-	</File>
-	<File name="fog.cpp" open="0" top="0" tabpos="11" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="762" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="..\..\resources\shaders\fragment\fragmentShader.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="138" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="ants.cpp" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="12113" topLine="349" />
-		</Cursor>
-	</File>
-	<File name="entities.h" open="1" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="12341" topLine="278" />
-		</Cursor>
-	</File>
-	<File name="debug.cpp" open="0" top="0" tabpos="9" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="2910" topLine="83" />
-		</Cursor>
-	</File>
-	<File name="game.h" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="5814" topLine="103" />
+			<Cursor1 position="2290" topLine="84" />
 		</Cursor>
 	</File>
 	<File name="enemyAssemblers.h" open="0" top="0" tabpos="9" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -232,9 +107,134 @@
 			<Cursor1 position="105" topLine="0" />
 		</Cursor>
 	</File>
+	<File name="components.h" open="0" top="0" tabpos="12" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1949" topLine="93" />
+		</Cursor>
+	</File>
+	<File name="enemyAssemblers.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="655" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="..\..\resources\shaders\fragment\fragmentShader.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="138" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="entities.h" open="0" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="11157" topLine="273" />
+		</Cursor>
+	</File>
+	<File name="fog.cpp" open="0" top="0" tabpos="11" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="762" topLine="0" />
+		</Cursor>
+	</File>
 	<File name="..\..\resources\glGame.cpp" open="0" top="0" tabpos="13" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="10897" topLine="391" />
+		</Cursor>
+	</File>
+	<File name="fog.h" open="0" top="0" tabpos="10" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="413" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="navigation.cpp" open="1" top="1" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="24305" topLine="526" />
+		</Cursor>
+	</File>
+	<File name="..\..\resources\shaders\vertex\simpleVertex.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="164" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="entities.cpp" open="0" top="0" tabpos="7" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="27276" topLine="920" />
+		</Cursor>
+	</File>
+	<File name="game.h" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="5814" topLine="103" />
+		</Cursor>
+	</File>
+	<File name="..\..\resources\glInterface.h" open="0" top="0" tabpos="8" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="5513" topLine="94" />
+		</Cursor>
+	</File>
+	<File name="player.cpp" open="0" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="4831" topLine="205" />
+		</Cursor>
+	</File>
+	<File name="ants.cpp" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="10817" topLine="265" />
+		</Cursor>
+	</File>
+	<File name="..\..\resources\vanilla.h" open="0" top="0" tabpos="15" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="12449" topLine="554" />
+		</Cursor>
+	</File>
+	<File name="debug.cpp" open="0" top="0" tabpos="16" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="3273" topLine="81" />
+		</Cursor>
+	</File>
+	<File name="debug.h" open="0" top="0" tabpos="15" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="753" topLine="6" />
+		</Cursor>
+	</File>
+	<File name="..\..\resources\glInterface.cpp" open="0" top="0" tabpos="9" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="7052" topLine="226" />
+		</Cursor>
+	</File>
+	<File name="sequence.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="2934" topLine="117" />
+		</Cursor>
+	</File>
+	<File name="..\..\resources\shaders\vertex\vertexShader.h" open="0" top="0" tabpos="16" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="345" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="sprites.cpp" open="0" top="0" tabpos="17" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1204" topLine="5" />
+		</Cursor>
+	</File>
+	<File name="..\..\resources\FreeTypeHelper.h" open="0" top="0" tabpos="11" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="2399" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="main.cpp" open="0" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="2154" topLine="117" />
+		</Cursor>
+	</File>
+	<File name="..\..\resources\shaders\vertex\polygonVertex.h" open="0" top="0" tabpos="17" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="266" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="game.cpp" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="13419" topLine="385" />
+		</Cursor>
+	</File>
+	<File name="..\..\resources\FreeTypeHelper.cpp" open="0" top="0" tabpos="10" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="5837" topLine="171" />
 		</Cursor>
 	</File>
 </CodeBlocks_layout_file>

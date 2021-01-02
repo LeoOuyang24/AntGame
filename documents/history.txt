@@ -1,5 +1,8 @@
 This document keeps track of considered changes made to the resources as well as why they were made. Consider this a "learning from the past" kind of document. 
 
+12/26/2020:
+	ProjectileComponent's new shooter variable currenlty can only be set through a setter function and not through the constructor. This is simply because right now, we don't need the constructor to do that; we should be okay with adding this later if necessary.
+
 12/10/2020:
 	Changed AnimationComponent to take in a reference to an animation rather than a pointer because it makes more sense. We never want to pass a null animation to the component and in the off chance that we have a AnimationWrapper* const variable, we want to be able to dereference the pointer to pass the animation to the component while making the pointer const. Basically, we care more about the AnimationWrapper than the pointer, so we pass by reference.
 	Tentative change that changed all Unit and ObjectAssembler member variables to public and const. These variables will never change and are effectively static; may as well make them public for cleanliness and also removes the need for getter functions. We can't make assemblers aggregates because: 

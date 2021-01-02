@@ -236,7 +236,7 @@ glm::vec2 NavMesh::displacePoint(const glm::vec2& point, const glm::vec4& line, 
              nextPoint.y += width;
          }
     }
-    return nextPoint;
+    return {round(nextPoint.x),round(nextPoint.y)};
 }
 
 NavMesh::NavMesh(const glm::vec4& bounds_, RawQuadTree& tree_) : bounds(bounds_), negativeTree(bounds), nodeTree(bounds)
@@ -489,6 +489,45 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
                 }
                 const glm::vec4* nodeRect = &(it->first->getRect());
                 midpoint = displacePoint(midpoint,it->second,*nodeRect,width);
+                glm::vec2 leftBound,rightBound;
+                if (midpoint.y> curPoint.y) //if we are going down
+                    {
+                        if (a.x > curPoint.x)
+                        {
+                            leftBound = a;
+                        }
+                        else
+                        {
+                            leftBound = glm::vec2(a.x,a.y + nodeRect->a*(a.x == nodeRect->x));
+                        }
+                        if (b.x < curPoint.x)
+                        {
+                            rightBound = b;
+                        }
+                        else
+                        {
+                            rightBound = glm::vec2(b.x,b.y + nodeRect->a*(b.x == nodeRect->x + nodeRect->z));
+                        }
+                    }
+                    else //if we going up
+                    {
+                        if (a.x > curPoint.x)
+                        {
+                            leftBound = a;
+                        }
+                        else
+                        {
+                            leftBound = glm::vec2(a.x,a.y - nodeRect->a*(a.x == nodeRect->x));
+                        }
+                        if (b.x < curPoint.x)
+                        {
+                            rightBound = b;
+                        }
+                        else
+                        {
+                            rightBound = glm::vec2(b.x,b.y - nodeRect->a*(b.x == nodeRect->x + nodeRect->z));
+                        }
+                    }
                 //std::cout << it->first << std::endl;
                 //printRect(*nodeRect);
                 if (Debug::getRenderPath())
@@ -508,12 +547,22 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
                         std::cout << midpoint.x << " " << midpoint.y << std::endl;
                     }*/
                     pointAndNodes[midpoint] = it->first;
+                   /* if (!pointInVec(it->first->getRect(),midpoint.x,midpoint.y))
+                    {
+                        glm::vec2 otherPoint = {midpoint.x,it->second.y};
+                        paths[otherPoint].first = newDistance + width;
+                        paths[otherPoint].second =  midpoint;
+                        pointAndNodes[otherPoint] = it->first;
+                        midpoint = otherPoint;
+                        GameWindow::requestNGon(10,midpoint,3,{.5,.5,.5,1},0,true,0);
+                    }*/
                     if (newPoint)
                     {
                         //the final score that also uses the heuristic
                         heap.add({midpoint,it->first},newDistance + pointDistance(midpoint,end));
                      //   heap.print();
                     }
+
                 }
             }
         }
@@ -523,49 +572,80 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
         {
            // std::cout << "Repeat\n";
            glm::vec2 shortCut = curPoint; //shortcut is the last point that we know curPoint can move to without hitting a wall that has yet to be added to finalPath
+            glm::vec2 leftBound = {bounds.x,0}, rightBound = {bounds.x + bounds.z, 0};
            finalPath.push_back(curPoint); //curPoint is the last point that was added to our final Path
             while (curPoint != start && shortCut != start)
             {
                 //std::cout << paths.count(curPoint) << " " << curPoint.x << " " << curPoint.y << std::endl;
                 glm::vec2 nextPoint = paths[shortCut].second; //nextPoint is the nextPoint to process.
                 //std::cout << shortCut.x << " " << shortCut.y << " " << &(pointAndNodes[shortCut]->getNextTo()) << "\n";
+               // std::cout << pointAndNodes[nextPoint] << std::endl;
                 if (pointAndNodes[shortCut]->getNextTo().count(pointAndNodes[nextPoint])!= 0) //this is only false in the beginning since the end point and the second-last point are both in the endNode
                 {
 
                     glm::vec4 line = pointAndNodes[shortCut]->getNextTo()[pointAndNodes[nextPoint]];// - glm::vec4(width,0,width,0);
                     glm::vec4 nodeRect = pointAndNodes[nextPoint]->getRect();
-                    if ((!lineInLine(curPoint,nextPoint,{line.x,line.y},{line.z,line.a})
+
+                    float farUp = nodeRect.y + nodeRect.a*(curPoint.y < nextPoint.y); //the y coordinate of the nodeRect furthest away from curPoint
+                    glm::vec2 farLeft = {nodeRect.x,farUp};
+                    glm::vec2 farRight = {nodeRect.x  + nodeRect.z,farUp};
+
+                    leftBound = line.x > leftBound.x ? (lineLineIntersectExtend(curPoint,{line.x,line.y},farLeft,farRight))
+                                                     : lineLineIntersectExtend(curPoint,leftBound,farLeft,farRight) ;
+                    rightBound = line.z < rightBound.x ? (lineLineIntersectExtend(curPoint,{line.z,line.y},farLeft,farRight))
+                                                     : lineLineIntersectExtend(curPoint,rightBound,farLeft,farRight); //we only want to update left and rightBound if the new ones are more restrictive
+                    if (
+                        !pointInTriangle(leftBound,rightBound,curPoint,nextPoint)/* && (
+                        (!lineInLine(curPoint,nextPoint,{line.x,line.y},{line.z,line.a})
                          &&
                          (std::max(curPoint.y,nextPoint.y) >= line.y && std::min(curPoint.y,nextPoint.y) <= line.y))
-                        /*||
+                        ||
                         (!lineInLine({nodeRect.x,nodeRect.y},{nodeRect.x + nodeRect.z,nodeRect.y},nextPoint,curPoint)
                           &&
-                        !lineInLine({nodeRect.x, nodeRect.y + nodeRect.a},{nodeRect.x + nodeRect.z, nodeRect.y + nodeRect.a},nextPoint,curPoint))*/
-                        ||
+                        !lineInLine({nodeRect.x, nodeRect.y + nodeRect.a},{nodeRect.x + nodeRect.z, nodeRect.y + nodeRect.a},nextPoint,curPoint)))*/
+                        /*||
                         ((nextPoint.x < line.x || nextPoint.x > line.z) ||
-                         (curPoint.x < line.x || curPoint.x > line.z)
-                                     )) //if we can't move to nextPoint, then shortCut is the furthest we can move.
+                         (curPoint.x < line.x || curPoint.x > line.z))*/
+                        ) //if we can't move to nextPoint, then shortCut is the furthest we can move.
                         {
 
                             if (Debug::getRenderPath())
                             {
-                                GameWindow::requestNGon(10,shortCut,1,{1,1,0,1},0,true,1,false);
-                                                PolyRender::requestLine(glm::vec4({GameWindow::getCamera().toScreen({line.x,line.y}),
+                                if (leftBound.y != 0) //render leftBound
+                                PolyRender::requestLine(glm::vec4(GameWindow::getCamera().toScreen(leftBound),GameWindow::getCamera().toScreen(curPoint)),
+                                                        {175/255.0,238/255.0,238/255.0,1});
+                                if (rightBound.y != 0) //render rightBound
+                                PolyRender::requestLine(glm::vec4(GameWindow::getCamera().toScreen(rightBound),GameWindow::getCamera().toScreen(curPoint)),
+                                                        {1,142/255.0,1,1});
+                                //GameWindow::requestNGon(10,shortCut,1,{1,1,0,1},0,true,1,false);
+                                PolyRender::requestLine(glm::vec4({GameWindow::getCamera().toScreen({line.x,line.y}),
                               GameWindow::getCamera().toScreen({line.z,line.a})}),{1,1,0,1},2);
+                          //  std::cout << leftBound.x << " " << leftBound.y << " " << rightBound.x << " " << rightBound.y << " " << nextPoint.x << " " << nextPoint.y << "\n";
+
                             }
                             finalPath.push_front(shortCut);
                             curPoint = shortCut;
+                            leftBound = {bounds.x,0};
+                            rightBound = {bounds.x + bounds.z, 0};
                         }
                         else
                         {
                             if (Debug::getRenderPath())
                             {
+
+                            if (leftBound.y != 0)
+                                PolyRender::requestLine(glm::vec4(GameWindow::getCamera().toScreen(leftBound),GameWindow::getCamera().toScreen(curPoint)),
+                                                        {175/255.0,238/255.0,238/255.0,1});
+                            if (rightBound.y != 0)
+                                PolyRender::requestLine(glm::vec4(GameWindow::getCamera().toScreen(rightBound),GameWindow::getCamera().toScreen(curPoint)),
+                                                        {1,142/255.0,1,1});
                                 GameWindow::requestNGon(10,shortCut,1,{1,0,1,1},0,true,1,false);
                             }
                         }
 
                 }
                     shortCut = nextPoint;
+
                   //  GameWindow::requestNGon(10,shortCut,10,{.5,1,0,1},0,true,.9,false);
 
             }
@@ -594,8 +674,8 @@ bool NavMesh::straightLine(const glm::vec4& line)
         glm::vec4 wallRect = (static_cast<RectPositional*>(vec[i]))->getRect();
         bool intersect = lineInVec(a,b,wallRect,0);
         //std::cout << "Points: ";
-        //printRect(line);
-        //printRect(wallRect);
+       // printRect(line);
+       // printRect(wallRect);
         if (intersect && !pointInVec(wallRect,a.x,a.y,0) && !pointInVec(wallRect,b.x,b.y,0))//sometimes, buildings may target or be targeted so we want to make sure we don't mind if the line starts or ends in a wall.
         {
             return false;
