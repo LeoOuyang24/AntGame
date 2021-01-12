@@ -2,6 +2,7 @@
 #include "animation.h"
 #include "ants.h"
 #include "game.h"
+#include "effects.h"
 
 ObjectAssembler::ObjectAssembler( std::string name_, const glm::vec2& rect_,AnimationWrapper* anime, bool mov, bool friendly_, int goldCost_) :
     dimen(rect_), name(name_), sprite(anime), movable(mov), friendly(friendly_), goldCost(goldCost_)
@@ -86,21 +87,25 @@ Object* AntAssembler::assemble()
     return ent;
 }
 
+
 BlasterAssembler::BlasterRocket::ExplodingRocketComponent::ExplodingRocketComponent(const glm::vec2& target, const glm::vec2& pos, Unit& entity) :
-                                                        ProjectileComponent(10,true,target,1,{pos.x,pos.y,16,8},entity)
+                                                        ProjectileComponent(10,true,target,1,{pos.x,pos.y,16,8},entity), ComponentContainer<ExplodingRocketComponent>(entity)
 {
 
 }
 
-void BlasterAssembler::BlasterRocket::ExplodingRocketComponent::collide(Entity& other)
+void BlasterAssembler::BlasterRocket::ExplodingRocketComponent::onCollide(Unit& other)
 {
     auto vec = GameWindow::getLevel()->getTree()->getNearest(other.getComponent<RectComponent>()->getCenter(),100);
     int size = vec.size();
    // std::cout << size << std::endl;
     for (int i = 0; i < size; ++i)
     {
-        ProjectileComponent::collide(*convertPosToUnit(vec[i]));
+        ProjectileComponent::onCollide(*convertPosToUnit(vec[i]));
     }
+    glm::vec4 rect = entity->getComponent<RectComponent>()->getRect();
+     //   glm::vec4 (RenderCamera::*transform) (const glm::vec4&) const = &(GameWindow::getCamera().toScreen);
+    explosionAnime.request({{rect.x - 50,rect.y - 50,100,100}},{-1,.01,1,&(GameWindow::getCamera().toScreen),&GameWindow::getCamera()});
 }
 
 BlasterAssembler::BlasterRocket::BlasterRocket() : ProjectileAssembler(1,"BlasterTankRocket",{8,16},&tankRocketAnime,1,1,1,true)
@@ -136,6 +141,36 @@ Object* BlasterAssembler::assemble()
     return ent;
 }
 
+IncineratorAssembler::IncineratorAttackComponent::IncineratorAttackComponent(Entity& unit) : UnitAttackComponent(1,500,200,200,false,unit), ComponentContainer<IncineratorAttackComponent>(unit)
+{
+
+}
+
+void IncineratorAssembler::IncineratorAttackComponent::attack(HealthComponent* health)
+{
+    health->addEffect(StatusEffect(damage,1000,[](StatusEffect& effect){
+    effect.unit->getHealth().takeDamage(effect.value/1000.0*DeltaTime::deltaTime,*effect.source);},
+    fireIcon,*static_cast<Unit*>(&health->getEntity()),*static_cast<Unit*>(&this->getEntity())));
+}
+
+IncineratorAssembler::IncineratorAssembler() : UnitAssembler("Incinerator",{30,30},&incineratorAnime,true,100,0,10,true,10)
+{
+    addUnitToBucket(*this,allShopItems);
+    addUnitToBucket(*this,allUnits);
+}
+
+Object* IncineratorAssembler::assemble()
+{
+    Unit* ent = new Unit(movable);
+    ent->addRect((new Ant::AntMoveComponent(nullptr,.3,{0,0,dimen.x,dimen.y},*ent)));
+    ent->addClickable((new Ant::AntClickable(name,*ent)));
+    ent->addRender((new AnimationComponent(*sprite,*ent)));
+    ent->addHealth(new HealthComponent(*ent,maxHealth));
+    //ent->addComponent(*(new UnitAttackComponent(1,1,300,300,!friendly,*ent)));
+    ent->addComponent(*(new IncineratorAttackComponent(*ent)));
+    ent->addComponent(*(new CommandableComponent(*ent)));
+    return ent;
+}
 
 FactoryAssembler::FactoryAssembler() : UnitAssembler("Factory",{30,30}, &defaultAnime, false, 100,1000,10,true,10)
 {
@@ -224,6 +259,7 @@ AntAssembler antAssembler;
 TurretAssembler turretAssembler;
 HealBuildingAssembler healBuildingAssembler;
 BlasterAssembler blastAssembler;
+IncineratorAssembler incineratorAssembler;
 
 UnitAssembler* getRandomAssembler(UnitBucket& bucket)
 {

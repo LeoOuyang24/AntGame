@@ -70,12 +70,17 @@ void AntManager::setShortTarget(std::shared_ptr<Object>& obj)
 
 void AntManager::getInput()
 {
+
+
     std::pair<int,int> mousePos = MouseManager::getMousePos();
     glm::vec4 mouseClick = {GameWindow::getCamera().toWorld({mousePos.first,mousePos.second}),1,1};
     int chosen = selected.size();
     if (chosen > 0)
     {
+        attackMove = attackMove || (KeyManager::getJustPressed() == SDLK_a);
+
         bool justClicked = MouseManager::getJustClicked() == SDL_BUTTON_RIGHT;
+
         std::vector<Positional*> nearest;
         //RectPositional post(mouseClick);
         //tree.getNearest(nearest,post);
@@ -196,7 +201,7 @@ void AntManager::getInput()
                                 UnitAttackComponent* attack = ptr->getComponent<UnitAttackComponent>();
                                 if (attack)
                                 {
-                                    attack->setLongTarget(moveTo,newTarget);
+                                    attack->setLongTarget(moveTo,newTarget,false);
                                 }
                                 else
                                 {
@@ -244,7 +249,6 @@ void AntManager::updateAnts()
             interact = unitPtr->getComponent<InteractionComponent>();
         }
         Map* map = (GameWindow::getLevel());
-        repel = (KeyManager::getJustPressed() == SDLK_BACKQUOTE) != repel ;
        // bool lastRepel = repel && MouseManager::getJustClicked() != SDL_BUTTON_RIGHT; //whether or not we were repelling last frame.
 
         bool atTarget = true; //used if the current Task is Move. Used to keep track of whether or not there are still units moving.

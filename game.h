@@ -61,11 +61,10 @@ public:
 };
 
 class GameWindow;
-class Camera : public Entity
+class Camera : public RenderCamera, Entity
 {
     glm::vec2 baseDimen = {0,0};
     glm::vec4 bounds;
-    glm::vec4 rect = {0,0,0,0};
     double zoomAmount = 1; //percentage of the base width and height of the camera
     double zoomGoal = -1;
     double zoomSpeed = .0001;
@@ -76,14 +75,7 @@ public:
     Camera();
     void init(int w, int h);
     void update();
-    const glm::vec4& getRect() const;
     void setBounds(const glm::vec4& newBounds);
-    glm::vec4 toScreen(const glm::vec4& rect) const;//converts a rect from the world coordinate to the screen coordinate
-    glm::vec2 toScreen(const glm::vec2& point) const;
-    glm::vec4 toWorld(const glm::vec4& rect) const;  //converts a rect from the screen coordinate to the world coordinate
-    glm::vec2 toWorld(const glm::vec2& point) const;
-    glm::vec4 toAbsolute(const glm::vec4& rect) const;
-    glm::vec2 toAbsolute(const glm::vec2& point) const; //given a screen coordinate, renders it to that point on the screen regardless of zoom
     void center(const glm::vec2& point); //centers the camera around point
     void zoom(float amount, const glm::vec2& point); //zooms the camera in and out. Multiples both height and width by amount
     void zoom(float amount);

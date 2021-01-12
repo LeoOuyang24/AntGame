@@ -113,7 +113,7 @@ void Manager::spawnCreatures(Anthill& hill, double minR, double maxR) //spawn cr
         AttackComponent* attack = toSpawn->getComponent<AttackComponent>();
         if (unitAttack)
         {
-            unitAttack->setLongTarget(closestPointOnVec(hill.getRect().getRect(),{x,y}),&level->getUnit(&hill));
+            unitAttack->setLongTarget(closestPointOnVec(hill.getRect().getRect(),{x,y}),&level->getUnit(&hill),false);
         }
         else if (attack)
         {
@@ -425,8 +425,8 @@ Camera::Camera()
 
 void Camera::init(int w, int h)
 {
+    RenderCamera::init(w,h);
     baseDimen = {w,h};
-    rect = {0,0,w,h};
 
     move = new MoveComponent(.1,rect,*this);
     addComponent(*(move));
@@ -482,53 +482,11 @@ void Camera::update()
 
 }
 
-const glm::vec4& Camera::getRect() const
-{
-    return rect;
-}
 void Camera::setBounds(const glm::vec4& newBounds)
 {
     bounds = newBounds;
 }
 
-glm::vec4 Camera::toScreen(const glm::vec4& change) const
-{
-    glm::vec2 point = toScreen({change.x,change.y});
-    return {point.x,point.y,change.z, change.a};
-}
-
-glm::vec2 Camera::toScreen(const glm::vec2& point) const
-{
-
-    return {(point.x - rect.x), (point.y - rect.y)};
-}
-
-glm::vec4 Camera::toWorld(const glm::vec4& change) const
-{
-
-    glm::vec2 point = toWorld({change.x,change.y});
-    return {point.x,point.y , change.z, change.a};
-}
-
-glm::vec2 Camera::toWorld(const glm::vec2& point) const
-{
-     glm::vec2 screenDimen = RenderProgram::getScreenDimen();
-    return {(point.x/screenDimen.x*rect.z + rect.x), (point.y/screenDimen.y*rect.a + rect.y)};
-}
-
-glm::vec4 Camera::toAbsolute(const glm::vec4& rect) const
-{
-    return glm::vec4(toAbsolute({rect.x,rect.y}),toAbsolute({rect.z,rect.a}));
-}
-glm::vec2 Camera::toAbsolute(const glm::vec2& point) const
-{
-     //glm::vec2 screenDimen = RenderProgram::getScreenDimen();
-     //double horiz = (RenderProgram::getXRange().y - RenderProgram::getXRange().x);
-  //   std::cout << horiz << " " << rect.z << std::endl;
-     //double vert = ViewRange::getYRange(RenderProgram::getYRange());
-    //return {point.x*horiz/screenDimen.x,point.y*rect.a/screenDimen.y};
-    return RenderProgram::toAbsolute(point);
-}
 
 void Camera::center(const glm::vec2& point)
 {

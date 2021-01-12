@@ -1,5 +1,15 @@
 This document keeps track of considered changes made to the resources as well as why they were made. Consider this a "learning from the past" kind of document. 
 
+1/4/2021:
+	Code::blocks has long had an issue with files named "sprite". Old projects with sprite.h didn't work and sprite.cpp in Ants Game has alwyas had massive lag spikes when we swap to the file. Today, I deleted the file and replaced it with animation.cpp to go with animation.h. This has fixed the lag tremendously for some reason.
+
+1/3/2021: 
+	A unit's list of status effects is currently tracked in the HealthComponent. It could be tracked in any component, including separate component altogether. Currently, the HealthComponent renders the healthbar and since the effects will be rendered along with the health bar, it is currently stored in HealthComponent.
+	StatusEffect currently has a seemingly random value member variable. This is because most status effects can be described using 4 things: duration, an icon, a function that describes how the effect works, and a value variable that generally shows how strong the effect is. For example, the value may represent how much the entity is slowed or how much damage they take over time. By declaring this seemingly arbitrary variable, we create a very flexible situation where most effects can be declared without ever declaring a new version of the update function.
+
+1/2/2021:
+	RenderCamera has been added as a universal camera class to render.h. This decision makes sense since cameras exist in all games, not just Ant Game. It also allows us to finally use camera functions in the base render.h functions.
+
 12/26/2020:
 	ProjectileComponent's new shooter variable currenlty can only be set through a setter function and not through the constructor. This is simply because right now, we don't need the constructor to do that; we should be okay with adding this later if necessary.
 

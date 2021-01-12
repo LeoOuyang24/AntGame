@@ -35,11 +35,13 @@ public:
 
 class AnimationComponent : public RenderComponent, public ComponentContainer<AnimationComponent>
 {
+    glm::vec4 tint = glm::vec4(1); //sometimes we want to modify our animation from outside sources (usually status effects)
     AnimationWrapper* sprite = nullptr;
     AnimationParameter animeParam;
 public:
     AnimationComponent(AnimationWrapper& anime, Entity& entity );
     void render(const SpriteParameter& param);
+    void requestTint(const glm::vec4& param);
     void update();
 };
 
@@ -97,7 +99,7 @@ public:
 };
 
 class Unit;
-
+class StatusEffect;
 class HealthComponent : public Component, public ComponentContainer<HealthComponent>
 {
     double health = 0;
@@ -106,10 +108,12 @@ class HealthComponent : public Component, public ComponentContainer<HealthCompon
     bool visible = true;
     DeltaTime invincible; //keeps track of how many frames of invincibility
     std::weak_ptr<Object> lastAttacker;// the last thing that attacked this unit
-    void addHealth(int amount); //increases health by amount. Health cannot exceed maxHealth nor go below 0
+    std::map<SpriteWrapper*,std::list<StatusEffect>> effects; //ordered map because we frequently iterate through this map. Each status effect should be uniquely identified by its sprite
+    void addHealth(double amount); //increases health by amount. Health cannot exceed maxHealth nor go below 0
 public:
     HealthComponent(Entity& entity, double health_,  int displacement_ = 20);
-    void takeDamage(int amount, Object& attacker ); //the key difference between this and add health is that this keeps track of which attackComponent dealt the damage. Negative damage heals the target
+    void takeDamage(double amount, Object& attacker ); //the key difference between this and add health is that this keeps track of which attackComponent dealt the damage. Negative damage heals the target
+    void addEffect(StatusEffect effect);
     double getHealth();
     double getMaxHealth();
     void update(); //render health bar and reset invincibility frames
@@ -287,16 +291,21 @@ public:
 
 class ProjectileComponent : public MoveComponent, public ComponentContainer<ProjectileComponent>
 {
+
+public:
+    typedef void (*ProjCollideFunc)(Unit& other, ProjectileComponent& thisProjectile); //function for ProjectileComponents' collide function
+    ProjectileComponent(double damage, bool friendly,const glm::vec2& target, double speed, const glm::vec4& rect, Unit& entity,ProjCollideFunc collideFun_ = nullptr);
+    ProjectileComponent(double damage, bool friendly, const glm::vec2& target, double xspeed, double yspeed, const glm::vec4& rect, Unit& entity, ProjCollideFunc collideFun_ = nullptr);
+    void setShooter(Object& obj);
+    void collide(Entity& other);
+    virtual void update();
+private:
     bool friendly = false;
     double damage = 0;
     Object* shooter = nullptr; //not the actual projectile unit, but whoever spawned the projectile unit. Primarily used to communicate who shot the projectile
-public:
-    ProjectileComponent(double damage, bool friendly,const glm::vec2& target, double speed, const glm::vec4& rect, Unit& entity);
-    ProjectileComponent(double damage, bool friendly, const glm::vec2& target, double xspeed, double yspeed, const glm::vec4& rect, Unit& entity);
-    void setShooter(Object& obj);
-    virtual void collide(Entity& other);
-    virtual void update();
-
+    ProjCollideFunc collideFunc = nullptr;
+protected:
+    virtual void onCollide(Unit& other); //what to actually call when we collide, since the collide code doesn't really change.
 };
 
 class UnitAttackComponent : public AttackComponent, public ComponentContainer<UnitAttackComponent>
@@ -307,11 +316,12 @@ class UnitAttackComponent : public AttackComponent, public ComponentContainer<Un
 
     bool activated = false; //whether this component should affect MoveComponent. Exists solely to make sure our unit doesn't move to 0,0 upon spawn. Since all of our units are spawned at (0,0) and then moved, we can't just set the position in the constructor
     bool notFriendly = false; //the type of enemy to attack
+    bool ignore = false; //whether to ignore enemies or not
     double searchRange = 0; //aggro range
 public:
     UnitAttackComponent(double damage_, int endLag_, double range_,double searchRange_,bool f, Entity& entity);
     void update();
-    void setLongTarget(const glm::vec2& point, std::shared_ptr<Object>* unit); //sets longTarget. Essentially only used when the player sets the target. Ignores the point if a target unit is provided
+    void setLongTarget(const glm::vec2& point, std::shared_ptr<Object>* unit, bool ignore); //sets longTarget. Essentially only used when the player sets the target. Ignores the point if a target unit is provided
     void setShortTarget(std::shared_ptr<Object>& unit); //sets shortTarget. Only used when there is a nearby enemy
 };
 

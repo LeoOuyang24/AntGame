@@ -55,11 +55,11 @@ class BlasterAssembler : public UnitAssembler
 {
     class BlasterRocket : public ProjectileAssembler
     {
-        class ExplodingRocketComponent : public ProjectileComponent
+        class ExplodingRocketComponent : public ProjectileComponent, public ComponentContainer<ExplodingRocketComponent>
         {
         public:
             ExplodingRocketComponent(const glm::vec2& target, const glm::vec2& pos, Unit& entity);
-            void collide(Entity& other);
+            void onCollide(Unit& other);
         } ;
     public:
         BlasterRocket();
@@ -68,6 +68,19 @@ class BlasterAssembler : public UnitAssembler
     BlasterRocket rocket;
 public:
     BlasterAssembler();
+    Object* assemble();
+};
+
+class IncineratorAssembler : public UnitAssembler
+{
+    class IncineratorAttackComponent : public UnitAttackComponent, public ComponentContainer<IncineratorAttackComponent>
+    {
+    public:
+        IncineratorAttackComponent(Entity& unit);
+        virtual void attack(HealthComponent* health);
+    };
+public:
+    IncineratorAssembler();
     Object* assemble();
 };
 
@@ -114,6 +127,7 @@ extern FactoryAssembler factAssembler;
 extern TurretAssembler turretAssembler;
 extern HealBuildingAssembler healBuildingAssembler;
 extern BlasterAssembler blastAssembler;
+extern IncineratorAssembler incineratorAssembler;
 
 void initAssemblers();
 

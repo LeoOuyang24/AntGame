@@ -7,6 +7,7 @@
 #include "navigation.h"
 #include "animation.h"
 #include "friendlyAssemblers.h"
+#include "effects.h"
 
 void renderMeter(const glm::vec3& xyWidth, const glm::vec4& color, double current, double maximum, float z)
 {
@@ -134,6 +135,11 @@ void AnimationComponent::render(const SpriteParameter& param)
     }
 }
 
+void AnimationComponent::requestTint(const glm::vec4& param)
+{
+    tint = param;
+}
+
 void AnimationComponent::update()
 {
     auto rect = entity->getComponent<RectComponent>();
@@ -177,21 +183,9 @@ void AnimationComponent::update()
                 angle = atan2(move->getCenter().y - target.y,move->getCenter().x - target.x) + M_PI/2;
 
             }
-           /* else
-            {
-                ApproachComponent* approach = entity->getComponent<ApproachComponent>();
-                if ( approach)
-                {
-                    Object* target = approach->getTargetUnit();
-                    if (target)
-                    {
-                       angle = atan2( move->getCenter().y - target->getCenter().y , move->getCenter().x -  target->getCenter().x ) + M_PI/2;
-                    }
-                }
-
-            }*/
         }
-        render({GameWindow::getCamera().toScreen(rect->getRect()),angle,NONE});
+        render({GameWindow::getCamera().toScreen(rect->getRect()),angle,NONE,tint});
+        tint = glm::vec4(1);
     }
 }
 
@@ -318,7 +312,7 @@ InteractionComponent::~InteractionComponent()
 
 }
 
-void HealthComponent::addHealth(int amount)
+void HealthComponent::addHealth(double amount)
 {
     if (amount < 0)
     {
@@ -339,10 +333,15 @@ HealthComponent::HealthComponent(Entity& entity, double health_,  int displaceme
 
 }
 
-void HealthComponent::takeDamage(int amount, Object& attacker)
+void HealthComponent::takeDamage(double amount, Object& attacker)
 {
     lastAttacker = GameWindow::getLevel()->getUnit(&attacker);
     addHealth(-1*amount);
+}
+
+void HealthComponent::addEffect(StatusEffect effect)
+{
+    effects[effect.icon].push_back(effect);
 }
 
 double HealthComponent::getHealth()
@@ -364,11 +363,42 @@ void HealthComponent::setVisible(bool value)
 void HealthComponent::update()
 {
     RectComponent* rectComp = entity->getComponent<RectComponent>();
-    if (rectComp && visible && !entity->getComponent<ProjectileComponent>())
+    const glm::vec4* rect = &(rectComp->getRect());
+    glm::vec2 mousePos = GameWindow::getCamera().toWorld(pairtoVec(MouseManager::getMousePos()));
+    if (visible && !entity->getComponent<ProjectileComponent>() && pointInVec(*rect,mousePos.x,mousePos.y))
     {
-        const glm::vec4* rect = &(rectComp->getRect());
         //GameWindow::requestRect({rect->x ,rect->y - displacement, rect->z, 0},{1,0,0,1},true,0,0);
         render({rect->x,rect->y - displacement,rect->z}, 0);
+    }
+    //SpriteParameter
+    auto end = effects.end();
+    for (auto i = effects.begin(); i != end; ++i)
+    {
+        auto lstEnd = i->second.end();
+        for (auto j = i->second.begin(); j != lstEnd;)
+        {
+
+            if (j->isDone())
+            {
+                j = i->second.erase(j);
+            }
+            else
+            {
+                j->update();
+                ++j;
+            }
+        }
+        int size = i->second.size();
+        if (size > 0)
+        {
+            glm::vec4 iconRect = GameWindow::getCamera().toScreen({rect->x,rect->y - displacement*2,displacement,displacement});
+            i->second.begin()->icon->request({iconRect});
+
+            if (size > 1)
+            {
+                Font::tnr.requestWrite({convert(size),iconRect + glm::vec4(displacement/2,displacement/2,0,0),0,{1,1,1,1},1});
+            }
+        }
     }
 }
 
@@ -874,16 +904,27 @@ ResourceEatComponent::~ResourceEatComponent()
 
 }
 
-ProjectileComponent::ProjectileComponent(double damage, bool friendly,const glm::vec2& target, double speed, const glm::vec4& rect, Unit& entity) : MoveComponent(speed, rect, entity),
-                        ComponentContainer<ProjectileComponent>(entity), damage(damage), friendly(friendly)
+void ProjectileComponent::onCollide(Unit& other)
+{
+    if (collideFunc)
+    {
+        collideFunc(other,*this);
+    }
+    else
+    {
+        other.getHealth().takeDamage(damage,*shooter);
+    }
+}
+
+ProjectileComponent::ProjectileComponent(double damage, bool friendly,const glm::vec2& target, double speed, const glm::vec4& rect, Unit& entity,ProjCollideFunc collideFun_) : MoveComponent(speed, rect, entity),
+                        ComponentContainer<ProjectileComponent>(entity), damage(damage), friendly(friendly), collideFunc(collideFun_)
 {
     setTarget(target);
 }
 
-ProjectileComponent::ProjectileComponent(double damage, bool friendly,const glm::vec2& target, double xspeed, double yspeed, const glm::vec4& rect, Unit& entity) : MoveComponent(sqrt(xspeed*xspeed + yspeed*yspeed),rect,entity),
-                        ComponentContainer<ProjectileComponent>(entity), damage(damage),friendly(friendly)
+ProjectileComponent::ProjectileComponent(double damage, bool friendly,const glm::vec2& target, double xspeed, double yspeed, const glm::vec4& rect, Unit& entity,ProjCollideFunc collideFun_) :
+                        ProjectileComponent(damage,friendly,target,sqrt(xspeed*xspeed + yspeed*yspeed),rect,entity,collideFunc)
 {
-    setTarget(target);
 
 }
 
@@ -901,7 +942,7 @@ void ProjectileComponent::collide(Entity& other)
         unit->setDead(true);
         if (shooter)
         {
-            otherUnit->getHealth().takeDamage(damage,*shooter);
+            onCollide(*unit);
         }
         else
         {
@@ -931,7 +972,7 @@ void UnitAttackComponent::update()
 
     Object* ent = shortTarget.lock().get();
     Map* level = GameWindow::getLevel();
-    if (!ent && level) //if we aren't already fighting something, find something nearby
+    if (!ent && level && !ignore) //if we aren't already fighting something, find something nearby
     {
         Object* nearby = findNearestUnit<HealthComponent>(searchRange,notFriendly,*(level->getTree()));
         if (nearby && nearby != longTarget.first.lock().get() &&
@@ -964,18 +1005,20 @@ void UnitAttackComponent::update()
                                 {otherRect.x + otherRect.z/2, otherRect.y + otherRect.a/2})),
                                 {1,0,1,1},3);
     }
+    */
     if (move->getCenter() == longTarget.second) //if we are at the target, set our state back to ignore
     {
-        ignore = IgnoreState::IDLE;
-    }*/
+        ignore = false;
+    }
     AttackComponent::update();
 }
 
-void UnitAttackComponent::setLongTarget(const glm::vec2& target, std::shared_ptr<Object>* unit)
+void UnitAttackComponent::setLongTarget(const glm::vec2& target, std::shared_ptr<Object>* unit, bool ignore)
 {
     activated = true; //once moveComponent has set a target, we gets permission to affect moveComponent
     //AttackComponent::setTarget(target,unit);
     //std::cout << target.x << " " << target.y << " " << unit->get() << std::endl;
+    this->ignore = ignore;
     if (unit)
     {
         longTarget.first = *unit;

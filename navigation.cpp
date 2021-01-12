@@ -489,45 +489,6 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
                 }
                 const glm::vec4* nodeRect = &(it->first->getRect());
                 midpoint = displacePoint(midpoint,it->second,*nodeRect,width);
-                glm::vec2 leftBound,rightBound;
-                if (midpoint.y> curPoint.y) //if we are going down
-                    {
-                        if (a.x > curPoint.x)
-                        {
-                            leftBound = a;
-                        }
-                        else
-                        {
-                            leftBound = glm::vec2(a.x,a.y + nodeRect->a*(a.x == nodeRect->x));
-                        }
-                        if (b.x < curPoint.x)
-                        {
-                            rightBound = b;
-                        }
-                        else
-                        {
-                            rightBound = glm::vec2(b.x,b.y + nodeRect->a*(b.x == nodeRect->x + nodeRect->z));
-                        }
-                    }
-                    else //if we going up
-                    {
-                        if (a.x > curPoint.x)
-                        {
-                            leftBound = a;
-                        }
-                        else
-                        {
-                            leftBound = glm::vec2(a.x,a.y - nodeRect->a*(a.x == nodeRect->x));
-                        }
-                        if (b.x < curPoint.x)
-                        {
-                            rightBound = b;
-                        }
-                        else
-                        {
-                            rightBound = glm::vec2(b.x,b.y - nodeRect->a*(b.x == nodeRect->x + nodeRect->z));
-                        }
-                    }
                 //std::cout << it->first << std::endl;
                 //printRect(*nodeRect);
                 if (Debug::getRenderPath())
