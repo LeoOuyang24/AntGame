@@ -172,6 +172,47 @@ Object* IncineratorAssembler::assemble()
     return ent;
 }
 
+FreezerAssembler::FreezerAttackComponent::FreezerAttackComponent(Entity& unit) : UnitAttackComponent(10,200,100,100,false,unit), ComponentContainer<FreezerAttackComponent>(unit)
+{
+
+}
+
+void FreezerAssembler::FreezerAttackComponent::attack(HealthComponent* health)
+{
+    UnitAttackComponent::attack(health);
+    health->addEffect(StatusEffect(slowAmount,1000,[](StatusEffect& effect){
+                                   MoveComponent* move = effect.unit->getComponent<MoveComponent>();
+                                   if (move)
+                                   {
+                                       move->setSpeed(move->getCurSpeed()*(1-effect.value));
+                                   }
+                                   AnimationComponent* anime = effect.unit->getComponent<AnimationComponent>();
+                                   if (anime)
+                                   {
+                                       anime->setTint({0,.5,0,1});
+                                   }
+                                   },freezeIcon,*static_cast<Unit*>(&health->getEntity()),*static_cast<Unit*>(&this->getEntity())));
+}
+
+FreezerAssembler::FreezerAssembler() : UnitAssembler("Cryogenics Unit",{30,30},&freezeUnitAnime,true,100,0)
+{
+    addUnitToBucket(*this,allShopItems);
+    addUnitToBucket(*this,allUnits);
+}
+
+Object* FreezerAssembler::assemble()
+{
+    Unit* ent = new Unit(movable);
+    ent->addRect((new Ant::AntMoveComponent(nullptr,.3,{0,0,dimen.x,dimen.y},*ent)));
+    ent->addClickable((new Ant::AntClickable(name,*ent)));
+    ent->addRender((new AnimationComponent(*sprite,*ent)));
+    ent->addHealth(new HealthComponent(*ent,maxHealth));
+    //ent->addComponent(*(new UnitAttackComponent(1,1,300,300,!friendly,*ent)));
+    ent->addComponent(*(new FreezerAttackComponent(*ent)));
+    ent->addComponent(*(new CommandableComponent(*ent)));
+    return ent;
+}
+
 FactoryAssembler::FactoryAssembler() : UnitAssembler("Factory",{30,30}, &defaultAnime, false, 100,1000,10,true,10)
 {
         addUnitToBucket(*this,allShopItems);
@@ -260,6 +301,7 @@ TurretAssembler turretAssembler;
 HealBuildingAssembler healBuildingAssembler;
 BlasterAssembler blastAssembler;
 IncineratorAssembler incineratorAssembler;
+FreezerAssembler freezerAssembler;
 
 UnitAssembler* getRandomAssembler(UnitBucket& bucket)
 {

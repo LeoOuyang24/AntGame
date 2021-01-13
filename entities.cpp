@@ -135,7 +135,7 @@ void AnimationComponent::render(const SpriteParameter& param)
     }
 }
 
-void AnimationComponent::requestTint(const glm::vec4& param)
+void AnimationComponent::setTint(const glm::vec4& param)
 {
     tint = param;
 }
@@ -149,22 +149,9 @@ void AnimationComponent::update()
         MoveComponent* move = entity->getComponent<MoveComponent>();
         if (move)
         {
+            glm::vec2 target = move->getCenter();
             if (!move->atTarget() )
             {
-                glm::vec2 target;
-                if (move->getVelocity() == 0) //typically happens if we are attacking a unit
-                {
-                    AttackComponent* approach = entity->getComponent<AttackComponent>();
-                    if ( approach)
-                    {
-                        Object* targetUnit = approach->getTargetUnit();
-                        if (targetUnit)
-                        {
-                            target = targetUnit->getCenter();
-                        }
-                    }
-                }
-                else
                 {
                     PathComponent* path = entity->getComponent<PathComponent>();
                     if (path)
@@ -179,10 +166,35 @@ void AnimationComponent::update()
                     }
                 }
 
-                GameWindow::requestNGon(10,target,1,{1,1,1,1},0,true,10);
-                angle = atan2(move->getCenter().y - target.y,move->getCenter().x - target.x) + M_PI/2;
 
+               // GameWindow::requestNGon(10,target,1,{1,1,1,1},0,true,10);
             }
+            else if (move->getVelocity() == 0) //typically happens if we are attacking a unit
+            {
+                AttackComponent* approach = entity->getComponent<AttackComponent>();
+                if ( approach)
+                {
+                    Object* targetUnit = approach->getTargetUnit();
+                    if (targetUnit) //this should be guaranteed to be true
+                    {
+                        target = targetUnit->getCenter();
+                    }
+                    else
+                    {
+                        target.y += 1;
+                    }
+                }
+                else
+                {
+                    target.y += 1;
+                }
+            }
+            else
+            {
+                target.y += 1; //we want our angle to be 0, so we set target to a value that would force it to be 0.
+            }
+            angle = atan2(move->getCenter().y - target.y,move->getCenter().x - target.x) + M_PI/2;
+
         }
         render({GameWindow::getCamera().toScreen(rect->getRect()),angle,NONE,tint});
         tint = glm::vec4(1);
@@ -372,6 +384,7 @@ void HealthComponent::update()
     }
     //SpriteParameter
     auto end = effects.end();
+    int disp = 0; //keeps track of where in the effect icon rendering we are in
     for (auto i = effects.begin(); i != end; ++i)
     {
         auto lstEnd = i->second.end();
@@ -391,13 +404,13 @@ void HealthComponent::update()
         int size = i->second.size();
         if (size > 0)
         {
-            glm::vec4 iconRect = GameWindow::getCamera().toScreen({rect->x,rect->y - displacement*2,displacement,displacement});
+            glm::vec4 iconRect = GameWindow::getCamera().toScreen({rect->x + disp,rect->y - displacement*2,displacement,displacement});
             i->second.begin()->icon->request({iconRect});
-
             if (size > 1)
             {
                 Font::tnr.requestWrite({convert(size),iconRect + glm::vec4(displacement/2,displacement/2,0,0),0,{1,1,1,1},1});
             }
+            disp += displacement;
         }
     }
 }

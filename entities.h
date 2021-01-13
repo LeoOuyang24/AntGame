@@ -41,7 +41,7 @@ class AnimationComponent : public RenderComponent, public ComponentContainer<Ani
 public:
     AnimationComponent(AnimationWrapper& anime, Entity& entity );
     void render(const SpriteParameter& param);
-    void requestTint(const glm::vec4& param);
+    void setTint(const glm::vec4& param);
     void update();
 };
 

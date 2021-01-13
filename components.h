@@ -125,6 +125,8 @@ public:
     virtual void setTarget(const glm::vec2& point);
     virtual const glm::vec2& getTarget();
     double getVelocity();
+    double getBaseSpeed();
+    double getCurSpeed();
     void setSpeed(double newSpeed); //sets the speed for this frame only
     virtual ~MoveComponent();
 

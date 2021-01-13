@@ -1,6 +1,7 @@
 #include "animation.h"
 
 SpriteWrapper fireIcon;
+SpriteWrapper freezeIcon;
 SpriteWrapper coinIcon;
 SpriteWrapper redX;
 
@@ -14,6 +15,7 @@ AnimationWrapper basicEnemyAnime;
 AnimationWrapper blasterAnime;
 AnimationWrapper tankRocketAnime;
 AnimationWrapper incineratorAnime;
+AnimationWrapper freezeUnitAnime;
 
 AnimationWrapper explosionAnime;
 AnimationWrapper fireBlastSprite;
@@ -24,6 +26,7 @@ AnimationWrapper portalAnime;
 void initSprites()
 {
     fireIcon.init("sprites/fire-icon.png");
+    freezeIcon.init("sprites/freeze-icon.png");
     coinIcon.init("sprites/gold_icon.png");
     redX.init("sprites/redX.png");
 
@@ -38,6 +41,7 @@ void initSprites()
     blasterAnime.init(new BaseAnimation("sprites/blaster.png",0.01,3,1));
     tankRocketAnime.init(new BaseAnimation("sprites/blastRocket.png",0,1,1));
     incineratorAnime.init(new BaseAnimation("sprites/incinerator.png",.01,3,1));
+    freezeUnitAnime.init(new BaseAnimation("sprites/freezeUnit.png",.01,3,1) );
     explosionAnime.init(new BaseAnimation("sprites/explosion.png",.1,3,4));
     fireBlastSprite.init(new BaseAnimation("sprites/fireBlast.png",0,1,1));
 

@@ -84,6 +84,20 @@ public:
     Object* assemble();
 };
 
+class FreezerAssembler : public UnitAssembler
+{
+    class FreezerAttackComponent : public UnitAttackComponent, public ComponentContainer<FreezerAttackComponent>
+    {
+        const float slowAmount = .1f; //speed decrease amount
+    public:
+        FreezerAttackComponent(Entity& unit);
+        virtual void attack(HealthComponent* health);
+    };
+public:
+    FreezerAssembler();
+    Object* assemble();
+};
+
 class FactoryAssembler : public UnitAssembler
 {
 public:
@@ -128,6 +142,7 @@ extern TurretAssembler turretAssembler;
 extern HealBuildingAssembler healBuildingAssembler;
 extern BlasterAssembler blastAssembler;
 extern IncineratorAssembler incineratorAssembler;
+extern FreezerAssembler freezerAssembler;
 
 void initAssemblers();
 

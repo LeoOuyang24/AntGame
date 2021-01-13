@@ -4,6 +4,7 @@
 #include "render.h"
 
 extern SpriteWrapper fireIcon;
+extern SpriteWrapper freezeIcon;
 extern SpriteWrapper coinIcon;
 extern SpriteWrapper redX;
 
@@ -18,6 +19,7 @@ extern AnimationWrapper basicEnemyAnime;
 extern AnimationWrapper blasterAnime;
 extern AnimationWrapper tankRocketAnime;
 extern AnimationWrapper incineratorAnime;
+extern AnimationWrapper freezeUnitAnime;
 
 extern AnimationWrapper explosionAnime;
 extern AnimationWrapper fireBlastSprite;

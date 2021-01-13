@@ -49,6 +49,8 @@
 		<Unit filename="../../resources/FreeTypeHelper.h" />
 		<Unit filename="../../resources/SDLhelper.cpp" />
 		<Unit filename="../../resources/SDLhelper.h" />
+		<Unit filename="../../resources/geometry.cpp" />
+		<Unit filename="../../resources/geometry.h" />
 		<Unit filename="../../resources/glGame.cpp" />
 		<Unit filename="../../resources/glGame.h" />
 		<Unit filename="../../resources/glInterface.cpp" />
@@ -85,6 +87,7 @@
 		<Unit filename="../../resources/stb_image.h" />
 		<Unit filename="../../resources/vanilla.cpp" />
 		<Unit filename="../../resources/vanilla.h" />
+		<Unit filename="animation.cpp" />
 		<Unit filename="animation.h" />
 		<Unit filename="antManager.cpp" />
 		<Unit filename="antManager.h" />
@@ -95,6 +98,8 @@
 		<Unit filename="creature.h" />
 		<Unit filename="debug.cpp" />
 		<Unit filename="debug.h" />
+		<Unit filename="effects.cpp" />
+		<Unit filename="effects.h" />
 		<Unit filename="enemyAssemblers.cpp" />
 		<Unit filename="enemyAssemblers.h" />
 		<Unit filename="entities.cpp" />
@@ -122,7 +127,6 @@
 		<Unit filename="sequence.cpp" />
 		<Unit filename="sequence.h" />
 		<Unit filename="shop.h" />
-		<Unit filename="sprites.cpp" />
 		<Unit filename="world.cpp" />
 		<Unit filename="world.h" />
 		<Unit filename="worldMap.cpp" />

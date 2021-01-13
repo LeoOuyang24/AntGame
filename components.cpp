@@ -98,14 +98,25 @@ const glm::vec2& MoveComponent::getTarget()
     return target;
 }
 
+void MoveComponent::setTarget(const glm::vec2& point)
+{
+    target = point;
+}
+
+
 double MoveComponent::getVelocity()
 {
     return velocity;
 }
 
-void MoveComponent::setTarget(const glm::vec2& point)
+double MoveComponent::getBaseSpeed()
 {
-    target = point;
+    return baseSpeed;
+}
+
+double MoveComponent::getCurSpeed()
+{
+    return speed;
 }
 
 void MoveComponent::setSpeed(double newspeed)
