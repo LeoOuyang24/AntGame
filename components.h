@@ -105,6 +105,7 @@ public:
     RectComponent(const glm::vec4& rect, Entity& entity);
     void setRect(const glm::vec4& rect);
     virtual void setPos(const glm::vec2& pos);
+    glm::vec2 getPos();
     glm::vec2 getCenter();
     virtual ~RectComponent();
 };
@@ -129,6 +130,24 @@ public:
     double getCurSpeed();
     void setSpeed(double newSpeed); //sets the speed for this frame only
     virtual ~MoveComponent();
+
+};
+
+struct ForceVector
+{
+    float angle;
+    float magnitude;
+};
+
+class ForcesComponent : public Component, public ComponentContainer<ForcesComponent> //component that pushes MoveComponent based on what forces are currently being applied
+{
+    glm::vec2 finalForce; //after applying all forces, this is the final x and y displacement to move
+    MoveComponent* move = nullptr; //forcesComponent will only work if there is a moveComponent on the entity
+public:
+    ForcesComponent(Entity& entity);
+    void addForce(ForceVector force);
+    void update();
+
 
 };
 

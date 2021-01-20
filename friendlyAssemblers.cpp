@@ -84,6 +84,7 @@ Object* AntAssembler::assemble()
     ent->addHealth(new HealthComponent(*ent,maxHealth));
     ent->addComponent(*(new UnitAttackComponent(1,100,100,100,false,*ent)));
     ent->addComponent(*(new CommandableComponent(*ent)));
+    ent->addComponent(*(new ForcesComponent(*ent)));
     return ent;
 }
 

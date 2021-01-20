@@ -91,7 +91,6 @@ int main(int args, char* argsc[])
 
     initSprites();
 
-    std::cout << lineInLine({2426, 2992},{2667, 2992}, {2541, 3023}, {2559.43, 2717.66}) << std::endl;
 
     SDL_Event e;
     bool quit = false;
@@ -99,7 +98,11 @@ int main(int args, char* argsc[])
         //std::cout << tree.count() << std::endl;
     Interface interface;
     GameWindow game;
+
+            std::cout << "Time to setup everything before worldMap: " << SDL_GetTicks() << "\n";
+
     WorldMapWindow worldMap;
+
     interface.switchCurrent(&worldMap);
     worldMap.generate();
 

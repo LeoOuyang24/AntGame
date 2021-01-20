@@ -137,6 +137,7 @@ WorldMapWindow::WorldMapWindow() : Window({0,0,0,0},nullptr,{0,0,1,1})
 
 void WorldMapWindow::generate()
 {
+    auto ticks = SDL_GetTicks();
     int numberOfLevels = rand()%6 + 3;
     for (int i = 0; i < numberOfLevels; ++i)
     {

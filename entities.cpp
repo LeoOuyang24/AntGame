@@ -165,8 +165,6 @@ void AnimationComponent::update()
 
                     }
                 }
-
-
                // GameWindow::requestNGon(10,target,1,{1,1,1,1},0,true,10);
             }
             else if (move->getVelocity() == 0) //typically happens if we are attacking a unit
@@ -596,8 +594,38 @@ PathComponent::PathComponent(double speed, const glm::vec4& rect, Entity& unit) 
 
 void PathComponent::setPos(const glm::vec2& pos)
 {
+    glm::vec2 adjPos = pos; //adjusted position in case we are being pushed into a wall
+    glm::vec4 nodeRect = GameWindow::getLevel()->getMesh().getNearestNodeRect(pos);
+    if (nodeRect == glm::vec4(0))
+    {
+        std::cerr << "attempted to move entity outside of world boundaries\n";
+        throw std::logic_error("attempted to move entity outside of world boundaries");
+    }
+    else
+    {
+        adjPos = closestPointOnVec(nodeRect,adjPos);
+    }
+    //MoveComponent::setPos(pos);
+    if(velocity == 0)
+    {
+        changePos(adjPos + glm::vec2(rect.z/2,rect.a/2)); //changePos sets center rather than top-left corner. Here we have to adjust it.
+    }
+    else
+    {
+        MoveComponent::setPos(adjPos);
+    }
+
+}
+
+void PathComponent::changePos(const glm::vec2& pos)
+{
     rect.x = pos.x - rect.z/2;
     rect.y = pos.y - rect.a/2;
+    ApproachComponent* app = entity->getComponent<ApproachComponent>();
+    if (app)
+    {
+        app->setTarget(pos,nullptr);
+    }
     setTarget(pos);
 }
 
@@ -605,31 +633,31 @@ void PathComponent::setTarget(const glm::vec2& point)
 {
     if (getTarget() != point)
     {
-      //  std::cout << point.x << " " << point.y << std::endl;
-
-       /* if (MouseManager::getJustClicked() != SDL_BUTTON_RIGHT)
+       /* if (MouseManager::getJustClicked() != SDL_BUTTON_RIGHT && point != getCenter() && !Debug::getSpawnCreatures())
         {
             std::cout << point.x << " " << point.y << std::endl;
         }*/
-        if (pointDistance(point,getTarget()) < 2) //if our new target is very similar to our old target, just replace the old target
-        {
-            //std::cout << "ASDF" << std::endl;
-        //    path.pop_back();
-          //  path.push_back(point);
-        }
         path.clear();
-        NavMesh* mesh = &(GameWindow::getLevel()->getMesh());
-        auto time = SDL_GetTicks();
-        path = mesh->getPath(getCenter(),point, entity->getComponent<RectComponent>()->getRect().z/2*sqrt(2));
-       // std::cout << SDL_GetTicks() - time << std::endl;
-        if (path.size() > 0)
+        if (point == getCenter())
         {
-            target = path.front();
+            target = point;
         }
         else
         {
-            std::cout << "No path!" << std::endl;
+            NavMesh* mesh = &(GameWindow::getLevel()->getMesh());
+            auto time = SDL_GetTicks();
+            path = mesh->getPath(getCenter(),point, entity->getComponent<RectComponent>()->getRect().z/2*sqrt(2));
+           // std::cout << SDL_GetTicks() - time << std::endl;
+            if (path.size() > 0)
+            {
+                target = path.front();
+            }
+            else
+            {
+                std::cout << "No path!" << std::endl;
+            }
         }
+
     }
     //MoveComponent::setTarget(point);
 }
@@ -719,7 +747,7 @@ Object* ApproachComponent::getTargetUnit()
 {
     return targetUnit.lock().get();
 }
-void ApproachComponent::setTarget(const glm::vec2& target, const std::shared_ptr<Object>* unit)
+void ApproachComponent::setTarget(const glm::vec2& target, std::shared_ptr<Object>* unit)
 {
     if (move)
     {
@@ -735,7 +763,7 @@ void ApproachComponent::setTarget(const glm::vec2& target, const std::shared_ptr
     }
 }
 
-void ApproachComponent::setTarget(const std::shared_ptr<Object>& unit)
+void ApproachComponent::setTarget(std::shared_ptr<Object>& unit)
 {
     if (move)
     {
@@ -827,7 +855,7 @@ void AttackComponent::update()
     }
 }
 
-void AttackComponent::setTarget(const glm::vec2& target, const std::shared_ptr<Object>* unit) //unit is a pointer so you can move to a point rather than a unit
+void AttackComponent::setTarget(const glm::vec2& target, std::shared_ptr<Object>* unit) //unit is a pointer so you can move to a point rather than a unit
 {
     if (move)
     {
@@ -998,12 +1026,12 @@ void UnitAttackComponent::update()
             if (longTarget.first.lock().get())
             {
             //    std::cout << longTarget.first.lock().get() << std::endl;
-                setTarget(longTarget.second,&level->getUnit(longTarget.first.lock().get()));
+                AttackComponent::setTarget(longTarget.second,&level->getUnit(longTarget.first.lock().get()));
             }
             else
             {
                // std::cout << longTarget.second.x << " " << longTarget.second.y << std::endl;
-                setTarget(longTarget.second,nullptr);
+                AttackComponent::setTarget(longTarget.second,nullptr);
             }
         }
 
@@ -1024,6 +1052,12 @@ void UnitAttackComponent::update()
         ignore = false;
     }
     AttackComponent::update();
+}
+
+void UnitAttackComponent::setTarget(const glm::vec2& target,std::shared_ptr<Object>* unit)
+{
+    setLongTarget(target,unit,false);
+    AttackComponent::setTarget(target,unit);
 }
 
 void UnitAttackComponent::setLongTarget(const glm::vec2& target, std::shared_ptr<Object>* unit, bool ignore)

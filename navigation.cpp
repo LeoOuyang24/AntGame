@@ -396,6 +396,19 @@ bool NavMesh::notInWall(const glm::vec4& rect)
     return true;
 }
 
+glm::vec4 NavMesh::getNearestNodeRect(const glm::vec2& point)
+{
+    NavMesh::NavMeshNode* node = getNearestNode(point);
+    if (node)
+    {
+        return node->getRect();
+    }
+    else
+    {
+        return glm::vec4(0);
+    }
+}
+
 Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, int width)
 {
     NavMeshNode* startNode = getNearestNode(startPoint);  //ndoe we start off with. Repurposed later to be the node we are currently working on

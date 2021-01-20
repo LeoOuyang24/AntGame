@@ -162,7 +162,15 @@ std::shared_ptr<Object>& Map::getUnit(Object* unit)
 
 void Map::moveObject(Object& obj, double x, double y)
 {
-    obj.getRect().setPos({x,y});
+    PathComponent* path = obj.getComponent<PathComponent>();
+    if (path)
+    {
+        path->changePos({x,y});
+    }
+    else
+    {
+        obj.getRect().setPos({x,y});
+    }
     tree->update(obj.getRect(), *tree.get());
     //std::cout << obj.getCenter().x << std::endl;
    // std::cout << getChunk(obj).ants.size() << oldChunk->ants.size() << std::endl;
@@ -285,7 +293,7 @@ Map* Map::generateLevel(const glm::vec4& levelRect) // Doesn't generate terrain 
     for (int i = 0; i < points.y -1; ++i) //for every row except the bottom most...
     {
         int size = dists.size();
-        glm::vec2 line = {0,0};
+        glm::vec2 line = {0,0}; //x is the starting coordinate. y is the width
         bool empty = true;
         glm::vec2 popped;
         bool poppedEmpty = false; //whether the line is empty or a line of blocks
@@ -342,6 +350,7 @@ Map* Map::generateLevel(const glm::vec4& levelRect) // Doesn't generate terrain 
                         {
                           //  std::cout << line.x<< " "<< line.y<< " " << empty << std::endl;
                             dists.push({line,empty});
+                            //chunk->addTerrain({x,y,maxObjectSize*(line.y),maxObjectSize});
                         }
                         line = {line.x + line.y, 1};
                         empty = true;

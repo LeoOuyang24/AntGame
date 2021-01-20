@@ -33,24 +33,25 @@ Ant::AntMoveComponent::AntMoveComponent(Anthill* hill, double speed, const glm::
 
 void Ant::AntMoveComponent::collide(Entity& other)
 {
-    auto move = other.getComponent<Ant::AntMoveComponent>();
-    if (&other == home && carrying > 0)
+    auto force = other.getComponent<ForcesComponent>();
+   // std::cout << entity << " " << &other << std::endl;
+    /*if (&other == home && carrying > 0)
     {
         home->getComponent<ResourceComponent>()->setResource(carrying);
         carrying = 0;
-    }
-    else if (move && move->getVelocity() == 0 && velocity == 0)
+    }*/
+    if (force)
     {
-        glm::vec2 otherPos = move->getPos();
+        glm::vec2 otherCenter = other.getComponent<RectComponent>()->getCenter();
         glm::vec2 center = getCenter();
-        if (rect.x == otherPos.x && rect.y == otherPos.y)
-        {
-            otherPos.x += rand()%3 - 1;
-            otherPos.y += rand()%3 - 1;
-        }
-
-        glm::vec2 targetPoint = {center.x + convertTo1(rect.x-otherPos.x)*.05, center.y + convertTo1(rect.y-otherPos.y)*.05};
-       teleport(targetPoint);
+        float angle = atan2(otherCenter.y - center.y, otherCenter.x - center.x) + (M_PI/4*(center.x < otherCenter.x));
+        force->addForce({angle - (M_PI/8),1});
+        /*PolyRender::requestLine(glm::vec4(
+                                          GameWindow::getCamera().toScreen(getCenter()),
+                                          GameWindow::getCamera().toScreen(getCenter() + glm::vec2(cos(-M_PI/4)*100.0,sin(-M_PI/4)*100.0))
+                                          ),
+                                {1,1,1,1},10
+                                );*/
         //setTarget(targetPoint);//, rect.z, rect.a});
     }
 }
@@ -72,6 +73,11 @@ Anthill* Ant::AntMoveComponent::getHome()
 
 void Ant::AntMoveComponent::update()
 {
+  /*  if (KeyManager::getJustPressed() == SDLK_1)
+    {
+        entity->getComponent<ForcesComponent>()->addForce({-M_PI/4,.1});
+
+    }*/
     PathComponent::update();
 
 }

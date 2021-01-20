@@ -52,6 +52,11 @@ void RectComponent::setPos(const glm::vec2& pos)
     this->rect.y = pos.y;
 }
 
+glm::vec2 RectComponent::getPos()
+{
+    return {rect.x,rect.y};
+}
+
 glm::vec2 RectComponent::getCenter()
 {
     return {rect.x + rect.z/2, rect.y + rect.a/2};
@@ -126,6 +131,34 @@ void MoveComponent::setSpeed(double newspeed)
 
 MoveComponent::~MoveComponent()
 {
+
+}
+
+ForcesComponent::ForcesComponent(Entity& entity) : Component(entity), ComponentContainer<ForcesComponent>(&entity), move(entity.getComponent<MoveComponent>())
+{
+    if (!move)
+    {
+        throw std::logic_error("Entity has ForcesComponent but no MoveComponent!");
+    }
+}
+
+void ForcesComponent::addForce(ForceVector force)
+{
+    float y = sin(force.angle)*force.magnitude;
+    float x = cos(force.angle)*force.magnitude;
+
+    finalForce.x += x;
+    finalForce.y += y;
+}
+
+void ForcesComponent::update()
+{
+    if (finalForce.x != 0 || finalForce.y != 0)
+    {
+        glm::vec2 finalPoint = glm::vec2(move->getPos() + finalForce);
+        move->setPos(move->getPos() + finalForce);
+        finalForce = glm::vec2(0);
+    }
 
 }
 

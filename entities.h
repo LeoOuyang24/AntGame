@@ -191,10 +191,12 @@ public:
 
 class PathComponent : public MoveComponent, public ComponentContainer<PathComponent> //a MoveComponent that holds a whole path rather than just a single target
 {
+
     Path path;
 public:
     PathComponent(double speed, const glm::vec4& rect, Entity& unit);
-    void setPos(const glm::vec2& pos);
+    void setPos(const glm::vec2& pos); //sets top left corner. Doesn't change target so unit may still move to old target
+    void changePos(const glm::vec2& pos); // sets the center and target so the unit won't move
     virtual void setTarget(const glm::vec2& point);
     const glm::vec2& getTarget(); //gets the final target. //atTarget() returns whether this object is at the next point, not the final point
     glm::vec2 getNextTarget(); //gets the next point to move to
@@ -245,8 +247,8 @@ protected:
     }
 public:
     ApproachComponent(Entity& entity);
-    virtual void setTarget(const glm::vec2& target, const std::shared_ptr<Object>* unit); //unit is a pointer so you can move to a point rather than a unit
-    virtual void setTarget(const std::shared_ptr<Object>& unit);
+    virtual void setTarget(const glm::vec2& target,std::shared_ptr<Object>* unit); //unit is a pointer so you can move to a point rather than a unit
+    virtual void setTarget(std::shared_ptr<Object>& unit);
     virtual void update();
     void setMove(MoveComponent& move_);
     Object* getTargetUnit();
@@ -266,7 +268,7 @@ public:
     virtual void attack(HealthComponent* health); //this is a pointer so you can legally pass in a null pointer. This function will make sure it's not null
     virtual void update();
     using ApproachComponent::setTarget;
-    virtual void setTarget(const glm::vec2& target, const std::shared_ptr<Object>* unit); //unit is a pointer so you can move to a point rather than a unit
+    virtual void setTarget(const glm::vec2& target,  std::shared_ptr<Object>* unit); //unit is a pointer so you can move to a point rather than a unit
     ~AttackComponent();
 };
 
@@ -321,8 +323,9 @@ class UnitAttackComponent : public AttackComponent, public ComponentContainer<Un
 public:
     UnitAttackComponent(double damage_, int endLag_, double range_,double searchRange_,bool f, Entity& entity);
     void update();
-    void setLongTarget(const glm::vec2& point, std::shared_ptr<Object>* unit, bool ignore); //sets longTarget. Essentially only used when the player sets the target. Ignores the point if a target unit is provided
-    void setShortTarget(std::shared_ptr<Object>& unit); //sets shortTarget. Only used when there is a nearby enemy
+    void setTarget(const glm::vec2& point,  std::shared_ptr<Object>* unit); //sets long target before calling AttackComponent::setTarget
+    void setLongTarget(const glm::vec2& point, std::shared_ptr<Object>* unit, bool ignore); //sets longTarget. Essentially only used when the player sets the target. Ignores the point if a target unit is provided. Doesn't immediately set the target, you must wait for update to set the target
+    void setShortTarget(std::shared_ptr<Object>& unit); //sets shortTarget. Only used when there is a nearby enemy. Immediately sets unit as the new target
 };
 
 class ProjectileAssembler;
