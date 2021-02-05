@@ -191,14 +191,16 @@ public:
 
 class PathComponent : public MoveComponent, public ComponentContainer<PathComponent> //a MoveComponent that holds a whole path rather than just a single target
 {
-
+    glm::vec4 curNodeRect = {0,0,0,0}; //used in setPos to keep track of the nodeRect we were changed to last. This makes changePos more efficient if we have to call it numerous times (when units are pushing each other, for example)
     Path path;
 public:
     PathComponent(double speed, const glm::vec4& rect, Entity& unit);
-    void setPos(const glm::vec2& pos); //sets top left corner. Doesn't change target so unit may still move to old target
+    bool atPoint(const glm::vec2& point);
+    void setPos(const glm::vec2& pos); //same as MoveComponent::setPos if the target is moving, changePos if the target is standing still or part of an IDLE task. Prevents units from moving into walls. Sets top right corner
     void changePos(const glm::vec2& pos); // sets the center and target so the unit won't move
     virtual void setTarget(const glm::vec2& point);
     const glm::vec2& getTarget(); //gets the final target. //atTarget() returns whether this object is at the next point, not the final point
+    bool atFinalTarget(); //returns if our path size is only 1 point or less, which is equivalent to whether or not we've reached our final destination.
     glm::vec2 getNextTarget(); //gets the next point to move to
     void addPoint(const glm::vec2& point); //add a point to the path
     virtual void update();

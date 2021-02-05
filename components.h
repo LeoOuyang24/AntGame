@@ -112,6 +112,7 @@ public:
 
 class MoveComponent : public RectComponent, public ComponentContainer<MoveComponent>
 {
+    static constexpr float distThreshold = .001; //max distance an entity can be away from a point and still be considered to be on that point
     double angle = 0; //Direction we are moving in. This would be calculated every update call if this wasn't a member variable
 protected:
     double baseSpeed = 0;
@@ -121,8 +122,10 @@ protected:
 public:
     MoveComponent(double speed, const glm::vec4& rect, Entity& entity);
     void teleport(const glm::vec2& point); //centers the entity at the point and sets it as the new target
+    glm::vec2 getNextPoint(); //gets the projected center to move towards
     virtual void update();
-    bool atTarget(); //returns whether or not we have arrived at the target
+    virtual bool atPoint(const glm::vec2& point); //whether or not our center is within distThreshold of the point.
+    bool atTarget(); //returns atPoint(target);
     virtual void setTarget(const glm::vec2& point);
     virtual const glm::vec2& getTarget();
     double getVelocity();
@@ -142,11 +145,16 @@ struct ForceVector
 class ForcesComponent : public Component, public ComponentContainer<ForcesComponent> //component that pushes MoveComponent based on what forces are currently being applied
 {
     glm::vec2 finalForce; //after applying all forces, this is the final x and y displacement to move
+    std::list<ForceVector> forces;
     MoveComponent* move = nullptr; //forcesComponent will only work if there is a moveComponent on the entity
 public:
     ForcesComponent(Entity& entity);
     void addForce(ForceVector force);
     void update();
+    glm::vec2 getFinalForce()
+    {
+        return finalForce;
+    }
 
 
 };

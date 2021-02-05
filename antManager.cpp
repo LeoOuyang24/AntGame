@@ -37,6 +37,12 @@ const glm::vec2& AntManager::getCenter()
 {
     return antsCenter;
 }
+
+AntManager::Task AntManager::getCurrentTask()
+{
+    return currentTask;
+}
+
 const std::vector<std::weak_ptr<Entity>>& AntManager::getAnts() const
 {
     return selected;
@@ -49,6 +55,11 @@ void AntManager::clear()
 const Object* AntManager::getTargetUnit() const
 {
     return targetUnit.lock().get();
+}
+
+glm::vec2 AntManager::getTargetPoint() const
+{
+    return targetPoint;
 }
 
 void AntManager::setShortTarget(std::shared_ptr<Object>& obj)
@@ -117,10 +128,6 @@ void AntManager::getInput()
         if (newTarget) //if we clicked on a unit
         {
             const glm::vec4* targetRect = &(newTarget->get()->getRect().getRect());
-            clumpDimen.y = sqrt(chosen/(targetRect->z/targetRect->a)); //#of ants per dimension
-            clumpDimen.x = std::max(chosen/clumpDimen.y,1.0f);
-            space = {std::min(spacing, (int)((targetRect->z - clumpDimen.x*Ant::dimen)/clumpDimen.x)),
-                    std::min(spacing, (int)((targetRect->a - clumpDimen.y*Ant::dimen)/clumpDimen.y))};
             HealthComponent* health = newTarget->get()->getComponent<HealthComponent>();
 
             if (newTarget->get()->getComponent<ResourceComponent>() )
@@ -142,18 +149,14 @@ void AntManager::getInput()
         }
         else if (justClicked)
         {
-             clumpDimen.x = floor(sqrt(chosen));
-             clumpDimen.y = chosen/clumpDimen.x;
-             space = {spacing,spacing};
+            targetPoint = mouseClick;
             setTask(MOVE);
         }
-
-        targetPoint = {mouseClick.x, mouseClick.y - clumpDimen.y};
+        maxDistance = 0;
        /* if (KeyManager::getJustPressed() == SDLK_TAB && !parent.lock().get())
         {
             split(AntManager::maxChildren);
         }*/
-
         for (int i = 0; i < chosen; ++i)
         {
             Entity* ptr = selected[i].lock().get();
@@ -167,48 +170,40 @@ void AntManager::getInput()
                     if (justClicked) //if we've recieved a new task
                     {
                         CommandableComponent* command = ptr->getComponent<CommandableComponent>();
-                         if( command && command->getCurrentTask() != this)
+                         if( command )
                          {
-                            command->setCurrentTask(this);
-                         }
+                             if (command->getCurrentTask() != this)
+                             {
+                                command->setCurrentTask(this);
+                             }
+                             command->startTask();
                        // std::cout << this << " " << currentTask << std::endl;
-                        if (clumpDimen.x >= 1) //moving to target. Decimals can still be rounded to 0
-                        {
-                            glm::vec2 moveTo;
-                            /*if (repel)
+                            if (true) //moving to target. Decimals can still be rounded to 0
                             {
-                                double angle = atan2(targetPoint.y - currentRect.y - currentRect.a/2,targetPoint.x-currentRect.x - currentRect.z/2);
-                                moveTo = {currentRect.x + currentRect.z/2 + -1*(cos(angle)), currentRect.y + currentRect.a/2 + -1*sin(angle)};
-                            }
-                            else*/
-                            {
-                               // std::cout << scale << std::endl;
-                                moveTo = {targetPoint.x + ((i%((int)clumpDimen.x)) - (clumpDimen.x-1)/2)*(Ant::dimen + space.x),
-                                i/((int)(clumpDimen.x))};
-                                if (newTarget)
+                                glm::vec2 moveTo;
+                                /*if (repel)
                                 {
-                                    moveTo.y = fmod(moveTo.y,clumpDimen.y);
+                                    double angle = atan2(targetPoint.y - currentRect.y - currentRect.a/2,targetPoint.x-currentRect.x - currentRect.z/2);
+                                    moveTo = {currentRect.x + currentRect.z/2 + -1*(cos(angle)), currentRect.y + currentRect.a/2 + -1*sin(angle)};
                                 }
-                              //  std::cout << scale << std::endl;
-                                moveTo.y = (moveTo.y-  (clumpDimen.y-1)/2.0)*(Ant::dimen + space.y) + targetPoint.y;
+                                else*/
+                                /*{
+                                   // std::cout << scale << std::endl;
+                                    moveTo = {targetPoint.x + ((i%((int)clumpDimen.x)) - (clumpDimen.x-1)/2)*(Ant::dimen + space.x),
+                                    i/((int)(clumpDimen.x))};
+                                    if (newTarget)
+                                    {
+                                        moveTo.y = fmod(moveTo.y,clumpDimen.y);
+                                    }
+                                  //  std::cout << scale << std::endl;
+                                    moveTo.y = (moveTo.y-  (clumpDimen.y-1)/2.0)*(Ant::dimen + space.y) + targetPoint.y;
+                                }*/
+                                auto center = ptr->getComponent<MoveComponent>()->getCenter();
+                                moveTo = targetPoint;
+                               command->setTarget(moveTo,newTarget);
+
                             }
-                            auto otherTarg = ptr->getComponent<MoveComponent>()->getTarget();
-                            if (otherTarg.x != moveTo.x || otherTarg.y != moveTo.y)
-                            {
-                                //atTarget = false;
-                              //  std::cout << "Move: " << i << " " << moveTo.x << " " << moveTo.y<< "\n";
-                                // current->getComponent<MoveComponent>()->getTarget().x << " " << current->getComponent<MoveComponent>()->getTarget().y << std::endl;
-                                UnitAttackComponent* attack = ptr->getComponent<UnitAttackComponent>();
-                                if (attack)
-                                {
-                                    attack->setLongTarget(moveTo,newTarget,false);
-                                }
-                                else
-                                {
-                                    ptr->getComponent<ApproachComponent>()->setTarget(moveTo,newTarget);
-                                }
-                            }
-                        }
+                         }
                     }
                 }
               /*  else if ()
@@ -265,58 +260,36 @@ void AntManager::updateAnts()
             }
             else
             {
-                glm::vec4 currentRect = current->getComponent<RectComponent>()->getRect();
-                antsCenter.x += currentRect.x + currentRect.z/2;
-                antsCenter.y += currentRect.y + currentRect.a/2;
+                glm::vec2 currentCenter = current->getComponent<RectComponent>()->getCenter();
+                antsCenter.x += currentCenter.x;
+                antsCenter.y += currentCenter.y;
                 if (currentTask != IDLE)
                 {
-                   /* if (current->getCarrying() == 0)
+                    CommandableComponent* command = current->getComponent<CommandableComponent>();
+                    if (command)
                     {
-                        if (targetRect && vecIntersect(currentRect,*targetRect)) //at target
+                        if (!command->getCompletedTask())
                         {
-                            if (currentTask == ATTACK)
+                            atTarget = false;
+                        }
+                        else
+                        {
+                            double newDistance = pointDistance(currentCenter,targetPoint);
+                            if (newDistance > maxDistance)
                             {
-                               // current->getComponent<AttackComponent>()->attack(health);
-                            }
-                            else if (currentTask == COLLECT)
-                            {
-                                if (resource)
-                                {
-                                    resource->collect(*current);
-                                     collected = false;
-                                }
-                            }
-                            else if (currentTask == INTERACT)
-                            {
-                                interact->interact(*current);
-                                setTask(IDLE);
-                                targetUnit.reset();
-                                break;
+                                maxDistance = newDistance;
                             }
                         }
-
-                    }
-                    else
-                    {
-                        current->setTarget(map->getUnit(current->getComponent<Ant::AntMoveComponent>()->getHome()));
-                        collected = false;
-                    }*/
-                    if (currentTask == MOVE && atTarget && !current->getComponent<MoveComponent>()->atTarget())
-                    {
-                        atTarget = false;
                     }
                 }
             }
         }
-        if (currentTask == MOVE && atTarget)
-        {
-           setTask(IDLE);
-        }
-        if (currentTask == COLLECT && collected && !unitPtr)
-        {
-            setTask(IDLE);
-        }
         antsCenter/=chosen;
+        if (atTarget)
+        {
+            currentTask = IDLE;
+        }
+        PolyRender::requestCircle({1,0,0,1},GameWindow::getCamera().toScreen(targetPoint),maxDistance,1);
                   //  std::cout << antsCenter.x << " " << antsCenter.y << std::endl;
 
         }
@@ -431,4 +404,9 @@ std::vector<AntManager> AntManager::split(int pieces )
 void AntManager::setTask(Task t)
 {
     currentTask = t;
+}
+
+double AntManager::getMaxDistance()
+{
+    return maxDistance;
 }

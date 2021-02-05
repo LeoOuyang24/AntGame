@@ -9,95 +9,76 @@
 #include "game.h"
 #include "animation.h"
 
-UnitAttackComponent::UnitAttackComponent(float damage_, int endLag_, double range_,double searchRange_, bool f, Entity& entity) : AttackComponent(damage_,endLag_,range_,entity),
-ComponentContainer<UnitAttackComponent>(entity), notFriendly(f), searchRange(searchRange_), activated(f) //coincidentally, activated should always be the same value as f
-{
-
-}
-
-void UnitAttackComponent::update()
-{
-    if (ignore != IGNORE) //if we aren't ignoring, find nearby units to fight
-    {
-        Object* ent = shortTarget.lock().get();
-        Map* level = GameWindow::getLevel();
-        if (!ent && level) //if we aren't already fighting something, find something nearby
-        {
-            Object* nearby = findNearestUnit<HealthComponent>(searchRange,notFriendly,*(level->getTree()));
-            if (nearby)
-            {
-                setShortTarget(&GameWindow::getLevel().getUnit(nearby));
-            }
-            else if (activated && (longTarget.second != move->getTarget() || targetUnit.lock().get() != longTarget.first.lock().get())) //if there's nothing nearby to fight, set the target to the long target
-            {
-                if (longTarget.first.lock().get())
-                {
-                    setTarget(longTarget.second,&GameWindow::getLevel().getUnit(longTarget.first.lock().get()));
-                }
-                else
-                {
-                    setTarget(longTarget.second,nullptr);
-                }
-            }
-
-        }
-    }
-    if (move->getCenter() == longTarget.second) //if we are at the target, set our state back to ignore
-    {
-        ignore = IDLE;
-    }
-    AttackComponent::update();
-}
-
-void UnitAttackComponent::setLongTarget(const glm::vec2& target, std::shared_ptr<Object>* unit)
-{
-    activated = true; //once moveComponent has set a target, our movecomponent gets permission to affect unitAttackComponent
-    AttackComponent::setTarget(target,unit);
-    if (unit)
-    {
-        longTarget.first = targetUnit;
-    }
-    else
-    {
-        longTarget.second = target;
-        longTarget.first.reset();
-    }
-    ignore = static_cast<IgnoreState>(std::min(ignore + 1,(int)IGNORE));
-}
-
-void UnitAttackComponent::setShortTarget(std::shared_ptr<Object>* unit)
-{
-   // std::cout <<move->getTarget().x << " " << move->getTarget().y << std::endl;
-    if (shortTarget.lock().get() != unit->get())
-    {
-        AttackComponent::setTarget(*unit);
-        if (unit )
-        {
-            shortTarget = *unit;
-            if (entity)
-            {
-                CommandableComponent* command = entity->getComponent<CommandableComponent>();
-                if (command)
-                {
-                    AntManager* curTask = command->getCurrentTask();
-                    if (curTask)
-                    {
-                        curTask->setShortTarget(*unit);
-                    }
-                }
-            }
-        }
-        else
-        {
-            shortTarget.reset();
-        }
-    }
-
-}
 
 CommandableComponent::CommandableComponent(Entity& entity) : Component(entity), ComponentContainer<CommandableComponent>(entity)
 {
 
+}
+
+void CommandableComponent::setTarget(const glm::vec2& moveTo, std::shared_ptr<Object>* obj)
+{
+    glm::vec2 otherTarg =unit.getComponent<MoveComponent>()->getTarget();
+    if (otherTarg.x != moveTo.x || otherTarg.y != moveTo.y)
+    {
+        //atTarget = false;
+      //  std::cout << "Move: " << i << " " << moveTo.x << " " << moveTo.y<< "\n";
+        // current->getComponent<MoveComponent>()->getTarget().x << " " << current->getComponent<MoveComponent>()->getTarget().y << std::endl;
+        UnitAttackComponent* attack = unit.getComponent<UnitAttackComponent>();
+        if (attack)
+        {
+            attack->setLongTarget(moveTo,obj,false);
+        }
+        else
+        {
+            unit.getComponent<ApproachComponent>()->setTarget(moveTo,obj);
+        }
+    }
+}
+
+void CommandableComponent::update()
+{
+    if (currentTask) //if we have been assigned to a group
+    {
+        auto todo = currentTask->getCurrentTask();
+        switch (todo)
+        {
+        case AntManager::Task::IDLE:
+            break;
+        case AntManager::Task::ATTACK:
+            if (currentTask->getTargetUnit())
+            {
+                completedTask = false;
+            }
+            break;
+        case AntManager::Task::MOVE:
+            completedTask = completedTask || entity->getComponent<MoveComponent>()->atPoint(currentTask->getTargetPoint()); //it's possible that we are already done because we collided with a unit already present at the location
+            break;
+        default:
+            completedTask = true;
+        }
+                //GameWindow::requestNGon(10,currentTask->getTargetPoint(),1,{1,0,0,1},0,true,1);
+
+    }
+
+}
+
+void CommandableComponent::collide(Entity& other)
+{
+    CommandableComponent* command = other.getComponent<CommandableComponent>();
+    PathComponent* path = other.getComponent<PathComponent>(); //we don't really care about colliding with units that don't have path components since then they are probably airborne units or projectiles
+    PathComponent* ourPath = entity->getComponent<PathComponent>();
+    if (command && path && ourPath &&
+        command->getCurrentTask() == getCurrentTask() &&
+        ((command->getCompletedTask()) || (.5f*(path->getCenter() + ourPath->getCenter()) == path->getTarget())))
+    {
+        AntManager::setLongTarget(*static_cast<Unit*>(entity),ourPath->getCenter(),nullptr);
+        completedTask = true;
+    }
+}
+
+void CommandableComponent::startTask()
+{
+    completedTask = false;
 }
 
 void CommandableComponent::setCurrentTask(AntManager* task)
@@ -110,32 +91,52 @@ AntManager* CommandableComponent::getCurrentTask()
     return currentTask;
 }
 
+bool CommandableComponent::getCompletedTask()
+{
+    return completedTask;
+}
+
 const short Ant::dimen = 20;
 Ant::AntMoveComponent::AntMoveComponent(Anthill* hill, double speed, const glm::vec4& rect, Entity& entity) : PathComponent(speed,rect,entity), ComponentContainer<Ant::AntMoveComponent>(entity), home(hill)
 {
 
 }
 
+void Ant::AntMoveComponent::addForceApplier(ForcesComponent& force)
+{
+    appliedForces.insert(&force);
+}
+
 void Ant::AntMoveComponent::collide(Entity& other)
 {
-    auto move = other.getComponent<Ant::AntMoveComponent>();
-    if (&other == home && carrying > 0)
+    auto force = other.getComponent<ForcesComponent>();
+   // std::cout << entity << " " << &other << std::endl;
+    /*if (&other == home && carrying > 0)
     {
         home->getComponent<ResourceComponent>()->setResource(carrying);
         carrying = 0;
-    }
-    else if (move && move->getVelocity() == 0 && velocity == 0)
+    }*/
+    if (force)
     {
-        glm::vec2 otherPos = move->getPos();
+        glm::vec2 otherCenter = other.getComponent<RectComponent>()->getCenter();
         glm::vec2 center = getCenter();
-        if (rect.x == otherPos.x && rect.y == otherPos.y)
+        float angle = atan2(otherCenter.y - center.y, otherCenter.x - center.x) + (M_PI/4*(center.x < otherCenter.x));
+        MoveComponent* move = other.getComponent<MoveComponent>();
+        if (appliedForces.count(force) == 0 && move && //apply if the other unit hasn't applied a force on us and if
+            (velocity != 0 ||  //we are moving or if
+             move->getVelocity() == 0 || //the other object and we are both not moving
+             !pointInVec(rect,move->getNextPoint(),0))  //
+            )
         {
-            otherPos.x += rand()%3 - 1;
-            otherPos.y += rand()%3 - 1;
+            force->addForce({angle - (M_PI/8),1});
+            appliedForces.insert(force);
         }
-
-        glm::vec2 targetPoint = {center.x + convertTo1(rect.x-otherPos.x)*.05, center.y + convertTo1(rect.y-otherPos.y)*.05};
-       teleport(targetPoint);
+        /*PolyRender::requestLine(glm::vec4(
+                                          GameWindow::getCamera().toScreen(getCenter()),
+                                          GameWindow::getCamera().toScreen(getCenter() + glm::vec2(cos(-M_PI/4)*100.0,sin(-M_PI/4)*100.0))
+                                          ),
+                                {1,1,1,1},10
+                                );*/
         //setTarget(targetPoint);//, rect.z, rect.a});
     }
 }
@@ -157,7 +158,13 @@ Anthill* Ant::AntMoveComponent::getHome()
 
 void Ant::AntMoveComponent::update()
 {
+  /*  if (KeyManager::getJustPressed() == SDLK_1)
+    {
+        entity->getComponent<ForcesComponent>()->addForce({-M_PI/4,.1});
+
+    }*/
     PathComponent::update();
+    appliedForces.clear();
 
 }
 
@@ -228,7 +235,7 @@ Ant::AntClickable::~AntClickable()
 }
 
 Ant::Ant(const glm::vec4& rect, Anthill& home) : Unit(*(new ClickableComponent("Ant",*this)), *(new AntMoveComponent(&home,.5,rect,*this)),
-                                                      *(new AnimationComponent(&(basicSoldierAnime),*this)), *(new HealthComponent(*this, 10)))
+                                                      *(new AnimationComponent((basicSoldierAnime),*this)), *(new HealthComponent(*this, 10)))
 {
     health->setVisible(false);
 }
@@ -292,14 +299,14 @@ AntHillRender::~AntHillRender()
 
 }
 
-ProduceUnitComponent::ProduceUnitButton::ProduceUnitButton(UnitAssembler& obj, ProduceUnitComponent* own) : assembler(&obj),owner(own), Button({0,0,64,16},nullptr,nullptr,
-                                                                                                           {"Create " + obj.getName(),{0,0,0,0},0,{0,0,0,1},GameWindow::fontZ},&Font::tnr,
+ProduceUnitButton::ProduceUnitButton(UnitAssembler& obj, ProduceUnitComponent* own) : assembler(&obj),owner(own), Button({0,0,64,16},nullptr,nullptr,
+                                                                                                           {"Create " + obj.name,{0,0,0,0},0,{0,0,0,1},GameWindow::fontZ},&Font::tnr,
                                                                                                            {0,1,0,1})
 {
 
 }
 
-void ProduceUnitComponent::ProduceUnitButton::press()
+void ProduceUnitButton::press()
 {
     if (owner && assembler)
     {
@@ -309,12 +316,12 @@ void ProduceUnitComponent::ProduceUnitButton::press()
 
 ProduceUnitComponent::ProduceUnitComponent(std::string name, Unit& entity) : ClickableComponent(name, entity), ComponentContainer<ProduceUnitComponent>(entity)
 {
-    addButton(*(new ProduceUnitButton(antAssembler,this)));
+    auto units = &(GameWindow::getPlayer().getUnits());
 }
 
 void ProduceUnitComponent::produceUnit(UnitAssembler& assembler)
 {
-    if (toProduce.size() < 10 && GameWindow::getPlayer().getResource() >= assembler.getProdCost())
+    if (toProduce.size() < 10 && GameWindow::getPlayer().getResource() >= assembler.prodCost)
     {
         toProduce.push_back(&assembler);
     }
@@ -323,13 +330,18 @@ void ProduceUnitComponent::produceUnit(UnitAssembler& assembler)
 void ProduceUnitComponent::update()
 {
     ClickableComponent::update();
-    if (beingProduced && produceTimer.timePassed(beingProduced->getProdTime()) && GameWindow::getPlayer().getResource() >= beingProduced->getProdCost() ) //if something is in production and is done, put it into the real world
+    if (beingProduced && produceTimer.timePassed(beingProduced->prodTime) && GameWindow::getPlayer().getResource() >= beingProduced->prodCost)  //if something is in production and is done, put it into the real world
     {
         auto vec4 = entity->getComponent<RectComponent>()->getRect();
-        glm::vec2 center = {vec4.x + vec4.z + beingProduced->getDimen().x/2, vec4.y + vec4.a + beingProduced->getDimen().y/2};
 
-        GameWindow::getLevel().addUnit(*(beingProduced->assemble()),center.x +5*cos(rand()%360/180.0*M_PI),center.y +5*sin(rand()%360/180.0*M_PI), true);
-        GameWindow::getPlayer().addResource(-1*beingProduced->getProdCost());
+        Map* level = GameWindow::getLevel();
+        if (level)
+        {
+            double angle = rand()%360/180.0*M_PI; //generate a random angle in radians
+            level->addUnit(*(beingProduced->assemble()),vec4.x + vec4.z/2 + vec4.z/2*sqrt(2)*cos(angle),
+                           vec4.y + vec4.a/2 +vec4.a/2*sqrt(2)*sin(angle), true); //
+            GameWindow::getPlayer().addResource(-1*beingProduced->prodCost);
+        }
 
         beingProduced = nullptr;
         toProduce.pop_front();
@@ -343,7 +355,7 @@ void ProduceUnitComponent::update()
     {
         glm::vec4 rect = entity->getComponent<RectComponent>()->getRect();
         PolyRender::requestRect(GameWindow::getCamera().toScreen({rect.x,rect.y + rect.a + 10,
-                                                                 (SDL_GetTicks() - produceTimer.getTime())/beingProduced->getProdTime()*rect.z, 13}),
+                                                                 (SDL_GetTicks() - produceTimer.getTime())/beingProduced->prodTime*rect.z, 13}),
                                                                 {.5,.5,.5,1},true,0,0);
     }
 
@@ -355,13 +367,13 @@ void ProduceUnitComponent::display(const glm::vec4& rect)
     for (int it = 0; it < size; ++it)
     {
         glm::vec4 renderRect = GameWindow::getCamera().toAbsolute({rect.x + .1*rect.z,rect.y + .1*rect.a*(it),.1*rect.a,.1*rect.a});
-        toProduce[it]->getSprite()->request({renderRect,0,NONE,
+        toProduce[it]->sprite->request({renderRect,0,NONE,
                                             {1,1,1,1},&RenderProgram::basicProgram,GameWindow::fontZ} ,{});
         if (it == 0)
         {
               renderTimeMeter({renderRect.x+renderRect.z+.1*rect.a, renderRect.y,
                     rect.z - (renderRect.x + renderRect.z + .1*rect.a), .1*rect.a},
-                    {.5,.5,.5,1},produceTimer,beingProduced->getProdTime(),GameWindow::interfaceZ);
+                    {.5,.5,.5,1},produceTimer,beingProduced->prodTime,GameWindow::interfaceZ);
         }
     }
 }
@@ -410,9 +422,29 @@ void Anthill::createAnt()
         /*std::shared_ptr<Ant> ptr = ;
         std::cout << ptr.use_count() << std::endl;
         std::weak_ptr<Ant> weak = ptr;*/
-        GameWindow::getLevel().addUnit( *(new Ant({center.x +5*cos(rand()%360/180.0*M_PI),center.y +5*sin(rand()%360/180.0*M_PI),20,20},*this)), true);
+        GameWindow::getLevel()->addUnit( *(new Ant({center.x +5*cos(rand()%360/180.0*M_PI),center.y +5*sin(rand()%360/180.0*M_PI),20,20},*this)), true);
         //std::cout << ants.size() << std::endl;
     }
+}
+
+void Anthill::setButtons()
+{
+
+    auto units = &(GameWindow::getPlayer().getUnits());
+    //std::cout << units->size() << std::endl;
+    ProduceUnitComponent* produce = getComponent<ProduceUnitComponent>();
+    if (produce)
+    {
+        for (auto i = units->begin(); i != units->end(); ++i)
+        {
+            produce->addButton(*(new ProduceUnitButton(**i,produce)));
+        }
+    }
+    else
+    {
+        std::cout << "No ProduceUnitComponent in Anthill!" << std::endl;
+    }
+
 }
 
 Anthill::~Anthill()

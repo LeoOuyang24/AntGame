@@ -79,7 +79,7 @@ struct Map
     std::shared_ptr<Object> addUnit(Object& entity,  int x, int y, bool friendly = false);
     std::shared_ptr<Object>& getUnit(Object* unit);
     void addTerrain(const glm::vec4& rect);
-    void moveObject(Object& obj, double x, double y); //can move either ants or objects
+    void moveObject(Object& obj, double x, double y); //can move either ants or objects. Sets their center
     ObjectStorage& getEntities();
     NavMesh& getMesh(); //might be null if init hasn't been called
     void remove(Object& unit);

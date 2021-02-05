@@ -71,7 +71,7 @@ void CreateEnergyComponent::update()
 
 
 
-AntAssembler::AntAssembler() : UnitAssembler("Ant",{20,20},&basicSoldierAnime,true,10, 0000,10,true,10)
+AntAssembler::AntAssembler() : UnitAssembler("Ant",{20,20},&basicSoldierAnime,true,10, 0000,0,true,10)
 {
 }
 

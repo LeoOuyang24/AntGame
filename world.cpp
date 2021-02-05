@@ -162,15 +162,8 @@ std::shared_ptr<Object>& Map::getUnit(Object* unit)
 
 void Map::moveObject(Object& obj, double x, double y)
 {
-    PathComponent* path = obj.getComponent<PathComponent>();
-    if (path)
-    {
-        path->changePos({x,y});
-    }
-    else
-    {
-        obj.getRect().setPos({x,y});
-    }
+
+    obj.getRect().setPos({x - obj.getRect().getRect().z/2,y - obj.getRect().getRect().a/2});
     tree->update(obj.getRect(), *tree.get());
     //std::cout << obj.getCenter().x << std::endl;
    // std::cout << getChunk(obj).ants.size() << oldChunk->ants.size() << std::endl;

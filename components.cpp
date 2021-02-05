@@ -73,23 +73,6 @@ MoveComponent::MoveComponent(double speed, const glm::vec4& rect, Entity& entity
     target = {rect.x + rect.z/2, rect.y + rect.a/2};
 }
 
-void MoveComponent::update()
-{
-    glm::vec2 center = {rect.x + rect.z/2, rect.y + rect.a/2};
-    angle = atan2((target.y - (center.y)),(target.x - (center.x)));
-    if (!atTarget())
-    {
-        rect.x += absMin(cos(angle)*speed*DeltaTime::deltaTime,target.x - center.x);
-        rect.y += absMin(sin(angle)*speed*DeltaTime::deltaTime, target.y - center.y);
-    }
-    velocity = pointDistance({rect.x + rect.z/2, rect.y + rect.a/2}, center);
-    speed = baseSpeed;
-}
-
-bool MoveComponent::atTarget()
-{
-    return pointDistance(getCenter(),target) <= 0.0001;
-}
 
 void MoveComponent::teleport(const glm::vec2& point)
 {
@@ -97,6 +80,37 @@ void MoveComponent::teleport(const glm::vec2& point)
     rect.y = point.y - rect.a/2;
     setTarget(point);
 }
+
+glm::vec2 MoveComponent::getNextPoint()
+{
+    glm::vec2 center = {rect.x + rect.z/2, rect.y + rect.a/2};
+    angle = atan2((target.y - (center.y)),(target.x - (center.x)));
+    return getCenter() + glm::vec2(absMin(cos(angle)*speed*DeltaTime::deltaTime,target.x - center.x),absMin(sin(angle)*speed*DeltaTime::deltaTime, target.y - center.y));
+}
+
+void MoveComponent::update()
+{
+    glm::vec2 center = getCenter();
+    if (!atTarget())
+    {
+        glm::vec2 nextPoint = getNextPoint();
+        rect.x += nextPoint.x - center.x;
+        rect.y += nextPoint.y - center.y;
+    }
+    velocity = pointDistance({rect.x + rect.z/2, rect.y + rect.a/2}, center);
+    speed = baseSpeed;
+}
+
+bool MoveComponent::atPoint(const glm::vec2& point)
+{
+    return pointDistance(getCenter(),point) <= distThreshold;
+}
+
+bool MoveComponent::atTarget()
+{
+    return atPoint(target);
+}
+
 
 const glm::vec2& MoveComponent::getTarget()
 {
@@ -149,15 +163,24 @@ void ForcesComponent::addForce(ForceVector force)
 
     finalForce.x += x;
     finalForce.y += y;
+    forces.push_back(force);
 }
 
 void ForcesComponent::update()
 {
-    if (finalForce.x != 0 || finalForce.y != 0)
+    if ((finalForce.x != 0 || finalForce.y != 0) && move)
     {
-        glm::vec2 finalPoint = glm::vec2(move->getPos() + finalForce);
+        if (abs(finalForce.x) > 10 || abs(finalForce.y) > 10)
+        {
+            for (auto it = forces.begin(); it != forces.end(); ++it)
+            {
+                std::cout << it->angle << " " << it->magnitude << "\n";
+            }
+        }
+      //  glm::vec2 finalPoint = glm::vec2(move->getPos() + finalForce);
         move->setPos(move->getPos() + finalForce);
         finalForce = glm::vec2(0);
+        forces.clear();
     }
 
 }

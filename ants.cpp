@@ -15,6 +15,89 @@ CommandableComponent::CommandableComponent(Entity& entity) : Component(entity), 
 
 }
 
+void CommandableComponent::setTarget(const glm::vec2& moveTo, std::shared_ptr<Object>* obj)
+{
+    glm::vec2 otherTarg =entity->getComponent<MoveComponent>()->getTarget();
+    if (otherTarg.x != moveTo.x || otherTarg.y != moveTo.y)
+    {
+        //atTarget = false;
+      //  std::cout << "Move: " << i << " " << moveTo.x << " " << moveTo.y<< "\n";
+        // current->getComponent<MoveComponent>()->getTarget().x << " " << current->getComponent<MoveComponent>()->getTarget().y << std::endl;
+        UnitAttackComponent* attack = entity->getComponent<UnitAttackComponent>();
+        if (attack)
+        {
+            attack->setLongTarget(moveTo,obj,false);
+        }
+        else
+        {
+            entity->getComponent<ApproachComponent>()->setTarget(moveTo,obj);
+        }
+        if (currentTask)
+        {
+
+            if (!completedTask  && moveTo != entity->getComponent<MoveComponent>()->getCenter())
+            {
+                glm::vec2 center = entity->getComponent<RectComponent>()->getCenter();
+                glm::vec2 antsCenter = currentTask->getCenter();
+                float antsAngle = atan2(antsCenter.y - center.y, antsCenter.x - center.x);
+                float moveToAngle = atan2(moveTo.y - center.y, moveTo.x - center.x);
+                towardsCenter = angleRange(antsAngle,moveToAngle,M_PI/4);
+            }
+
+        }
+
+    }
+}
+
+void CommandableComponent::update()
+{
+    if (currentTask) //if we have been assigned to a group
+    {
+        auto todo = currentTask->getCurrentTask();
+        switch (todo)
+        {
+        case AntManager::Task::IDLE:
+            break;
+        case AntManager::Task::ATTACK:
+            if (currentTask->getTargetUnit())
+            {
+                completedTask = false;
+            }
+            break;
+        case AntManager::Task::MOVE:
+            completedTask = completedTask || entity->getComponent<MoveComponent>()->atPoint(currentTask->getTargetPoint()); //it's possible that we are already done because we collided with a unit already present at the location
+            break;
+        default:
+            completedTask = true;
+        }
+
+                GameWindow::requestNGon(10,currentTask->getTargetPoint(),1,{completedTask,0,0,1},0,true,1);
+
+    }
+}
+
+void CommandableComponent::collide(Entity& other)
+{
+    CommandableComponent* command = other.getComponent<CommandableComponent>();
+    PathComponent* path = other.getComponent<PathComponent>(); //we don't really care about colliding with units that don't have path components since then they are probably airborne units or projectiles
+    PathComponent* ourPath = entity->getComponent<PathComponent>();
+
+    if (command && path && ourPath && currentTask &&
+        command->getCurrentTask() == currentTask &&
+        (command->getCompletedTask() && pointDistance(ourPath->getCenter(),ourPath->getTarget()) <= currentTask->getMaxDistance()))
+    {
+        setTarget(ourPath->getCenter(),nullptr);
+        completedTask = true;
+    }
+   // std::cout << getCompletedTask() << std::endl;
+
+}
+
+void CommandableComponent::startTask()
+{
+    completedTask = false;
+}
+
 void CommandableComponent::setCurrentTask(AntManager* task)
 {
     currentTask = task;
@@ -25,27 +108,43 @@ AntManager* CommandableComponent::getCurrentTask()
     return currentTask;
 }
 
+bool CommandableComponent::getCompletedTask()
+{
+    return completedTask;
+}
+
+bool CommandableComponent::getTowardsCenter()
+{
+    return towardsCenter;
+}
+
 const short Ant::dimen = 20;
 Ant::AntMoveComponent::AntMoveComponent(Anthill* hill, double speed, const glm::vec4& rect, Entity& entity) : PathComponent(speed,rect,entity), ComponentContainer<Ant::AntMoveComponent>(entity), home(hill)
 {
 
 }
 
+void Ant::AntMoveComponent::addForceApplier(ForcesComponent& force)
+{
+    appliedForces.insert(&force);
+}
+
 void Ant::AntMoveComponent::collide(Entity& other)
 {
     auto force = other.getComponent<ForcesComponent>();
-   // std::cout << entity << " " << &other << std::endl;
-    /*if (&other == home && carrying > 0)
-    {
-        home->getComponent<ResourceComponent>()->setResource(carrying);
-        carrying = 0;
-    }*/
     if (force)
     {
         glm::vec2 otherCenter = other.getComponent<RectComponent>()->getCenter();
         glm::vec2 center = getCenter();
         float angle = atan2(otherCenter.y - center.y, otherCenter.x - center.x) + (M_PI/4*(center.x < otherCenter.x));
-        force->addForce({angle - (M_PI/8),1});
+        MoveComponent* move = other.getComponent<MoveComponent>();
+        if (move && //apply if the other unit hasn't applied a force on us and if
+            (velocity != 0 ||  //we are moving or if
+             move->getVelocity() == 0//the other object and we are both not moving
+            ))
+        {
+                force->addForce({angle - (M_PI/8),1});
+        }
         /*PolyRender::requestLine(glm::vec4(
                                           GameWindow::getCamera().toScreen(getCenter()),
                                           GameWindow::getCamera().toScreen(getCenter() + glm::vec2(cos(-M_PI/4)*100.0,sin(-M_PI/4)*100.0))
@@ -79,6 +178,7 @@ void Ant::AntMoveComponent::update()
 
     }*/
     PathComponent::update();
+    appliedForces.clear();
 
 }
 
@@ -247,12 +347,15 @@ void ProduceUnitComponent::update()
     if (beingProduced && produceTimer.timePassed(beingProduced->prodTime) && GameWindow::getPlayer().getResource() >= beingProduced->prodCost)  //if something is in production and is done, put it into the real world
     {
         auto vec4 = entity->getComponent<RectComponent>()->getRect();
-        glm::vec2 center = {vec4.x + vec4.z + beingProduced->dimen.x/2, vec4.y + vec4.a + beingProduced->dimen.y/2};
 
         Map* level = GameWindow::getLevel();
         if (level)
         {
-            level->addUnit(*(beingProduced->assemble()),center.x +5*cos(rand()%360/180.0*M_PI),center.y +5*sin(rand()%360/180.0*M_PI), true);
+            double angle = rand()%360/180.0*M_PI; //generate a random angle in radians
+            std::cout <<"GENERATED: " <<  vec4.x + vec4.z/2 + vec4.z/2*sqrt(2)*cos(angle) << " " <<
+                           vec4.y + vec4.a/2 +vec4.a/2*sqrt(2)*sin(angle) << " " << angle << std::endl;
+            level->addUnit(*(beingProduced->assemble()),2576.57,
+                           2524.14, true); //
             GameWindow::getPlayer().addResource(-1*beingProduced->prodCost);
         }
 
@@ -271,6 +374,31 @@ void ProduceUnitComponent::update()
                                                                  (SDL_GetTicks() - produceTimer.getTime())/beingProduced->prodTime*rect.z, 13}),
                                                                 {.5,.5,.5,1},true,0,0);
     }
+    /*glm::vec2 center= entity->getComponent<RectComponent>()->getCenter();
+    float start = 0;
+    float range = 3*M_PI/4;
+    float angle = DeltaTime::getCurrentFrame()%360/180.0*2*M_PI;
+    PolyRender::requestLine(glm::vec4(GameWindow::getCamera().toScreen(center),
+                                      GameWindow::getCamera().toScreen(center + glm::vec2(100*cos(start - range),100*sin(start - range)))
+                                      ),
+                            {1,0,0,1},
+                            1
+                            );
+    PolyRender::requestLine(glm::vec4(GameWindow::getCamera().toScreen(center),
+                                      GameWindow::getCamera().toScreen(center + glm::vec2(100*cos(start + range),100*sin(start+range)))
+                                      ),
+                            {1,0,0,1},
+                            1
+                            );
+
+    PolyRender::requestLine(glm::vec4(GameWindow::getCamera().toScreen(center),
+                                      GameWindow::getCamera().toScreen(center + glm::vec2(100*cos(angle),100*sin(angle)))
+                                      ),
+                            {angleRange(angle,start,range),1,0,1},
+                            1
+                            );*/
+
+
 
 }
 

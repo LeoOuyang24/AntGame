@@ -2,7 +2,7 @@
 #define ANTS_H_INCLUDED
 
 #include <deque>
-#include <unordered_set>
+#include <unordered_set
 
 #include "components.h"
 #include "entities.h"
@@ -15,20 +15,16 @@ class AntManager;
 
 class CommandableComponent : public Component, public ComponentContainer<CommandableComponent> //handles communication with AntManagers. Tracks if a unit is done with a task
 {
-    bool towardsCenter = true; //whether the last moveTask has moved us towards our current AntManger center or not. True means that once we've reached a destination, units in the same AntManager should stop moving once reaching us, false menas they can still push us.
     bool completedTask = true;
     AntManager* currentTask = nullptr;
 public:
     CommandableComponent(Entity& entity);
-    void setTarget(const glm::vec2& moveTo, std::shared_ptr<Object>* obj);
     void update();
     void collide(Entity& entity);
     void startTask(); //sets completedTask to false
     void setCurrentTask(AntManager* task);
     AntManager* getCurrentTask();
     bool getCompletedTask();
-    bool getTowardsCenter();
-
 };
 
 class Ant : public Unit
@@ -40,7 +36,7 @@ public:
     {
         Anthill* home = nullptr;
         int carrying = 0;
-        glm::vec2 displacement = {0,0};
+>        glm::vec2 displacement = {0,0};
         std::unordered_set<ForcesComponent*> appliedForces; //list of forceComponents that we don't get to push because they've already pushed us
     public:
         AntMoveComponent(Anthill* hill, double speed, const glm::vec4& rect, Entity& entity);

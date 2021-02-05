@@ -60,7 +60,8 @@ public:
     void init2(ObjectStorage& storage); //initializes the mesh by calling smartAddNode on every object
     void smartAddNode(const glm::vec4& rect); //adds a negative space
     void reset(); //clears nodeTree and negativeTree but keeps bounds
-    bool notInWall(const glm::vec4& rect); //returns true if rect isn't in a wall
+    glm::vec4 getWallRect(const glm::vec4& rect); //returns the wall that rect intersects with. glm::vec4(0) if there is no wall
+    bool notInWall(const glm::vec4& rect); //returns true if rect is in a wall.
     glm::vec4 getNearestNodeRect(const glm::vec2& point); //returns the rect of the node that the point belongs to. glm::vec4(0) if there is no nearby node
     Path getPath(const glm::vec2& start, const glm::vec2& end, int width = 0); //returns a path from start to end using A*, returning the empty path if there is no path. Not guaranteed to be the shortest path. Width is the shortest distance we can be from any given negative area. This allows us to find paths for large objects without colliding with walls. This function is so convoluted there's a whole documentation in the documents folder!
     bool straightLine(const glm::vec4& line); //returns true if the line doesn't overlap with any negative space.

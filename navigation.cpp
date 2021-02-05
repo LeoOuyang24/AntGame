@@ -382,7 +382,7 @@ void NavMesh::reset()
     nodeTree.clear();
 }
 
-bool NavMesh::notInWall(const glm::vec4& rect)
+glm::vec4 NavMesh::getWallRect(const glm::vec4& rect)
 {
     auto near = negativeTree.getNearest(rect);
     int size = near.size();
@@ -390,10 +390,15 @@ bool NavMesh::notInWall(const glm::vec4& rect)
     {
         if (near[i]->collides(rect))
         {
-            return false;
+            return static_cast<RectPositional*>(near[i])->getRect();
         }
     }
-    return true;
+    return glm::vec4(0);
+}
+
+bool NavMesh::notInWall(const glm::vec4& rect)
+{
+    return getWallRect(rect) == glm::vec4(0);
 }
 
 glm::vec4 NavMesh::getNearestNodeRect(const glm::vec2& point)

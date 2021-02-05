@@ -51,9 +51,8 @@ void ClickableComponent::update()
     const glm::vec4* unitRect = &(entity->getComponent<RectComponent>()->getRect());
     int size = buttons.size();
     bool stillClicked = false;
+    glm::vec2 mousePos = pairtoVec({MouseManager::getMousePos().first, MouseManager::getMousePos().second});
     const glm::vec4* camRect = &(GameWindow::getCamera().getRect());
-
-    glm::vec2 mousePos = GameWindow::getCamera().toWorld(pairtoVec(MouseManager::getMousePos()));
     if (clicked)
     {
         int offset = 0;
@@ -75,17 +74,17 @@ void ClickableComponent::update()
                 buttonRect.x = unitRect->x + spacing.x;
                 buttonRect.y = unitRect->y + (unitRect->a+spacing.y)*downSpace - (rect->a +spacing.y)*(!downSpace && upSpace);
             }
-
-             //   GameWindow::requestRect(buttonRect,{0,1,0,1},true,0,GameWindow::interfaceZ);
+            buttonRect = GameWindow::getCamera().toScreen(buttonRect);
           //  buttons[i]->changeRect(GameWindow::getCamera().toScreen(buttonRect));
             //glm::vec4 disp = GameWindow::getCamera().getRect();
-            buttons[i]->updateBlit(GameWindow::interfaceZ,GameWindow::getCamera().toScreen(buttonRect));
-            offset += rect->a + spacing.y;
+            buttons[i]->updateBlit(GameWindow::interfaceZ,buttonRect);
+             //   GameWindow::requestRect(buttonRect,{0,1,0,1},true,0,GameWindow::interfaceZ);
             if (pointInVec(buttonRect,mousePos.x,mousePos.y,0))
             {
                 if (MouseManager::getJustClicked() == SDL_BUTTON_LEFT)
                 {
                     stillClicked = true;
+                  //  std::cout << "Clicked " << std::endl;
                  //   buttons[i]->press();
                     break;
                 }
@@ -95,7 +94,7 @@ void ClickableComponent::update()
               /*  std::cout << mousePos2.x << " " << mousePos2.y << " ";
                 printRect(buttonRect);*/
             }
-
+            offset += rect->a + spacing.y;
         }
         PolyRender::requestNGon(10,GameWindow::getCamera().toScreen({unitRect->x + unitRect->z/2,unitRect->y + unitRect->a/2}),unitRect->z/2*sqrt(2),{0,.5,1,1},0,false,1);
         //GameWindow::requestRect(*unitRect,Player::selectColor,true,0,0);
@@ -106,7 +105,7 @@ void ClickableComponent::update()
            // std::cout << stillClicked << " " << (MouseManager::getJustReleased() != SDL_BUTTON_LEFT && clicked) << std::endl;
         }*/
         //stillClicked = stillClicked ;//|| (MouseManager::getJustClicked() != SDL_BUTTON_LEFT && clicked);//  ||  becomeClicked;*/
-        clicked = stillClicked || (MouseManager::getJustClicked() == SDL_BUTTON_LEFT && pointInVec(*unitRect,mousePos.x,mousePos.y));
+        clicked = stillClicked || (MouseManager::getJustClicked() == SDL_BUTTON_LEFT && pointInVec(GameWindow::getCamera().toScreen(*unitRect),mousePos.x,mousePos.y));
 }
 void ClickableComponent::display(const glm::vec4& rect)
 {
@@ -593,45 +592,26 @@ PathComponent::PathComponent(double speed, const glm::vec4& rect, Entity& unit) 
 
 }
 
-bool PathComponent::atPoint(const glm::vec2& point)
-{
-    return pointDistance(point,this->getCenter()) <= std::min(rect.z,rect.a)/2;
-}
-
 void PathComponent::setPos(const glm::vec2& pos)
 {
     glm::vec2 adjPos = pos; //adjusted position in case we are being pushed into a wall
     glm::vec2 center = getCenter();
-    NavMesh* mesh = &GameWindow::getLevel()->getMesh();
-    if (!pointInVec(curNodeRect,adjPos,0)) //we can try to save some time by keeping track of the last node that we were moved to and trying to see if the new point is in that node as well
+
+    if (!pointInVec(curNodeRect,pos.x,pos.y))
         {
-            curNodeRect = mesh->getNearestNodeRect(adjPos);
+            curNodeRect = GameWindow::getLevel()->getMesh().getNearestNodeRect(pos);
         }
-    if (curNodeRect == glm::vec4(0)) //should never happen
+    if (curNodeRect == glm::vec4(0))
     {
-        GameWindow::requestNGon(10,pos,10,{1,0,0,1},0,true,1);
-        PolyRender::renderPolygons();
-        std::cerr << "attempted to move entity outside of world boundaries to point " << pos.x << " "<< pos.y <<"\n";
+        std::cerr << "attempted to move entity outside of world boundaries\n";
         throw std::logic_error("attempted to move entity outside of world boundaries");
     }
-    else if (!pointInVec(curNodeRect  - glm::vec4(1,1,rect.z - 2,rect.a - 2),adjPos.x,adjPos.y,0)) //there is a possibility of being moved into a wall
+    else
     {
-        glm::vec4 wall = mesh->getWallRect(glm::vec4(adjPos,rect.z,rect.a));
-        if (wall != glm::vec4(0))
-        {
-            if (vecIntersect(wall,{adjPos.x,rect.y,rect.z,rect.a}))
-                {
-                    adjPos.x = rect.x;
-                }
-            if (vecIntersect(wall,{rect.x,adjPos.y,rect.z,rect.a}))
-                {
-                    adjPos.y = rect.y;
-                }
-        }
+        adjPos = closestPointOnVec(curNodeRect,adjPos);
     }
     //MoveComponent::setPos(pos);
-    CommandableComponent* command = entity->getComponent<CommandableComponent>();
-    if(velocity == 0 && (!command || !command->getCurrentTask() || command->getCompletedTask() ||command->getCurrentTask()->getCurrentTask() == AntManager::Task::IDLE))
+    if(velocity == 0)
     {
         changePos(adjPos + glm::vec2(rect.z/2,rect.a/2)); //changePos sets center rather than top-left corner. Here we have to adjust it.
     }
@@ -639,6 +619,7 @@ void PathComponent::setPos(const glm::vec2& pos)
     {
         MoveComponent::setPos(adjPos);
     }
+
 }
 
 void PathComponent::changePos(const glm::vec2& pos)
@@ -657,7 +638,7 @@ void PathComponent::setTarget(const glm::vec2& point)
 {
     if (getTarget() != point)
     {
-        /*if (MouseManager::getJustClicked() != SDL_BUTTON_RIGHT)
+       /* if (MouseManager::getJustClicked() != SDL_BUTTON_RIGHT && point != getCenter() && !Debug::getSpawnCreatures())
         {
             std::cout << point.x << " " << point.y << std::endl;
         }*/
@@ -697,7 +678,7 @@ const glm::vec2& PathComponent::getTarget()
 bool PathComponent::atFinalTarget()
 {
    // std::cout << path.size() << std::endl;
-    return pointDistance(getTarget(),getCenter()) <= .001;
+    return path.size() <= 1;
 }
 
 glm::vec2 PathComponent::getNextTarget()
@@ -729,10 +710,7 @@ void PathComponent::update()
            // std::cout << "New: " << target.x << " " << target.y << std::endl;
         } //otherwise, we're done
     }
-
     MoveComponent::update();
-    GameWindow::requestNGon(10,target,1,{1,1,1,1},0,true,1);
-
 
 }
 
@@ -900,7 +878,6 @@ void AttackComponent::setTarget(const glm::vec2& target, std::shared_ptr<Object>
         }
         else
         {
-
             move->setTarget(target);
             targetUnit.reset();
         }
