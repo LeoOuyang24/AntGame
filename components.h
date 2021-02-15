@@ -161,8 +161,10 @@ public:
 
 class RenderComponent : public Component, public ComponentContainer<RenderComponent>
 {
+protected:
+    RenderCamera* camera = nullptr;
 public:
-    RenderComponent(Entity& entity);
+    RenderComponent(Entity& entity, RenderCamera* camera);
     virtual void render(const SpriteParameter& param);
     virtual ~RenderComponent();
 };

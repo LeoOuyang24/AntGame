@@ -1,5 +1,11 @@
 This document keeps track of considered changes made to the resources as well as why they were made. Consider this a "learning from the past" kind of document. 
 
+2/14/2021:
+	Panel's updateBlit now modifies mousePos based on the blit rect for convenience. updateBlit purposely doesn't take in a mousePos as a parameter because it's supposed to handle it. This will ensure that it will handle it correctly.
+
+2/4/2021:
+	After much work, the grouping behavior in Ants Game has been pushed. It's not perfect but should suffice for now. It currently sets all ants to the same point and all ants independently move towards it. Ants will stop once they arrived at their destination or, more likely, bumped into another ant that's arrived and the current ant is within a certain distance of the destination. This distance is the maximum distance from the destination that ants that have reached the destination have reached. Since ants can be pushed, this distance may be quite far and only grows as more ants reach the destination. Without this additional condition, ant groups will stop immediately after one ant reaches the destination, which while fine, means that in large groups, most ants won't be very close to the target at all. This solution isn't perfect, but it does improve it somewhat.
+
 1/4/2021:
 	Code::blocks has long had an issue with files named "sprite". Old projects with sprite.h didn't work and sprite.cpp in Ants Game has alwyas had massive lag spikes when we swap to the file. Today, I deleted the file and replaced it with animation.cpp to go with animation.h. This has fixed the lag tremendously for some reason.
 

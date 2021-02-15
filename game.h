@@ -6,14 +6,11 @@
 #include "vanilla.h"
 
 #include "components.h"
-//#include "entities.h"
 #include "world.h"
 #include "ants.h"
 #include "antManager.h"
-#include "debug.h"
 #include "player.h"
 #include "fog.h"
-#include "worldMap.h"
 
 extern SpriteWrapper frame;
 
@@ -61,10 +58,11 @@ public:
 };
 
 class GameWindow;
+
 class Camera : public RenderCamera, Entity
 {
+    glm::vec4 bounds = glm::vec4(0);
     glm::vec2 baseDimen = {0,0};
-    glm::vec4 bounds;
     double zoomAmount = 1; //percentage of the base width and height of the camera
     double zoomGoal = -1;
     double zoomSpeed = .0001;
@@ -126,6 +124,7 @@ public:
     void setWorldMap(WindowSwitchButton& butt);
     static void requestNGon(int n, const glm::vec2& center, double side, const glm::vec4& color, double angle, bool filled, float z, bool absolute = false); //easier way to render polygons without having to call getCamera();
     static void requestRect(const glm::vec4& rect, const glm::vec4& color, bool filled, double angle, float z, bool absolute = false); //if absolute is true, the coordinates are taken as screen coordinates
+    static void requestLine(const glm::vec4& line, const glm::vec4& color, float z, bool absolute);
     GameWindow();
     void onSwitch(Window& from);
     void updateTop(float z);

@@ -3,9 +3,8 @@
 
 #include "render.h"
 
-#include "entities.h"
+#include "navigation.h"
 
-class NavMesh;
 struct Debug //class to hold all debug controls
 {
     struct DebugNavMesh //for debugging NavMesh

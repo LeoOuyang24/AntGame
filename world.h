@@ -5,7 +5,6 @@
 #include "SDLhelper.h"
 
 #include "components.h"
-#include "entities.h"
 #include "friendlyAssemblers.h"
 
 class NavMesh;

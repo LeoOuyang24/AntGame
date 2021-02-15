@@ -1,6 +1,7 @@
 #include "SDLHelper.h"
 #include "vanilla.h"
 
+#include "debug.h"
 #include "game.h"
 #include "ants.h"
 #include "sequence.h"
@@ -416,7 +417,6 @@ void Manager::reset()
 
 class AntClickable;
 
-
 double Camera::minZoom = .1, Camera::maxZoom = 2;
 Camera::Camera()
 {
@@ -428,13 +428,13 @@ void Camera::init(int w, int h)
     RenderCamera::init(w,h);
     baseDimen = {w,h};
 
-    move = new MoveComponent(.1,rect,*this);
+    move = new MoveComponent(1,rect,*this);
     addComponent(*(move));
 }
 
 void Camera::update()
 {
-    if (!move->atTarget() || (zoomAmount != zoomGoal && zoomGoal != -1))
+    if ( (zoomAmount != zoomGoal && zoomGoal != -1))
     {
         if (!move->atTarget())
         {
@@ -448,19 +448,22 @@ void Camera::update()
     }
     else
     {
-        zoomGoal = -1;
-        std::pair<int,int> mousePos = MouseManager::getMousePos();
-        glm::vec2 screenDimen = RenderProgram::getScreenDimen();
+        auto mousePos = MouseManager::getMousePos();
+        auto screenDimen = RenderProgram::getScreenDimen();
+        int speed = 1;
         if (mousePos.first >= screenDimen.x - 1 || mousePos.first <= 0)
         {
-            rect.x += absMin((mousePos.first - 1), (mousePos.first - screenDimen.x +2 ))*DeltaTime::deltaTime;
+            rect.x += absMin((mousePos.first - speed), (mousePos.first - screenDimen.x +1 + speed ))*DeltaTime::deltaTime;
+            //std::cout << absMin((mousePos.first - speed), (mousePos.first - screenDimen.x +1 + speed ))*DeltaTime::deltaTime << "\n";
         }
         if (mousePos.second >= screenDimen.y - 1 || mousePos.second <= 0)
         {
-            rect.y +=  absMin((mousePos.second - 1), (mousePos.second - screenDimen.y + 2 ))*DeltaTime::deltaTime;
+            rect.y +=  absMin((mousePos.second - speed), (mousePos.second - screenDimen.y + 1+ speed ))*DeltaTime::deltaTime;
         }
         rect.x = std::max(bounds.x,std::min(bounds.x + bounds.z - rect.z,rect.x));
         rect.y = std::max(bounds.y, std::min(bounds.y + bounds.a  - rect.a , rect.y));
+        zoomGoal = -1;
+
         auto mouseWheel = MouseManager::getMouseWheel();
         if (mouseWheel.second > 0)
         {
@@ -497,10 +500,13 @@ void Camera::center(const glm::vec2& point)
 void Camera::zoom(float amount)
 {
     zoomAmount = std::max(minZoom,std::min(maxZoom,zoomAmount+ amount));
-    glm::vec2 rectCenter = {rect.x + rect.z/2, rect.y + rect.a/2};
-    rect.z = zoomAmount*baseDimen.x;
-    rect.a = zoomAmount*baseDimen.y;
-    center(rectCenter);
+    glm::vec2 zoomDimen = {zoomAmount*baseDimen.x,zoomAmount*baseDimen.y};
+
+    //if (vecContains(glm::vec4((rectCenter - glm::vec2(rect.z/2, rect.a/2)),rect.z,rect.a), bounds))
+    rect.x = std::min(std::max(bounds.x,rect.x - (zoomDimen.x - rect.z)/2),bounds.x + bounds.z - zoomDimen.x);
+    rect.y = std::min(std::max(bounds.y,rect.y - (zoomDimen.y - rect.a)/2),bounds.y + bounds.a - zoomDimen.y);
+    rect.z = zoomDimen.x;
+    rect.a = zoomDimen.y;
     RenderProgram::setXRange(0,rect.z);
     RenderProgram::setYRange(0,rect.a);
 }
@@ -696,10 +702,10 @@ void GameWindow::renderSelectedUnits()
     float antRectWidth = .03*rect.z; //width and height of each of the outlineRects. This is a bit of a magic number and was chosen just because it looks good
     glm::vec2 spacing = {(selectedAntsRect.z - margin.x*2 - antsPerRow*antRectWidth)/antsPerRow,.3*menuHeight}; //horizontal and vertical spacing between ants and unit and health bar
 
-    PolyRender::requestLine({selectedUnitRect.x*cameraRect->z/screenDimen.x,
+    GameWindow::requestLine({selectedUnitRect.x*cameraRect->z/screenDimen.x,
                             selectedUnitRect.y*cameraRect->a/screenDimen.y,
                             selectedUnitRect.x*cameraRect->z/screenDimen.x,
-                             (selectedUnitRect.y + selectedUnitRect.a)*cameraRect->a/screenDimen.y},{0,0,0,1},interfaceZ);
+                             (selectedUnitRect.y + selectedUnitRect.a)*cameraRect->a/screenDimen.y},{0,0,0,1},interfaceZ,true);
 
     const AntManager* antManager = manager.getCurrentTask();
     Object* selectedUnit = manager.getSelectedUnit().lock().get();
@@ -824,6 +830,29 @@ void GameWindow::requestRect(const glm::vec4& rect, const glm::vec4& color, bool
     {
         renderAbsolute = oldAbs;
     }
+}
+
+void GameWindow::requestLine(const glm::vec4& line, const glm::vec4& color, float z, bool absolute)
+{
+    glm::vec4 lineCopy = line;
+    if (absolute)
+    {
+        lineCopy = glm::vec4(
+                            getCamera().toAbsolute(glm::vec2(line.x,line.y)),
+                            getCamera().toAbsolute(glm::vec2(line.z,line.a))
+                             );
+    }
+    else
+    {
+        lineCopy =      glm::vec4(
+                        getCamera().toScreen(glm::vec2(line.x,line.y)),
+                        getCamera().toScreen(glm::vec2(line.z,line.a))
+                         );
+    }
+    PolyRender::requestLine(
+                             lineCopy,
+                            color,
+                            z);
 }
 
 void GameWindow::close()

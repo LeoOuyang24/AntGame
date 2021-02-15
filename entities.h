@@ -1,15 +1,14 @@
 #ifndef ENTITIES_H_INCLUDED
 #define ENTITIES_H_INCLUDED
 
-#include <deque>
 
 #include "glInterface.h"
 #include "SDLhelper.h"
 #include "render.h"
 
 #include "components.h"
+#include "navigation.h"
 
-typedef std::deque<glm::vec2> Path;
 
 void renderMeter(const glm::vec3& xyWidth, const glm::vec4& color, double current, double maximum, float z);
 void renderTimeMeter(const glm::vec4& rect, const glm::vec4& color, DeltaTime& alarm, double duration, float z);
@@ -39,7 +38,8 @@ class AnimationComponent : public RenderComponent, public ComponentContainer<Ani
     AnimationWrapper* sprite = nullptr;
     AnimationParameter animeParam;
 public:
-    AnimationComponent(AnimationWrapper& anime, Entity& entity );
+    AnimationComponent(AnimationWrapper& anime, Entity& entity, RenderCamera* camera);
+    AnimationComponent(AnimationWrapper& anime, Entity& entity);
     void render(const SpriteParameter& param);
     void setTint(const glm::vec4& param);
     void update();
@@ -50,6 +50,7 @@ class RectRenderComponent : public RenderComponent, public ComponentContainer<Re
 protected:
     glm::vec4 color;
 public:
+    RectRenderComponent(const glm::vec4& color, Entity& unit, RenderCamera* camera);
     RectRenderComponent(const glm::vec4& color, Entity& unit);
     void update();
     virtual void render(const SpriteParameter& param);
@@ -202,7 +203,7 @@ public:
     const glm::vec2& getTarget(); //gets the final target. //atTarget() returns whether this object is at the next point, not the final point
     bool atFinalTarget(); //returns if our path size is only 1 point or less, which is equivalent to whether or not we've reached our final destination.
     glm::vec2 getNextTarget(); //gets the next point to move to
-    void addPoint(const glm::vec2& point); //add a point to the path
+    void addPoint(PathPoint& point); //add a point to the path
     virtual void update();
 };
 

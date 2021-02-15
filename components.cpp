@@ -185,7 +185,7 @@ void ForcesComponent::update()
 
 }
 
-RenderComponent::RenderComponent(Entity& entity) : Component(entity), ComponentContainer<RenderComponent>(&entity)
+RenderComponent::RenderComponent(Entity& entity, RenderCamera* camera) : Component(entity), ComponentContainer<RenderComponent>(&entity), camera(camera)
 {
 
 }

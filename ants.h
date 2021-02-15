@@ -5,12 +5,12 @@
 #include <unordered_set>
 
 #include "components.h"
-#include "entities.h"
 #include "friendlyAssemblers.h"
 
 class Anthill;
 class AntManager;
-
+class Unit;
+class Structure;
 
 
 class CommandableComponent : public Component, public ComponentContainer<CommandableComponent> //handles communication with AntManagers. Tracks if a unit is done with a task

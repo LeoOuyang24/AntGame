@@ -1,8 +1,10 @@
 #include <algorithm>
 #include <unordered_set>
 
+#include "entities.h"
 #include "navigation.h"
 #include "game.h"
+#include "debug.h"
 
 bool compareRect(const glm::vec4* o1, const glm::vec4* o2)
 {
@@ -425,7 +427,7 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
         //GameWindow::requestRect(endNode->getRect(),{.5,.5,1,1},true,0,0,false);
         if (startNode == endNode)
         {
-            return {start,end}; //if both the start and end is in the same node then just move lol
+            return {{start,glm::vec2(0),glm::vec2(0)},{end,glm::vec2(0),glm::vec2(0)}}; //if both the start and end is in the same node then just move lol
         }
         std::unordered_set<NavMeshNode*> visited; //set of visited nodes
         std::unordered_map<glm::vec2,NavMeshNode*,HashPoint> pointAndNodes; //map of points to their nodes. If a point is on the border of two nodes, it's the node that the previous point is not a part of
@@ -441,7 +443,6 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
         NavMeshNode* curNode = startNode; //current node to analyze
        // GameWindow::requestRect(startNode->getRect(), {1,0,0,1},true,0,1,0);
         bool startEdge = false; //there's a fun edge case where if the start point is on the edge of two nodes, the algorithm will skirt around the neighboring node. This helps fix that (see documentation).
-                       auto time = SDL_GetTicks();
         while (heap.size() != 0 && heap.peak().first != end) //we end either when the heap is empty (no path) or when the top of the heap is the end (there is a path)
         {
             curPoint = heap.peak().first;
@@ -513,11 +514,13 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
                 {
                     GameWindow::requestNGon(10,midpoint,1,{.5,1,0,1},0,true,.9,false);
                 }
-                double newDistance = pointDistance(curPoint,midpoint) + std::get<0>(paths[curPoint]);
+
+                double newDistance =std::get<0>(paths[curPoint]) +  pointDistance(curPoint,midpoint); //distance from start to midpoint
                 bool newPoint = paths.count(midpoint) == 0;
                 //if we found the new shortest distance from start to this point, update.
                 if (newPoint ||paths[midpoint].first > newDistance) //add a never before visited point/node to the heap or update if we found a new short distance
                 {
+
                     paths[midpoint].first = newDistance;
                     paths[midpoint].second = curPoint;
                    /* if (pointAndNodes.find(midpoint) != pointAndNodes.end())
@@ -552,7 +555,7 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
            // std::cout << "Repeat\n";
            glm::vec2 shortCut = curPoint; //shortcut is the last point that we know curPoint can move to without hitting a wall that has yet to be added to finalPath
             glm::vec2 leftBound = {bounds.x,0}, rightBound = {bounds.x + bounds.z, 0};
-           finalPath.push_back(curPoint); //curPoint is the last point that was added to our final Path
+           finalPath.push_back({curPoint,glm::vec2(0),glm::vec2(0)}); //curPoint is the last point that was added to our final Path
             while (curPoint != start && shortCut != start)
             {
                 //std::cout << paths.count(curPoint) << " " << curPoint.x << " " << curPoint.y << std::endl;
@@ -602,7 +605,7 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
                           //  std::cout << leftBound.x << " " << leftBound.y << " " << rightBound.x << " " << rightBound.y << " " << nextPoint.x << " " << nextPoint.y << "\n";
 
                             }
-                            finalPath.push_front(shortCut);
+                            finalPath.push_front({shortCut,{line.x,line.y},{line.z,line.a}});
                             curPoint = shortCut;
                             leftBound = {bounds.x,0};
                             rightBound = {bounds.x + bounds.z, 0};
@@ -629,7 +632,7 @@ Path NavMesh::getPath(const glm::vec2& startPoint, const glm::vec2& endPoint, in
 
             }
 
-            finalPath.push_front(start);
+            finalPath.push_front({start,glm::vec2(0),glm::vec2(0)});
         }
         else
         {

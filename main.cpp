@@ -112,8 +112,8 @@ int main(int args, char* argsc[])
     shopWindow.addPanel(*(new Message({.8*screenWidth,.1*screenHeight,128,64},nullptr,{"Player Gold: "},&Font::tnr,{1,1,1,0},
                                       [](){return "Player Gold: " + convert(GameWindow::getPlayer().getGold());})));
     worldMap.addPanel(*(new WorldMapWindow::WorldSwitchToGame({.8*screenWidth,.8*screenHeight,.1*screenWidth,.1*screenHeight},
-                                                interface,game,worldMap)));
-    worldMap.addPanel(*(new WindowSwitchButton({100,100,100,100},nullptr,interface,shopWindow,{"Shop"},&Font::tnr,{1,1,1,1})));
+                                                interface,game,worldMap)),true);
+    worldMap.addPanel(*(new WindowSwitchButton({100,100,100,100},nullptr,interface,shopWindow,{"Shop"},&Font::tnr,{1,1,1,1})),true);
 
     game.setWorldMap(*(new WindowSwitchButton({0,0,0,0},nullptr,interface,worldMap,{},nullptr,{0,0,0,0})));
    SpriteWrapper spr;
@@ -166,7 +166,7 @@ int main(int args, char* argsc[])
         DeltaTime::update();
         eventsEmpty = true;
         //fastPrint("Ticks: " + convert(DeltaTime::deltaTime) + "\n");
-        //SDL_Delay(10);
+        SDL_Delay(10);
       //  std::cout << DeltaTime::deltaTime << std::endl;
     }
     game.close();

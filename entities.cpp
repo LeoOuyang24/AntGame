@@ -8,6 +8,7 @@
 #include "animation.h"
 #include "friendlyAssemblers.h"
 #include "effects.h"
+#include "debug.h"
 
 void renderMeter(const glm::vec3& xyWidth, const glm::vec4& color, double current, double maximum, float z)
 {
@@ -123,7 +124,13 @@ ClickableComponent::~ClickableComponent()
 
 }
 
-AnimationComponent::AnimationComponent(AnimationWrapper& anime, Entity& entity ) :  RenderComponent(entity), ComponentContainer<AnimationComponent>(entity), sprite(&anime)
+AnimationComponent::AnimationComponent(AnimationWrapper& anime, Entity& entity, RenderCamera* camera) :  RenderComponent(entity,camera), ComponentContainer<AnimationComponent>(entity),
+                                                                                                            sprite(&anime)
+{
+
+}
+
+AnimationComponent::AnimationComponent(AnimationWrapper& anime, Entity& entity) : AnimationComponent(anime,entity,&GameWindow::getCamera())
 {
 
 }
@@ -144,7 +151,7 @@ void AnimationComponent::setTint(const glm::vec4& param)
 void AnimationComponent::update()
 {
     auto rect = entity->getComponent<RectComponent>();
-    if (rect && vecContains(rect->getRect(),GameWindow::getCamera().getRect()))
+    if (rect && vecContains(rect->getRect(),camera->getRect()))
     {
         double angle = 0;
         MoveComponent* move = entity->getComponent<MoveComponent>();
@@ -195,19 +202,34 @@ void AnimationComponent::update()
             angle = atan2(move->getCenter().y - target.y,move->getCenter().x - target.x) + M_PI/2;
 
         }
-        render({GameWindow::getCamera().toScreen(rect->getRect()),angle,NONE,tint});
+        glm::vec4 renderRect = rect->getRect();
+        if (camera)
+        {
+            renderRect = camera->toScreen(renderRect);
+        }
+        render({renderRect,angle,NONE,tint});
         tint = glm::vec4(1);
     }
 }
 
-RectRenderComponent::RectRenderComponent(const glm::vec4& color, Entity& unit) : RenderComponent(unit), ComponentContainer<RectRenderComponent>(&unit), color(color)
+RectRenderComponent::RectRenderComponent(const glm::vec4& color, Entity& unit, RenderCamera* cam) : RenderComponent(unit,cam), ComponentContainer<RectRenderComponent>(&unit), color(color)
+{
+
+}
+
+RectRenderComponent::RectRenderComponent(const glm::vec4& color, Entity& unit) : RectRenderComponent(color,unit, &GameWindow::getCamera())
 {
 
 }
 
 void RectRenderComponent::update()
 {
-    render({GameWindow::getCamera().toScreen(((Object*)entity)->getRect().getRect()),0,NONE,color,&RenderProgram::basicProgram,0});
+    glm::vec4 renderRect = ((Object*)entity)->getRect().getRect();
+    if (camera)
+    {
+       renderRect = camera->toScreen(renderRect);
+    }
+    render({renderRect,0,NONE,color,&RenderProgram::basicProgram,0});
 }
 
 void RectRenderComponent::render(const SpriteParameter& param)
@@ -674,7 +696,7 @@ void PathComponent::setTarget(const glm::vec2& point)
            // std::cout << SDL_GetTicks() - time << std::endl;
             if (path.size() > 0)
             {
-                target = path.front();
+                target = path.front().point;
             }
             else
             {
@@ -691,7 +713,7 @@ const glm::vec2& PathComponent::getTarget()
     {
         return target;
     }
-    return path.back();
+    return path.back().point;
 }
 
 bool PathComponent::atFinalTarget()
@@ -706,10 +728,10 @@ glm::vec2 PathComponent::getNextTarget()
     {
         return target;
     }
-    return path.front();
+    return path.front().point;
 }
 
-void PathComponent::addPoint(const glm::vec2& point)
+void PathComponent::addPoint(PathPoint& point)
 {
     path.push_back(point);
 }
@@ -725,7 +747,7 @@ void PathComponent::update()
         if (path.size() > 1) //if we haven't reached the end of the path, select the next point
         {
             path.pop_front();
-            target = path.front();
+            target = path.front().point;
            // std::cout << "New: " << target.x << " " << target.y << std::endl;
         } //otherwise, we're done
     }

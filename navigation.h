@@ -2,12 +2,22 @@
 #define NAVIGATION_H_INCLUDED
 
 #include <unordered_map>
+#include <deque>
 
 #include "render.h"
 
-#include "entities.h"
-#include "world.h"
-#include "debug.h"
+#include "components.h"
+
+class Object;
+
+typedef  std::map<Object*, std::shared_ptr<Object>> ObjectStorage;
+
+struct PathPoint //includes a point and the line node-node border it resides on
+{
+    glm::vec2 point, a, b;
+};
+
+typedef std::deque<PathPoint> Path;
 
 bool compareRect(const glm::vec4* o1, const glm::vec4* o2);
 
@@ -17,10 +27,11 @@ struct HashPoint
     std::size_t operator() (const glm::vec2& p1) const; //hash function for glm::vec2. As of now, glm::vec2s of negative points are mapped to the same location as glm::vec2s of positive points (-1,2) = (1,2)
 };
 
+class Debug;
 
 class NavMesh //a navigation mesh of rectangle
 {
-    friend class Debug::DebugNavMesh;
+    friend class Debug;
     class NavMeshNode;
     typedef std::unordered_map<NavMeshNode*,glm::vec4> Neighbors; //pointer to the node and the line of intersection
 

@@ -81,9 +81,16 @@ void ShopWindow::onSwitch(Window& previous)
     }
 }
 
-WorldMapWindow::LevelButton::LevelButton(WorldMapWindow& window, Map& level, const glm::vec4& rect) : Button(rect,nullptr,nullptr,{},nullptr,{1,1,0,1}), window(&window), level(&level)
+WorldMapWindow::LevelButton::LevelButton(LevelButton* prev_, LevelButton* next_,WorldMapWindow& window, Map& level, const glm::vec4& rect) :
+                                                                                            Button(rect,nullptr,nullptr,{},nullptr,{1,1,0,1}),
+                                                                                            window(&window), level(&level), prev(prev_),next(next_)
 {
 
+}
+
+void WorldMapWindow::LevelButton::setNext(LevelButton* next_)
+{
+    this->next = next_;
 }
 
 void WorldMapWindow::LevelButton::press()
@@ -101,7 +108,22 @@ void WorldMapWindow::LevelButton::update(float x, float y, float z, const glm::v
         backgroundColor.g = 0;
         backgroundColor.b = 0;
     }
-    Button::update(x,y,z,blit);
+    if (next)
+    {
+        int dotNumber = 4;
+        double minDist = window->getPlanetPlanetDistance()/dotNumber;
+        glm::vec2 center = {rect.x + rect.z/2, rect.y + rect.a/2};
+        float angle = atan2(next->getRect().y - rect.y,next->getRect().x - rect.x);
+        int framesPerDot = 15;
+        auto frame = DeltaTime::getCurrentFrame();
+        for (int i = 0; i < dotNumber; ++i)
+        {
+            PolyRender::requestNGon(20,window->getCamera().toScreen({rect.x + (i+1)*minDist*cos(angle),rect.y + (i+1)*minDist*sin(angle)}),2,
+                                    {1,1,1,((frame%(dotNumber*framesPerDot))/framesPerDot == i)*((frame%framesPerDot) + 1)*(1.0/framesPerDot)},0,true,.01);
+        }
+    }
+    glm::vec2 point = window->getCamera().toScreen({x,y});
+    Button::update(point.x,point.y,z,blit);
 }
 
 
@@ -110,13 +132,27 @@ void WorldMapWindow::setCurrentLevel(Map& level)
     currentLevel = &level;
 }
 
-void WorldMapWindow::addLevel(Map& level)
+WorldMapWindow::LevelButton* WorldMapWindow::addLevel(Map& level,LevelButton* prev, LevelButton* next)
 {
     int width = 64;
     int height = 64;
     levels[&level] = std::shared_ptr<Map>(&level);
     glm::vec2 screenDimen = RenderProgram::getScreenDimen();
-    addPanel(*(new LevelButton(*this,level,{10 + (width+10)*(levels.size()%((int)(screenDimen.x/width))),levels.size()/(screenDimen.x/width),width,height})));
+    glm::vec2 pos;
+    if (prev)
+    {
+        glm::vec4 prevRect = prev->getRect();
+        float angle = (rand()%90)*M_PI/180;
+        pos = {prevRect.x + prevRect.z/2 + cos(angle)*planetPlanetDistance,
+                prevRect.y + prevRect.a/2 + sin(angle)*planetPlanetDistance};
+    }
+    else
+    {
+        pos = {10,10};
+    }
+    auto butt = (new LevelButton(prev,next,*this,level,{pos.x,pos.y,width,height}));
+    addPanel(*butt);
+    return butt;
 }
 
 void WorldMapWindow::switchToGame()
@@ -130,25 +166,58 @@ void WorldMapWindow::switchToGame()
 }
 
 
-WorldMapWindow::WorldMapWindow() : Window({0,0,0,0},nullptr,{0,0,1,1})
+WorldMapWindow::WorldMapWindow() : Window({0,0,10000,10000},nullptr,{0,0,1,1})
 {
+    auto screenDimen = RenderProgram::getScreenDimen();
+    camera.init(screenDimen.x,screenDimen.y);
+    camera.setBounds(rect);
+    setCamera(&camera);
+    planetPlanetDistance = rect.z/20;
   //  addPanel(*(new OnOffButton(OnOffMode::DYNAMIC,*shopWindow,{100,100,100,100},nullptr,{"Shop"},&Font::tnr,{1,1,1,1})));
 }
 
-void WorldMapWindow::generate()
+WorldMapWindow::LevelButton* WorldMapWindow::generate(int count, LevelButton* start, LevelButton* end)
 {
-    auto ticks = SDL_GetTicks();
-    int numberOfLevels = rand()%6 + 3;
-    for (int i = 0; i < numberOfLevels; ++i)
+    if (count < 0)
+    {
+        return generate(rand()%6 + 3,start,end);
+    }
+    else if (count == 0)
+    {
+        return start;
+    }
+    else
     {
         Map* level = Map::generateLevel();
-        addLevel(*level);
+        auto butt = addLevel(*level,start,nullptr);
+        auto next = generate(count - 1,butt,end);
+       // if (next != &butt) //happens if count = 1
+        {
+            butt->setNext(next);
+        }
+        return butt;
     }
+}
+
+void WorldMapWindow::update(float x, float y, float z, const glm::vec4& blit)
+{
+    camera.update();
+    Window::update(x,y,z,blit);
 }
 
 Map* WorldMapWindow::getCurrentLevel()
 {
     return currentLevel;
+}
+
+int WorldMapWindow::getPlanetPlanetDistance()
+{
+    return planetPlanetDistance;
+}
+
+const Camera& WorldMapWindow::getCamera()
+{
+    return camera;
 }
 
 

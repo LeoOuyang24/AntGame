@@ -139,6 +139,8 @@ Object* BlasterAssembler::assemble()
     //ent->addComponent(*(new UnitAttackComponent(1,1,300,300,!friendly,*ent)));
     ent->addComponent(*(new ProjectileAttackComponent(rocket,1000,300,300,!friendly,*ent)));
     ent->addComponent(*(new CommandableComponent(*ent)));
+    ent->addComponent(*(new ForcesComponent(*ent)));
+
     return ent;
 }
 
@@ -170,6 +172,7 @@ Object* IncineratorAssembler::assemble()
     //ent->addComponent(*(new UnitAttackComponent(1,1,300,300,!friendly,*ent)));
     ent->addComponent(*(new IncineratorAttackComponent(*ent)));
     ent->addComponent(*(new CommandableComponent(*ent)));
+        ent->addComponent(*(new ForcesComponent(*ent)));
     return ent;
 }
 
@@ -211,6 +214,8 @@ Object* FreezerAssembler::assemble()
     //ent->addComponent(*(new UnitAttackComponent(1,1,300,300,!friendly,*ent)));
     ent->addComponent(*(new FreezerAttackComponent(*ent)));
     ent->addComponent(*(new CommandableComponent(*ent)));
+    ent->addComponent(*(new ForcesComponent(*ent)));
+
     return ent;
 }
 

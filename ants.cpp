@@ -187,7 +187,7 @@ Ant::AntMoveComponent::~AntMoveComponent()
 
 }
 
-Ant::AntRenderComponent::AntRenderComponent(const glm::vec4& color, Entity& entity) : RenderComponent(entity), ComponentContainer<AntRenderComponent>(entity), color(color)
+Ant::AntRenderComponent::AntRenderComponent(const glm::vec4& color, Entity& entity) : RenderComponent(entity,&GameWindow::getCamera()), ComponentContainer<AntRenderComponent>(entity), color(color)
 {
 
 }
@@ -288,7 +288,7 @@ void Ant::setCurrentTask(AntManager& newTask)
     currentTask = &newTask;
 }
 
-AntHillRender::AntHillRender(Entity& entity) : RenderComponent(entity), ComponentContainer<AntHillRender>(entity),color({0,0,0,1})
+AntHillRender::AntHillRender(Entity& entity) : RenderComponent(entity, &GameWindow::getCamera()), ComponentContainer<AntHillRender>(entity),color({0,0,0,1})
 {
 
 }
@@ -337,6 +337,7 @@ void ProduceUnitComponent::produceUnit(UnitAssembler& assembler)
 {
     if (toProduce.size() < 10 && GameWindow::getPlayer().getResource() >= assembler.prodCost)
     {
+        GameWindow::getPlayer().addResource(-1*assembler.prodCost);
         toProduce.push_back(&assembler);
     }
 }
@@ -344,7 +345,7 @@ void ProduceUnitComponent::produceUnit(UnitAssembler& assembler)
 void ProduceUnitComponent::update()
 {
     ClickableComponent::update();
-    if (beingProduced && produceTimer.timePassed(beingProduced->prodTime) && GameWindow::getPlayer().getResource() >= beingProduced->prodCost)  //if something is in production and is done, put it into the real world
+    if (beingProduced && produceTimer.timePassed(beingProduced->prodTime))  //if something is in production and is done, put it into the real world
     {
         auto vec4 = entity->getComponent<RectComponent>()->getRect();
 
@@ -352,11 +353,10 @@ void ProduceUnitComponent::update()
         if (level)
         {
             double angle = rand()%360/180.0*M_PI; //generate a random angle in radians
-            std::cout <<"GENERATED: " <<  vec4.x + vec4.z/2 + vec4.z/2*sqrt(2)*cos(angle) << " " <<
-                           vec4.y + vec4.a/2 +vec4.a/2*sqrt(2)*sin(angle) << " " << angle << std::endl;
-            level->addUnit(*(beingProduced->assemble()),2576.57,
-                           2524.14, true); //
-            GameWindow::getPlayer().addResource(-1*beingProduced->prodCost);
+            /*std::cout <<"GENERATED: " <<  vec4.x + vec4.z/2 + vec4.z/2*sqrt(2)*cos(angle) << " " <<
+                           vec4.y + vec4.a/2 +vec4.a/2*sqrt(2)*sin(angle) << " " << angle << std::endl;*/
+            level->addUnit(*(beingProduced->assemble()),vec4.x + vec4.z/2 + vec4.z/2*sqrt(2)*cos(angle) ,
+                           vec4.y + vec4.a/2 +vec4.a/2*sqrt(2)*sin(angle), true); //
         }
 
         beingProduced = nullptr;

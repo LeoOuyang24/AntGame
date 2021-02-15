@@ -46,14 +46,14 @@ void Debug::DebugNavMesh::showPath(Path& path)
         Camera* cam = &(GameWindow::getCamera());
 
         auto end = path.end();
-        glm::vec2* prev = &(*path.begin()), *next;
+        glm::vec2* prev = &(path.begin()->point), *next;
 
         GameWindow::requestNGon(10,*prev,2,{1,0,0,1},0,true,0,false);
         if( path.size() > 1)
         {
             for (auto it = path.begin() + 1; it != end; ++it)
            {
-                next = &(*it);
+                next = &(*it).point;
                // GameWindow::requestNGon(10,*prev,2,{1,0,0,1},0,true,0,false);
                 GameWindow::requestNGon(10,*next,2,{1,0,0,1},0,true,0,false);
                 glm::vec2 p1 = cam->toScreen(*prev);
@@ -62,8 +62,8 @@ void Debug::DebugNavMesh::showPath(Path& path)
                 prev = next;
                 //std::cout << p1.x << " " << p1.y << " " << p2.x << " " << p2.y << std::endl;
            }
-           glm::vec2 startP = cam->toScreen(path.front());
-           glm::vec2 endP = cam->toScreen(path.back());
+           glm::vec2 startP = cam->toScreen(path.front().point);
+           glm::vec2 endP = cam->toScreen(path.back().point);
             PolyRender::requestLine({startP.x, startP.y, endP.x, endP.y},{.5,0,.5,1},GameWindow::interfaceZ);
         }
     }
