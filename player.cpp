@@ -166,8 +166,7 @@ void Player::update()
 
 void Player::render(const glm::vec4& windowSize)
 {
-    buildingWindow->updateTop(GameWindow::interfaceZ,
-                          RenderProgram::toAbsolute(windowSize));
+    buildingWindow->updateBlit(GameWindow::interfaceZ,GameWindow::getCamera(),true, windowSize);
    // GameWindow::requestRect(windowSize,{0,1,1,1},true,0,GameWindow::interfaceZ,true);
 }
 

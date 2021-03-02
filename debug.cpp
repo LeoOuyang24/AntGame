@@ -94,6 +94,7 @@ void Debug::DebugGameWindow::update()
     }
 }
 
+bool Debug::showFog = true;
 bool Debug::spawnCreatures = true;
 bool Debug::renderPath = false;
 
@@ -125,9 +126,17 @@ void Debug::update()
         std::cout << "Generating Terrain" << "\n";
         gameDB.addTerrain = !gameDB.addTerrain;
         break;
+    case SDLK_F6:
+        showFog = !showFog;
+        fastPrint("Fog turned " + (std::string)(showFog ? "on" : "off") +".\n");
     }
     meshDB.update();
     gameDB.update();
+}
+
+bool Debug::getShowFog()
+{
+    return showFog;
 }
 
 bool Debug::getSpawnCreatures()

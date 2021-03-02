@@ -13,7 +13,7 @@ class ShopButton : public Button
     Player* player = nullptr;
     bool soldOut = false; //whether the player has bought this or not
 public:
-    ShopButton(Player& player, UnitAssembler& obj, const glm::vec4& rect);
+    ShopButton(Player& player, UnitAssembler*  obj, const glm::vec4& rect);
     void press();
     void update(float x, float y, float z, const glm::vec4& scale);
     void changeAssembler(UnitAssembler* assembler); //allows us to update the shopbuttons in a shop instead of adding new ones

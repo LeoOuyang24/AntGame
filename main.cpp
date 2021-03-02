@@ -157,7 +157,7 @@ int main(int args, char* argsc[])
       //SpriteWrapper* ptr = &anime;
       //turretSprite.request({{0,0,64,64}});
        //PolyRender::requestRect(rect,{0,0,0,1},true,0,.1);
-     //  Font::tnr.requestWrite({"hella",rect,0,{1,0,0,1},1});
+     //  Font::tnr.requestWrite({"hella",GameWindow::getCamera().toWorld(rect),0,{1,0,0,1},1});
    //  PolyRender::requestNGon(10,GameWindow::getCamera().toAbsolute(pairtoVec(MouseManager::getMousePos())),10,{1,0,0,1},0,true,3);
         PolyRender::render();
         SpriteManager::render();
@@ -166,7 +166,7 @@ int main(int args, char* argsc[])
         DeltaTime::update();
         eventsEmpty = true;
         //fastPrint("Ticks: " + convert(DeltaTime::deltaTime) + "\n");
-        SDL_Delay(10);
+        //SDL_Delay(10);
       //  std::cout << DeltaTime::deltaTime << std::endl;
     }
     game.close();

@@ -110,8 +110,8 @@ struct Map
     };
 private:
 
-    constexpr static int chunkDimen = 5000;
-    constexpr static int maxObjectSize = 50; //the longest any one dimension of an entity can be
+    constexpr static int chunkDimen = 2500;
+    constexpr static int maxObjectSize = 100; //the longest any one dimension of an entity can be
     const static glm::vec4 playerArea; //area that walls can't spawn because the player's stuff will be there
     bool changeLevel = false; //whether or not to changeLevel
     std::weak_ptr<Anthill> mainHill;

@@ -676,10 +676,9 @@ glm::vec4 NavMesh::getRandomArea(const glm::vec2& origin, double minDist, double
     NavMeshNode* node = nullptr;
     while (!node)
     {
-        double radius = fmod(rand(),(maxDist - minDist)) + minDist;
+        double radius = fmod(rand(),std::max(1.0,(maxDist - minDist))) + minDist;
         double theta = rand()%360*M_PI/180;
         glm::vec2 point = {origin.x + radius*cos(theta), origin.y + radius*sin(theta)};
-            //std::cout << "Point: " << point.x << " " << point.y << std::endl;
 
         point.x = std::max(std::min(bounds.x + bounds.z, point.x), bounds.x);
         point.y = std::max(std::min(bounds.y + bounds.a, point.y), bounds.y); //clamp the points so that the point can't be out of bounds

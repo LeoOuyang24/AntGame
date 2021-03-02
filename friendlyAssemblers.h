@@ -13,7 +13,6 @@ struct ObjectAssembler
     const int goldCost = 0;
     ObjectAssembler( std::string name_, const glm::vec2& rect_,AnimationWrapper* anime, bool mov = false, bool friendly_ = true, int goldCost_ = 10);
     virtual Object* assemble();
-
 };
 
 struct UnitAssembler : public ObjectAssembler
@@ -21,14 +20,16 @@ struct UnitAssembler : public ObjectAssembler
     const double prodTime = 0; //milliseconds it takes to produce this unit
     const double maxHealth = 0;
     const int prodCost = 0;
-    UnitAssembler( std::string name_,const glm::vec2& rect_, AnimationWrapper* anime, bool mov, double maxHealth_, double prodTime_, int prodCost = 10, bool friendly_ = false, int goldCost = 10);
+    float speed = .1;
+    UnitAssembler( std::string name_,const glm::vec2& rect_, AnimationWrapper* anime, bool mov, double maxHealth_, float speed, double prodTime_, int prodCost = 10, bool friendly_ = false, int goldCost = 10);
     virtual Object* assemble();
+    Unit* commandUnitAssemble(); //creates a unit with a bunch of components they will need to be commanded, including CommandableComponent and ForceComponent. Does not add unitAttackComponent since that may be unique to each assembler
 };
 
 struct ProjectileAssembler : public UnitAssembler
 {
     const double damage = 0;
-    ProjectileAssembler(double damage_, std::string name_,const glm::vec2& rect_, AnimationWrapper* anime, double maxHealth_, double prodTime_, int prodCost = 10, bool friendly_ = false, int goldCost = 10);
+    ProjectileAssembler(double damage_, std::string name_,const glm::vec2& rect_, AnimationWrapper* anime, double maxHealth_, float speed, double prodTime_, int prodCost = 10, bool friendly_ = false, int goldCost = 10);
     using UnitAssembler::assemble;
     Object* assemble(Object& shooter, const glm::vec2& point, const glm::vec2& target);
 };
@@ -58,7 +59,7 @@ class BlasterAssembler : public UnitAssembler
         class ExplodingRocketComponent : public ProjectileComponent, public ComponentContainer<ExplodingRocketComponent>
         {
         public:
-            ExplodingRocketComponent(const glm::vec2& target, const glm::vec2& pos, Unit& entity);
+            ExplodingRocketComponent(const glm::vec2& target, const glm::vec2& rect, Unit& entity);
             void onCollide(Unit& other);
         } ;
     public:
@@ -95,6 +96,97 @@ class FreezerAssembler : public UnitAssembler
     };
 public:
     FreezerAssembler();
+    Object* assemble();
+};
+
+class MercenaryAssembler : public UnitAssembler
+{
+    class MercenaryAttackComponent: public UnitAttackComponent
+    {
+    public:
+        MercenaryAttackComponent(Entity& unit);
+        virtual bool canAttack(Object* ptr);
+        void attack(HealthComponent* health);
+    };
+    public:
+    MercenaryAssembler();
+    Object* assemble();
+};
+
+class MinigunUserAssembler : public UnitAssembler
+{
+    class MinigunHypeComponent : public Component
+    {
+    public:
+        MinigunHypeComponent(Entity& unit);
+        void update();
+    };
+public:
+    MinigunUserAssembler();
+    Object* assemble();
+};
+
+class ShrimpSuitOperator : public UnitAssembler
+{
+public:
+    ShrimpSuitOperator();
+    Object* assemble();
+};
+
+class SuperMegaTank : public UnitAssembler
+{
+    class NukeComponent : public ProjectileComponent
+    {
+        DeltaTime timer;
+        bool tangible = false;
+    public:
+        NukeComponent(const glm::vec2& target, const glm::vec4& rect, Unit& entity);
+        void update();
+        void collide(Entity& other);
+    };
+    class NukeAssembler : public ProjectileAssembler
+    {
+    public:
+        NukeAssembler();
+        Object* assemble();
+    };
+    class SMTankComponent : public UnitAttackComponent
+    {
+        NukeAssembler nukeAssembler;
+        unsigned int counter = 0;
+    public:
+        SMTankComponent(Unit& entity);
+        void attack(HealthComponent* health);
+    };
+public:
+    SuperMegaTank();
+    Object* assemble();
+};
+
+class CommanderAssembler : public UnitAssembler
+{
+    class CommanderComponent : public Component, public ComponentContainer<CommanderComponent>
+    {
+    public:
+        CommanderComponent(Unit& unit);
+        void update();
+    };
+public:
+    CommanderAssembler();
+    Object* assemble();
+
+};
+
+class IceBlasterAssembler :public UnitAssembler
+{
+    class IceBlasterAttackComponent : public UnitAttackComponent
+    {
+    public:
+        IceBlasterAttackComponent(Unit& unit);
+        void attack(HealthComponent* health);
+    };
+public:
+    IceBlasterAssembler();
     Object* assemble();
 };
 

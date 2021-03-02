@@ -86,6 +86,8 @@ Object* PickUpResource::assemble()
     return obj;
 }
 
+const glm::vec4 Map::playerArea = {chunkDimen/2 - 500,chunkDimen/2 - 500,1000,1000};
+
 Map::Map(const glm::vec4& rect) : rect(rect)
 {
     init(rect);
@@ -278,7 +280,7 @@ Map* Map::generateLevel(const glm::vec4& levelRect) // Doesn't generate terrain 
     //addTerrain({100,100,100,100});
     //addTerrain({200,200,100,100});
    // glm::vec2 playerPoints = {playerArea.z/maxObjectSize + 1, playerArea.a/maxObjectSize + 1}; //points we can't use because it's in the player area
-    int luck = 10;
+    int luck = 100;
     std::queue<std::pair<glm::vec2,bool>>  dists; //vector of empty areas. x is the starting index and y is the # of spawn points are on the line. Bool is true if the line is empty
     std::vector<glm::vec2> emptySpots;
     dists.push({{0,points.x},true});
@@ -369,14 +371,14 @@ Map* Map::generateLevel(const glm::vec4& levelRect) // Doesn't generate terrain 
     {
         glm::vec2 chosen = emptySpots[rand()%emptySpots.size()];
         chunk->addUnit(*(shard.assemble()),chosen.x + fmod(rand(),(maxObjectSize/2 - dimen.x/2)),
-                chosen.y + fmod(rand(),(maxObjectSize/2 - dimen.y/2)),false);
+                chosen.y + fmod(rand(),(maxObjectSize/2 - dimen.y/2)),true);
     }
     dimen = resource.dimen;
     for (int i = 0; i < rand()%100; ++i)
     {
             glm::vec2 chosen = emptySpots[rand()%emptySpots.size()];
             chunk->addUnit(*(resource.assemble()),chosen.x + fmod(rand(),(maxObjectSize/2 - dimen.x/2)),
-            chosen.y + fmod(rand(),(maxObjectSize/2 - dimen.y/2)),false);
+            chosen.y + fmod(rand(),(maxObjectSize/2 - dimen.y/2)),true);
     }
     chunk->mainHill = std::static_pointer_cast<Anthill>(chunk->addUnit(*(new Anthill({chunkDimen/2,chunkDimen/2})),true));
     return chunk;
@@ -450,7 +452,6 @@ Map::Chunk::~Chunk()
     clear();
 }*/
 
-const glm::vec4 Map::playerArea = {chunkDimen/2 - 1000,chunkDimen/2 - 1000,2000,2000};
 
 
 

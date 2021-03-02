@@ -22,4 +22,14 @@ private:
     unsigned int startTime = 0;
 };
 
+struct StatusEffectAssembler
+{
+    effectFunc func = nullptr;
+    SpriteWrapper* const icon = nullptr;
+    StatusEffectAssembler(effectFunc func_, SpriteWrapper& icon_);
+    StatusEffect getEffect(double value, int duration, Unit& unit, Unit& source);
+};
+
+extern StatusEffectAssembler chillEffect;
+
 #endif // EFFECTS_H_INCLUDED

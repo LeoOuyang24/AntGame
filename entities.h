@@ -103,6 +103,8 @@ class Unit;
 class StatusEffect;
 class HealthComponent : public Component, public ComponentContainer<HealthComponent>
 {
+    int tempArmor = 0; //used to track armor modifications
+    int armor = 0;
     double health = 0;
     double maxHealth = 0;
     int displacement = 0; //height above the entity
@@ -113,6 +115,7 @@ class HealthComponent : public Component, public ComponentContainer<HealthCompon
     void addHealth(double amount); //increases health by amount. Health cannot exceed maxHealth nor go below 0
 public:
     HealthComponent(Entity& entity, double health_,  int displacement_ = 20);
+    void addArmor(int val);
     void takeDamage(double amount, Object& attacker ); //the key difference between this and add health is that this keeps track of which attackComponent dealt the damage. Negative damage heals the target
     void addEffect(StatusEffect effect);
     double getHealth();
@@ -261,13 +264,20 @@ public:
 class AttackComponent : public ApproachComponent, public ComponentContainer<AttackComponent>
 {
 protected:
-    double range = 0;
-    double damage = 0;
-    int endLag = 0; //how much time must pass before the attack can be reused.
+    struct AttackData //represents all parameters that can be modified by outside sources
+    {
+        float range = 0, damage = 0;
+        int endLag = 0;
+    };
+    AttackData modData;
     DeltaTime attackTimer;
     virtual bool canAttack(Object* ptr); //returns true if we can attack the target. Doesn't take into account attackTimer because even if we are waiting for the timer to tick down, we should still stop moving
 public:
-    AttackComponent(double damage_, int endLag_, double range_, Entity& unit);
+    const AttackData baseData;
+    AttackComponent(float damage_, int endLag_, float range_, Entity& unit);
+    void setRange(float range);
+    void setDamage(float damage);
+    void setAttackSpeed(float increase); //sets %increase. Example: passing in .1 will increase attack speed by 10%, -.1 will decrease by 10%
     virtual void attack(HealthComponent* health); //this is a pointer so you can legally pass in a null pointer. This function will make sure it's not null
     virtual void update();
     using ApproachComponent::setTarget;

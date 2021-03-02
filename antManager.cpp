@@ -289,7 +289,6 @@ void AntManager::updateAnts()
         {
             currentTask = IDLE;
         }
-        PolyRender::requestCircle({1,0,0,1},GameWindow::getCamera().toScreen(targetPoint),maxDistance,1);
                   //  std::cout << antsCenter.x << " " << antsCenter.y << std::endl;
 
         }

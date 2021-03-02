@@ -2,7 +2,7 @@
 #include "game.h"
 #include "animation.h"
 
-ShopButton::ShopButton(Player& player, UnitAssembler& obj,const glm::vec4& rect) : Button(rect,nullptr,nullptr,{},nullptr,{0,1,0,0}),  assembler(&obj),
+ShopButton::ShopButton(Player& player, UnitAssembler* obj,const glm::vec4& rect) : Button(rect,nullptr,nullptr,{},nullptr,{0,1,0,0}),  assembler(obj),
                                                                                                     player(&player)
 {
 
@@ -38,6 +38,10 @@ void ShopButton::update(float x, float y, float z, const glm::vec4& scale)
         Font::tnr.requestWrite({convert(assembler->goldCost),{renderRect.x,renderRect.y + renderRect.a*1.1, renderRect.z*.8,renderRect.z*.2},
                                0, {0,0,0,1},finalZ});
     }
+    else
+    {
+        soldOut = true;
+    }
     PolyRender::requestRect(renderRect,{0,0,1,1},false,0,z + baseZ);
     coinIcon.request({{renderRect.x + renderRect.z*.8,renderRect.y + renderRect.a*1.1, renderRect.z*.2, renderRect.z*.2}, 0, NONE, {1,1,1,1},
                      &RenderProgram::basicProgram, finalZ});
@@ -63,7 +67,7 @@ ShopWindow::ShopWindow() : Window({0,0},nullptr,{.5,.5,1,1},0)
     glm::vec2 buttDimen = {shopRect.z/numButtons,shopRect.a/numButtons}; //dimen of the space of buttons and margins, not the dimensions of the buttons
     for (int i = 0; i < shopItems; ++i)
     {
-        buttons[i] = new ShopButton(GameWindow::getPlayer(),antAssembler,{
+        buttons[i] = new ShopButton(GameWindow::getPlayer(),nullptr,{
                                     shopRect.x + buttDimen.x*(i%numButtons),
                                     shopRect.y + buttDimen.y*(i/numButtons),
                                      buttDimen.x - margin,buttDimen.y - margin});
@@ -74,9 +78,19 @@ ShopWindow::ShopWindow() : Window({0,0},nullptr,{.5,.5,1,1},0)
 
 void ShopWindow::onSwitch(Window& previous)
 {
+    std::set<UnitAssembler*> set;
     for (int i = 0; i < shopItems; ++i)
     {
-        UnitAssembler* newAss = getRandomAssembler(allShopItems);
+        UnitAssembler* newAss = nullptr;//getRandomAssembler(allShopItems);
+        if (allShopItems.size() == set.size())
+        {
+            break;
+        }
+        while (set.find(newAss) != set.end() || newAss == nullptr)
+        {
+            newAss = getRandomAssembler(allShopItems);
+        }
+        set.insert(newAss);
         buttons[i]->changeAssembler(newAss);
     }
 }
@@ -114,16 +128,17 @@ void WorldMapWindow::LevelButton::update(float x, float y, float z, const glm::v
         double minDist = window->getPlanetPlanetDistance()/dotNumber;
         glm::vec2 center = {rect.x + rect.z/2, rect.y + rect.a/2};
         float angle = atan2(next->getRect().y - rect.y,next->getRect().x - rect.x);
-        int framesPerDot = 15;
-        auto frame = DeltaTime::getCurrentFrame();
+        int framesPerDot = 120;
+        auto frame = SDL_GetTicks();
         for (int i = 0; i < dotNumber; ++i)
         {
             PolyRender::requestNGon(20,window->getCamera().toScreen({rect.x + (i+1)*minDist*cos(angle),rect.y + (i+1)*minDist*sin(angle)}),2,
                                     {1,1,1,((frame%(dotNumber*framesPerDot))/framesPerDot == i)*((frame%framesPerDot) + 1)*(1.0/framesPerDot)},0,true,.01);
         }
     }
-    glm::vec2 point = window->getCamera().toScreen({x,y});
-    Button::update(point.x,point.y,z,blit);
+    //glm::vec2 point = window->getCamera().toScreen({x,y});
+    Button::update(x,y,z,blit);
+    PolyRender::requestNGon(10,{x,y},10,{1,0,0,1},0,true,1);
 }
 
 
@@ -191,7 +206,7 @@ WorldMapWindow::LevelButton* WorldMapWindow::generate(int count, LevelButton* st
         Map* level = Map::generateLevel();
         auto butt = addLevel(*level,start,nullptr);
         auto next = generate(count - 1,butt,end);
-       // if (next != &butt) //happens if count = 1
+        if (next != butt) //happens if count = 1
         {
             butt->setNext(next);
         }

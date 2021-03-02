@@ -398,7 +398,7 @@ void Manager::update()
     Map* level = GameWindow::getLevel();
     if (Debug::getSpawnCreatures() && level && level->getAnthill() && (!spawner.isSet() || spawner.timePassed(std::min(180000 - SDL_GetTicks(),(Uint32)1000))))
     {
-        spawnCreatures(*level->getAnthill() , level->getRect().z/6, level->getRect().z/6);
+        spawnCreatures(*level->getAnthill() , level->getRect().z, level->getRect().z);
         spawner.reset();
         spawner.set();
     }
@@ -636,22 +636,27 @@ void GameWindow::updateTop(float z)
         manager.updateAntManagers();
 
         //everything rendered before this is rendered as if it were under fog (unless it has a z higher than fog obviously)
-      /* fogMaker.renderFog(); //anything rendered after this is only shown if it were in a sight bubble.
+       if (Debug::getShowFog())
+       {
+           fogMaker.renderFog(); //anything rendered after this is only shown if it were in a sight bubble.
 
-        glDisable(GL_DEPTH_TEST);
-        glStencilFunc(GL_NOTEQUAL,1,0xFF);
-        glStencilMask(0x00);*/
+            glDisable(GL_DEPTH_TEST);
+            glStencilFunc(GL_NOTEQUAL,1,0xFF);
+            glStencilMask(0x00);
+       }
 
         manager.update();
         PolyRender::render();
         SpriteManager::render();
+        FontManager::update();
 
-      /* glDisable(GL_STENCIL_TEST);
-        glStencilFunc(GL_ALWAYS,1,0xFF);
-        glStencilMask(0xFF);
-        glEnable(GL_DEPTH_TEST); //anything rendered after this will be discarded if they are under the fog.*/
-
-
+        if (Debug::getShowFog())
+        {
+            glDisable(GL_STENCIL_TEST);
+            glStencilFunc(GL_ALWAYS,1,0xFF);
+            glStencilMask(0xFF);
+            glEnable(GL_DEPTH_TEST); //anything rendered after this will be discarded if they are under the fog.*/
+        }
         renderAbsolute = true;
     // std::cout << camera.getRect().x << " " << camera.getRect().x + camera.getRect().z << std::endl;
        // camera.reserveZoom();
@@ -702,10 +707,10 @@ void GameWindow::renderSelectedUnits()
     float antRectWidth = .03*rect.z; //width and height of each of the outlineRects. This is a bit of a magic number and was chosen just because it looks good
     glm::vec2 spacing = {(selectedAntsRect.z - margin.x*2 - antsPerRow*antRectWidth)/antsPerRow,.3*menuHeight}; //horizontal and vertical spacing between ants and unit and health bar
 
-    GameWindow::requestLine({selectedUnitRect.x*cameraRect->z/screenDimen.x,
+    PolyRender::requestLine({selectedUnitRect.x*cameraRect->z/screenDimen.x,
                             selectedUnitRect.y*cameraRect->a/screenDimen.y,
                             selectedUnitRect.x*cameraRect->z/screenDimen.x,
-                             (selectedUnitRect.y + selectedUnitRect.a)*cameraRect->a/screenDimen.y},{0,0,0,1},interfaceZ,true);
+                             (selectedUnitRect.y + selectedUnitRect.a)*cameraRect->a/screenDimen.y},{0,0,0,1},interfaceZ);
 
     const AntManager* antManager = manager.getCurrentTask();
     Object* selectedUnit = manager.getSelectedUnit().lock().get();
