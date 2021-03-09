@@ -34,7 +34,7 @@ void ShopButton::update(float x, float y, float z, const glm::vec4& scale)
     float finalZ = z + baseZ + .01;
     if(assembler)
     {
-        assembler->sprite->request({renderRect,0, NONE, {1,1,1,1},&RenderProgram::basicProgram,finalZ},{0,0});
+        assembler->sprites.walking->request({renderRect,0, NONE, {1,1,1,1},&RenderProgram::basicProgram,finalZ},{0,0});
         Font::tnr.requestWrite({convert(assembler->goldCost),{renderRect.x,renderRect.y + renderRect.a*1.1, renderRect.z*.8,renderRect.z*.2},
                                0, {0,0,0,1},finalZ});
     }
@@ -249,9 +249,9 @@ bool WorldMapWindow::WorldSwitchToGame::doSwitch()
 
 void WorldMapWindow::WorldSwitchToGame::press()
 {
-    if (worldMap)
+    if (doSwitch())
     {
         worldMap->switchToGame();
+        WindowSwitchButton::press();
     }
-    WindowSwitchButton::press();
 }

@@ -554,6 +554,7 @@ Manager GameWindow::manager;
 std::weak_ptr<Map> GameWindow::level;
 Debug GameWindow::debug;
 Window* GameWindow::gameOver = nullptr;
+GameWindow* GameWindow::actualWindow = nullptr;
 Player GameWindow::player;
 FogMaker GameWindow::fogMaker;
 float GameWindow::interfaceZ = 3;
@@ -568,6 +569,8 @@ GameWindow::GameWindow() : Window({0,0},nullptr,{0,0,0,0})
     rect.a = screenDimen.y;
     camera.init(screenDimen.x,screenDimen.y);
     player.init();
+    actualWindow = this;
+    Window::camera = &camera;
   /*  auto ptr = evilMoonAssembler.assemble();
     ptr->getComponent<UnitAttackComponent>()->setLongTarget({0,0},&level.getUnit(level.getAnthill()));
     level.addUnit(*ptr,0,0,false);*/
@@ -671,7 +674,8 @@ void GameWindow::updateTop(float z)
             }
         }
 
-        //camera.goBack();
+        Window::updateTop(z);
+                //camera.goBack();
         //requestRect({0,0,320,320},{1,0,1,1},true,0,1,1);
 
     }
@@ -795,6 +799,14 @@ FogMaker& GameWindow::getFogMaker()
 void GameWindow::setWorldMap(WindowSwitchButton& butt)
 {
     switchToMap = &butt;
+}
+
+void GameWindow::staticAddPanel(Panel& panel, bool absolute)
+{
+    if (actualWindow)
+    {
+        actualWindow->addPanel(panel,absolute);
+    }
 }
 
 void GameWindow::requestNGon(int n, const glm::vec2& center, double side, const glm::vec4& color, double angle, bool filled, float z, bool absolute)

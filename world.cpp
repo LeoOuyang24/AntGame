@@ -51,7 +51,7 @@ void Shard::ShardComponent::onUse(Entity& other)
     GameWindow::getLevel()->findShard();
 }
 
-Shard::Shard() : ObjectAssembler("Shard", {40,40},&shardAnime, true)
+Shard::Shard() : ObjectAssembler("Shard", {40,40},{&shardAnime}, true)
 {
 
 }
@@ -74,7 +74,7 @@ void PickUpResource::PickUpResourceComponent::onUse(Entity& entity)
     GameWindow::getPlayer().addResource(amount);
 }
 
-PickUpResource::PickUpResource() : ObjectAssembler("Resource", {40,40},&resourceAnime,false)
+PickUpResource::PickUpResource() : ObjectAssembler("Resource", {40,40},{&resourceAnime},false)
 {
 
 }
@@ -83,6 +83,7 @@ Object* PickUpResource::assemble()
 {
     Object* obj = ObjectAssembler::assemble();
     obj->addComponent(*(new PickUpResourceComponent(rand()%100 + 50,*obj)));
+
     return obj;
 }
 

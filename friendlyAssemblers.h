@@ -7,11 +7,11 @@ struct ObjectAssembler
 {
     const glm::vec2 dimen;
     const std::string name;
-    AnimationWrapper* const sprite = nullptr;
+    UnitAnimSet const sprites;
     const bool movable = false;
     const bool friendly = false;
     const int goldCost = 0;
-    ObjectAssembler( std::string name_, const glm::vec2& rect_,AnimationWrapper* anime, bool mov = false, bool friendly_ = true, int goldCost_ = 10);
+    ObjectAssembler( std::string name_, const glm::vec2& rect_,const UnitAnimSet& anime, bool mov = false, bool friendly_ = true, int goldCost_ = 10);
     virtual Object* assemble();
 };
 
@@ -21,7 +21,7 @@ struct UnitAssembler : public ObjectAssembler
     const double maxHealth = 0;
     const int prodCost = 0;
     float speed = .1;
-    UnitAssembler( std::string name_,const glm::vec2& rect_, AnimationWrapper* anime, bool mov, double maxHealth_, float speed, double prodTime_, int prodCost = 10, bool friendly_ = false, int goldCost = 10);
+    UnitAssembler( std::string name_,const glm::vec2& rect_, const UnitAnimSet& anime, bool mov, double maxHealth_, float speed, double prodTime_, int prodCost = 10, bool friendly_ = false, int goldCost = 10);
     virtual Object* assemble();
     Unit* commandUnitAssemble(); //creates a unit with a bunch of components they will need to be commanded, including CommandableComponent and ForceComponent. Does not add unitAttackComponent since that may be unique to each assembler
 };

@@ -34,6 +34,7 @@ public:
 
 class AnimationComponent : public RenderComponent, public ComponentContainer<AnimationComponent>
 {
+protected:
     glm::vec4 tint = glm::vec4(1); //sometimes we want to modify our animation from outside sources (usually status effects)
     AnimationWrapper* sprite = nullptr;
     AnimationParameter animeParam;
@@ -42,6 +43,20 @@ public:
     AnimationComponent(AnimationWrapper& anime, Entity& entity);
     void render(const SpriteParameter& param);
     void setTint(const glm::vec4& param);
+    void update();
+};
+
+struct UnitAnimSet
+{
+    AnimationWrapper* const walking = nullptr;
+    AnimationWrapper* const attacking = nullptr;
+};
+
+class UnitAnimationComponent : public AnimationComponent, public ComponentContainer<UnitAnimationComponent> //used to show different animations for different actions.
+{
+   const UnitAnimSet*  animeSet = nullptr; //we use a pointer so we can point to an ObjectAssembler's UnitAnimeSet rather than copying;
+public:
+    UnitAnimationComponent(const UnitAnimSet& set, Unit& entity);
     void update();
 };
 
@@ -275,6 +290,7 @@ protected:
 public:
     const AttackData baseData;
     AttackComponent(float damage_, int endLag_, float range_, Entity& unit);
+    bool isAttacking(); //used by other components to tell if the AttackComponent is attacking
     void setRange(float range);
     void setDamage(float damage);
     void setAttackSpeed(float increase); //sets %increase. Example: passing in .1 will increase attack speed by 10%, -.1 will decrease by 10%

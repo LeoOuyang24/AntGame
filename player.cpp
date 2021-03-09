@@ -37,7 +37,7 @@ bool Player::updateSelect()
 }
 
 Player::BuildingButton::BuildingButton(const glm::vec4& rect, Player& player_,UnitAssembler& building_) :
-    Button(rect,nullptr,building_.sprite,{},nullptr,{0,0,0,0}),player(&player_), building(&building_)
+    Button(rect,nullptr,building_.sprites.walking,{},nullptr,{0,0,0,0}),player(&player_), building(&building_)
 {
 
 }

@@ -20,7 +20,7 @@ void renderMeter(const glm::vec3& xyWidth, const glm::vec4& color, double curren
 
 void renderTimeMeter(const glm::vec4& rect, const glm::vec4& color, DeltaTime& alarm, double duration, float z)
 {
-    double time = std::min(SDL_GetTicks() - alarm.getTime(),duration); //amount of time passed
+    double time = std::min((double)(SDL_GetTicks() - alarm.getTime()),duration); //amount of time passed
     PolyRender::requestRect({rect.x,rect.y,rect.z*(time)/duration,rect.a},color,true,0,z);
     Font::tnr.requestWrite({convert ((duration - time)/1000.0),rect,0,{0,0,0,1},z+.01f});
 }
@@ -158,7 +158,21 @@ void AnimationComponent::update()
         if (move)
         {
             glm::vec2 target = move->getCenter();
-            if (!move->atTarget() )
+            AttackComponent* approach = entity->getComponent<AttackComponent>();
+
+            if (approach && approach->isAttacking()) //typically happens if we are attacking a unit
+            {
+                Object* targetUnit = approach->getTargetUnit();
+                if (targetUnit) //this should be guaranteed to be true
+                {
+                    target = targetUnit->getCenter();
+                }
+                else
+                {
+                    target.y += 1;
+                }
+            }
+            else if (!move->atTarget() )
             {
                 {
                     PathComponent* path = entity->getComponent<PathComponent>();
@@ -174,26 +188,6 @@ void AnimationComponent::update()
                     }
                 }
                // GameWindow::requestNGon(10,target,1,{1,1,1,1},0,true,10);
-            }
-            else if (move->getVelocity() == 0) //typically happens if we are attacking a unit
-            {
-                AttackComponent* approach = entity->getComponent<AttackComponent>();
-                if ( approach)
-                {
-                    Object* targetUnit = approach->getTargetUnit();
-                    if (targetUnit) //this should be guaranteed to be true
-                    {
-                        target = targetUnit->getCenter();
-                    }
-                    else
-                    {
-                        target.y += 1;
-                    }
-                }
-                else
-                {
-                    target.y += 1;
-                }
             }
             else
             {
@@ -211,6 +205,26 @@ void AnimationComponent::update()
         render({renderRect,angle,NONE,tint});
         tint = glm::vec4(1);
     }
+}
+
+UnitAnimationComponent::UnitAnimationComponent(const UnitAnimSet& set, Unit& entity) : AnimationComponent(*set.walking,entity),
+                                                                                    ComponentContainer<UnitAnimationComponent>(entity), animeSet(&set)
+{
+
+}
+
+void UnitAnimationComponent::update()
+{
+    AttackComponent* attack = entity->getComponent<AttackComponent>();
+    if (attack && attack->isAttacking() && animeSet->attacking)
+    {
+        sprite = animeSet->attacking;
+    }
+    else
+    {
+        sprite = animeSet->walking;
+    }
+    AnimationComponent::update();
 }
 
 RectRenderComponent::RectRenderComponent(const glm::vec4& color, Entity& unit, RenderCamera* cam) : RenderComponent(unit,cam), ComponentContainer<RectRenderComponent>(&unit), color(color)
@@ -888,9 +902,8 @@ bool AttackComponent::canAttack(Object* ptr)
     if (ptr)
     {
         RectComponent* otherRect = &ptr->getRect();
-
-        return move && ptr->getComponent<HealthComponent>() && vecDistance(otherRect->getRect(),move->getRect()) <= modData.range
-            && GameWindow::getLevel()->getMesh().straightLine(glm::vec4(otherRect->getCenter(), move->getCenter())) ;
+        return  move && ptr->getComponent<HealthComponent>() && vecDistance(otherRect->getRect(),move->getRect()) <= modData.range;
+            //&& GameWindow::getLevel()->getMesh().straightLine(glm::vec4(otherRect->getCenter(), move->getCenter())) ;
     }
     return false;
 }
@@ -899,6 +912,11 @@ AttackComponent::AttackComponent(float damage_, int endLag_, float range_, Entit
                                                                                             baseData({range_,damage_,endLag_}), modData({range_,damage_,endLag_})
 {
 
+}
+
+bool AttackComponent::isAttacking()
+{
+    return canAttack(targetUnit.lock().get());
 }
 
 void AttackComponent::setRange(float range)
@@ -941,15 +959,10 @@ void AttackComponent::update()
               //  move->setTarget(ptr->getCenter()); //
             }
         }
-        if (((Unit*)entity)->getFriendly())
-        {
-
-            GameWindow::requestLine(glm::vec4(entity->getComponent<RectComponent>()->getCenter(),ptr->getRect().getCenter()),{1,0,0,1},1,false);
-        }
     }
     else //otherwise, move
     {
-        GameWindow::requestNGon(10,entity->getComponent<RectComponent>()->getCenter(),10,{1,0,0,.1},0,true,1);
+        //GameWindow::requestNGon(10,entity->getComponent<RectComponent>()->getCenter(),10,{1,0,0,.1},0,true,1);
         ApproachComponent::update();
     }
     modData = baseData;
@@ -1135,18 +1148,20 @@ void UnitAttackComponent::update()
                 AttackComponent::setTarget(longTarget.second,nullptr);
             }
         }
-
     }
-  /*  if (shortTarget.lock().get() && ((Unit*)entity)->getFriendly())
+    else if (ent && targetUnit.lock().get() != ent)
     {
-        std::cout << "Short target " << canAttack(shortTarget.lock().get()) <<"\n";
-        glm::vec4 selfRect = entity->getComponent<RectComponent>()->getRect();
-        glm::vec4 otherRect = shortTarget.lock().get()->getComponent<RectComponent>()->getRect();
-        PolyRender::requestLine(glm::vec4(GameWindow::getCamera().toScreen(
-                                {selfRect.x + selfRect.z/2, selfRect.y + selfRect.a/2}),
-                                GameWindow::getCamera().toScreen(
-                                {otherRect.x + otherRect.z/2, otherRect.y + otherRect.a/2})),
-                                {1,0,1,1},3);
+        AttackComponent::setTarget(GameWindow::getLevel()->getEntities()[ent]);
+    }
+   /* if (shortTarget.lock().get() && ((Unit*)entity)->getFriendly() && targetUnit.lock().get())
+    {
+        //std::cout << "Short target " << canAttack(shortTarget.lock().get()) <<"\n";
+       // glm::vec4 selfRect = entity->getComponent<RectComponent>()->getRect();
+        //GameWindow::requestNGon(10,entity->getComponent<RectComponent>()->getCenter(),10,{1,0,1,1},0,true,1);
+        GameWindow::requestLine(glm::vec4(entity->getComponent<RectComponent>()->getCenter(),
+                                          shortTarget.lock().get()->getComponent<RectComponent>()->getCenter()),
+                                        {0,1,0,1},1,false);
+
     }*/
 
     if (move->getCenter() == longTarget.second) //if we are at the target, set our state back to ignore

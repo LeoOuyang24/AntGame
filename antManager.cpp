@@ -100,6 +100,7 @@ void AntManager::getInput()
         std::shared_ptr<Object>* newTarget = nullptr;
         if (justClicked)
         {
+            maxDistance = 0;
             clickTimer.set();
             int nearSize = nearest.size();
             if (nearSize > 0)
@@ -152,7 +153,6 @@ void AntManager::getInput()
             targetPoint = mouseClick;
             setTask(MOVE);
         }
-        maxDistance = 0;
        /* if (KeyManager::getJustPressed() == SDLK_TAB && !parent.lock().get())
         {
             split(AntManager::maxChildren);
@@ -200,7 +200,7 @@ void AntManager::getInput()
                                 }*/
                                 auto center = ptr->getComponent<MoveComponent>()->getCenter();
                                 moveTo = targetPoint;
-                               command->setTarget(moveTo,newTarget);
+                               command->setTarget(moveTo,newTarget,true);
 
                             }
                          }
@@ -217,7 +217,8 @@ void AntManager::getInput()
     }
     if (clickTimer.isSet())
     {
-        PolyRender::requestNGon(100,GameWindow::getCamera().toScreen({mouseClick.x,mouseClick.y}),(SDL_GetTicks()-clickTimer.getTime())/500*5,{0,1,0,1},0,false,GameWindow::fontZ);
+        //std::cout << clickTimer.getTimePassed() << "\n";
+        PolyRender::requestNGon(100,GameWindow::getCamera().toScreen({mouseClick.x,mouseClick.y}),(clickTimer.getTimePassed())/500.0*5,{0,1,0,1},0,false,GameWindow::fontZ);
         if (clickTimer.timePassed(500))
         {
             clickTimer.reset();
@@ -289,6 +290,7 @@ void AntManager::updateAnts()
         {
             currentTask = IDLE;
         }
+        PolyRender::requestCircle({1,0,0,1},GameWindow::getCamera().toScreen(antsCenter),maxDistance,1);
                   //  std::cout << antsCenter.x << " " << antsCenter.y << std::endl;
 
         }

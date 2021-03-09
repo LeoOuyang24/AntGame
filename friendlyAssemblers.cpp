@@ -4,21 +4,21 @@
 #include "game.h"
 #include "effects.h"
 
-ObjectAssembler::ObjectAssembler( std::string name_, const glm::vec2& rect_,AnimationWrapper* anime, bool mov, bool friendly_, int goldCost_) :
-    dimen(rect_), name(name_), sprite(anime), movable(mov), friendly(friendly_), goldCost(goldCost_)
+ObjectAssembler::ObjectAssembler( std::string name_, const glm::vec2& rect_,const UnitAnimSet& anime, bool mov, bool friendly_, int goldCost_) :
+    dimen(rect_), name(name_), sprites(anime), movable(mov), friendly(friendly_), goldCost(goldCost_)
 {
 
 }
 
 Object* ObjectAssembler::assemble()
 {
-    Object* obj= new Object(name,{0,0,dimen.x,dimen.y},sprite,movable);
+    Object* obj= new Object(name,{0,0,dimen.x,dimen.y},sprites.walking,movable);
     obj->setFriendly(friendly);
     return obj;
 }
 
 
-UnitAssembler::UnitAssembler( std::string name_,const glm::vec2& rect_, AnimationWrapper* wrap, bool mov, double maxHealth_, float speed, double prodTime_, int prodCost, bool friendly_, int goldCost) :
+UnitAssembler::UnitAssembler( std::string name_,const glm::vec2& rect_, const UnitAnimSet& wrap, bool mov, double maxHealth_, float speed, double prodTime_, int prodCost, bool friendly_, int goldCost) :
      ObjectAssembler( name_,rect_, wrap, mov,friendly_,goldCost), maxHealth(maxHealth_), speed(speed), prodTime(prodTime_), prodCost(prodCost)
 {
         if (movable) //if is a unit, add to units
@@ -34,7 +34,7 @@ UnitAssembler::UnitAssembler( std::string name_,const glm::vec2& rect_, Animatio
 Object* UnitAssembler::assemble()
 {
 
-    return new Unit(name,{0,0,dimen.x,dimen.y}, sprite, movable, maxHealth);
+    return new Unit(name,{0,0,dimen.x,dimen.y}, sprites.walking, movable, maxHealth);
 }
 
 Unit* UnitAssembler::commandUnitAssemble()
@@ -42,7 +42,7 @@ Unit* UnitAssembler::commandUnitAssemble()
     Unit* ent = new Unit(movable);
     ent->addRect((new Ant::AntMoveComponent(nullptr,speed,{0,0,dimen.x,dimen.y},*ent)));
     ent->addClickable((new Ant::AntClickable(name,*ent)));
-    ent->addRender((new AnimationComponent(*sprite,*ent)));
+    ent->addRender((new UnitAnimationComponent(sprites,*ent)));
     ent->addHealth(new HealthComponent(*ent,maxHealth));
     ent->addComponent(*(new CommandableComponent(*ent)));
     ent->addComponent(*(new ForcesComponent(*ent)));
@@ -51,7 +51,7 @@ Unit* UnitAssembler::commandUnitAssemble()
 }
 
 ProjectileAssembler::ProjectileAssembler(double damage_, std::string name_,const glm::vec2& rect_, AnimationWrapper* anime, double maxHealth_, float speed, double prodTime_, int prodCost, bool friendly_, int goldCost) :
-                                        damage(damage_),UnitAssembler(name_,rect_,anime,true,maxHealth_,speed, prodTime_,prodCost,friendly_,goldCost)
+                                        damage(damage_),UnitAssembler(name_,rect_,{anime},true,maxHealth_,speed, prodTime_,prodCost,friendly_,goldCost)
 {
 
 }
@@ -74,6 +74,7 @@ void CreateEnergyComponent::update()
 {
     if (player && alarm.framesPassed(waitTime))
     {
+        GameWindow::staticAddPanel(*(new Ticker(1000,{entity->getComponent<RectComponent>()->getRect()},&resourceAnime,{""},&Font::tnr,{0,1,0,1},nullptr,GameWindow::interfaceZ)),false);
         player->addResource(1);
         alarm.set();
     }
@@ -85,7 +86,7 @@ void CreateEnergyComponent::update()
 
 
 
-AntAssembler::AntAssembler() : UnitAssembler("Ant",{20,20},&basicSoldierAnime,true,10,.1, 0000,0,true,10)
+AntAssembler::AntAssembler() : UnitAssembler("Ant",{20,20},{&basicSoldierAnime,&basicShootingAnime},true,10,.1, 0000,0,true,10)
 {
 }
 
@@ -117,7 +118,7 @@ void BlasterAssembler::BlasterRocket::ExplodingRocketComponent::onCollide(Unit& 
     explosionAnime.request({{rect.x - 50,rect.y - 50,100,100}},{-1,.01,1,&(GameWindow::getCamera().toScreen),&GameWindow::getCamera()});
 }
 
-BlasterAssembler::BlasterRocket::BlasterRocket() : ProjectileAssembler(1,"BlasterTankRocket",{8,16},&tankRocketAnime,1,.1,1,1,true)
+BlasterAssembler::BlasterRocket::BlasterRocket() : ProjectileAssembler(1,"BlasterTankRocket",{8,16},{&tankRocketAnime},1,.1,1,1,true)
 {
 
 }
@@ -127,12 +128,12 @@ Object* BlasterAssembler::BlasterRocket::assemble()
     Unit* rocket = new Unit(movable);
     rocket->addRect((new BlasterRocket::ExplodingRocketComponent({0,0},{0,0},*rocket)));
     rocket->addClickable((new ClickableComponent(name,*rocket)));
-    rocket->addRender((new AnimationComponent(*sprite,*rocket)));
+    rocket->addRender((new UnitAnimationComponent(sprites,*rocket)));
     rocket->addHealth((new HealthComponent(*rocket,maxHealth)));
     return rocket;
 }
 
-BlasterAssembler::BlasterAssembler() : UnitAssembler("Blaster",{20,20},&blasterAnime,true,5,1000,10,true,20)
+BlasterAssembler::BlasterAssembler() : UnitAssembler("Blaster",{20,20},{&blasterAnime},true,5,1000,10,true,20)
 {
     addUnitToBucket(*this,allShopItems);
 }
@@ -142,7 +143,7 @@ Object* BlasterAssembler::assemble()
     Unit* ent = new Unit(movable);
     ent->addRect((new Ant::AntMoveComponent(nullptr,.3,{0,0,dimen.x,dimen.y},*ent)));
     ent->addClickable((new Ant::AntClickable(name,*ent)));
-    ent->addRender((new AnimationComponent(*sprite,*ent)));
+    ent->addRender((new UnitAnimationComponent(sprites,*ent)));
     ent->addHealth(new HealthComponent(*ent,maxHealth));
     //ent->addComponent(*(new UnitAttackComponent(1,1,300,300,!friendly,*ent)));
     ent->addComponent(*(new ProjectileAttackComponent(rocket,1000,300,300,!friendly,*ent)));
@@ -164,7 +165,7 @@ void IncineratorAssembler::IncineratorAttackComponent::attack(HealthComponent* h
     fireIcon,*static_cast<Unit*>(&health->getEntity()),*static_cast<Unit*>(&this->getEntity())));
 }
 
-IncineratorAssembler::IncineratorAssembler() : UnitAssembler("Incinerator",{30,30},&incineratorAnime,true,100,.3,0,10,true,10)
+IncineratorAssembler::IncineratorAssembler() : UnitAssembler("Incinerator",{30,30},{&incineratorAnime},true,100,.3,0,10,true,10)
 {
     addUnitToBucket(*this,allShopItems);
     addUnitToBucket(*this,allUnits);
@@ -188,7 +189,7 @@ void FreezerAssembler::FreezerAttackComponent::attack(HealthComponent* health)
     health->addEffect(chillEffect.getEffect(slowAmount,1000,*static_cast<Unit*>(&health->getEntity()),*static_cast<Unit*>(&this->getEntity())));
 }
 
-FreezerAssembler::FreezerAssembler() : UnitAssembler("Cryogenics Unit",{30,30},&freezeUnitAnime,true,100,.1,0)
+FreezerAssembler::FreezerAssembler() : UnitAssembler("Cryogenics Unit",{30,30},{&freezeUnitAnime},true,100,.1,0)
 {
     addUnitToBucket(*this,allShopItems);
     addUnitToBucket(*this,allUnits);
@@ -223,7 +224,7 @@ void MercenaryAssembler::MercenaryAttackComponent::attack(HealthComponent* healt
     }
 }
 
-MercenaryAssembler::MercenaryAssembler() : UnitAssembler("Mercenary",{20,20},&mercenaryAnime,true,100,.1,1000,10,true,50)
+MercenaryAssembler::MercenaryAssembler() : UnitAssembler("Mercenary",{20,20},{&mercenaryAnime},true,100,.1,1000,10,true,50)
 {
     addUnitToBucket(*this,allShopItems);
     addUnitToBucket(*this,allUnits);
@@ -260,7 +261,7 @@ void MinigunUserAssembler::MinigunHypeComponent::update()
 
 }
 
-MinigunUserAssembler::MinigunUserAssembler() : UnitAssembler("Minigun Enthusiast",{20,20},&minigunEnthAnime,true,20,.1,1000)
+MinigunUserAssembler::MinigunUserAssembler() : UnitAssembler("Minigun Enthusiast",{20,20},{&minigunEnthAnime},true,20,.1,1000)
 {
     addUnitToBucket(*this,allShopItems);
 }
@@ -273,7 +274,7 @@ Object* MinigunUserAssembler::assemble()
     return ent;
 }
 
-ShrimpSuitOperator::ShrimpSuitOperator() : UnitAssembler("Shrimp Suit Operator", {25,25}, &shrimpSuitAnime,true,300,.05,1000,50,true,50)
+ShrimpSuitOperator::ShrimpSuitOperator() : UnitAssembler("Shrimp Suit Operator", {25,25}, {&shrimpSuitAnime},true,300,.05,1000,50,true,50)
 {
     addUnitToBucket(*this, allShopItems);
 }
@@ -311,7 +312,7 @@ void SuperMegaTank::NukeComponent::collide(Entity& other)
     }
 }
 
-SuperMegaTank::NukeAssembler::NukeAssembler() : ProjectileAssembler(0,"nuke",{100,100},&radiation,1,0,0)
+SuperMegaTank::NukeAssembler::NukeAssembler() : ProjectileAssembler(0,"nuke",{100,100},{&radiation},1,0,0)
 {
 
 }
@@ -321,7 +322,7 @@ Object* SuperMegaTank::NukeAssembler::assemble()
     Unit* rocket = new Unit(movable);
     rocket->addRect((new SuperMegaTank::NukeComponent({0,0},{0,0,dimen.x,dimen.y},*rocket)));
     rocket->addClickable((new ClickableComponent(name,*rocket)));
-    rocket->addRender((new AnimationComponent(*sprite,*rocket)));
+    rocket->addRender((new UnitAnimationComponent(sprites,*rocket)));
     rocket->addHealth((new HealthComponent(*rocket,maxHealth)));
     return rocket;
 }
@@ -343,7 +344,7 @@ void SuperMegaTank::SMTankComponent::attack(HealthComponent* health)
     }
 }
 
-SuperMegaTank::SuperMegaTank() : UnitAssembler("Super Mega Tank",{50,50},&tankAnime,true,1000,.05,10,10,true,10)
+SuperMegaTank::SuperMegaTank() : UnitAssembler("Super Mega Tank",{50,50},{&tankAnime},true,1000,.05,10,10,true,10)
 {
     addUnitToBucket(*this,allShopItems);
 }
@@ -379,7 +380,7 @@ void CommanderAssembler::CommanderComponent::update()
     GameWindow::requestNGon(100,center,2*radius*cos(98 * 180/ 100*M_PI/180/2),{.1,.5,1,1},0,false,0);
 }
 
-CommanderAssembler::CommanderAssembler() : UnitAssembler("Commander",{20,20},&commanderAnime,true,100,.1,0)
+CommanderAssembler::CommanderAssembler() : UnitAssembler("Commander",{20,20},{&commanderAnime},true,100,.1,0)
 {
     addUnitToBucket(*this, allShopItems);
 }
@@ -407,7 +408,7 @@ void IceBlasterAssembler::IceBlasterAttackComponent::attack(HealthComponent* hea
     }
 }
 
-IceBlasterAssembler::IceBlasterAssembler() : UnitAssembler("Ice Laser",{30,30},&iceTurretAnime,false,100,0,1000,5,true,10)
+IceBlasterAssembler::IceBlasterAssembler() : UnitAssembler("Ice Laser",{30,30},{&iceTurretAnime},false,100,0,1000,5,true,10)
 {
     addUnitToBucket(*this,allShopItems);
 }
@@ -419,9 +420,9 @@ Object* IceBlasterAssembler::assemble()
     return ent;
 }
 
-FactoryAssembler::FactoryAssembler() : UnitAssembler("Factory",{30,30}, &defaultAnime, false, 100,0,1000,10,true,10)
+FactoryAssembler::FactoryAssembler() : UnitAssembler("Factory",{30,30}, {&defaultAnime}, false, 100,0,1000,10,true,10)
 {
-        addUnitToBucket(*this,allShopItems);
+    addUnitToBucket(*this,allShopItems);
 }
 
 Object* FactoryAssembler::assemble()
@@ -433,7 +434,7 @@ Object* FactoryAssembler::assemble()
     return stru;
 }
 
-TurretAssembler::TurretAssembler() : UnitAssembler("Turret", {30,30},&turretSprite,false,100,0,1000,5,true,10)
+TurretAssembler::TurretAssembler() : UnitAssembler("Turret", {30,30},{&turretSprite},false,100,0,1000,5,true,10)
 {
     addUnitToBucket(*this,allShopItems);
 }
@@ -443,7 +444,7 @@ Object* TurretAssembler::assemble()
     Unit* ent = new Unit(movable);
     ent->addRect((new MoveComponent(0,{0,0,dimen.x,dimen.y},*ent)));
     ent->addClickable((new ClickableComponent(name,*ent)));
-    ent->addRender((new AnimationComponent(*sprite,*ent)));
+    ent->addRender((new UnitAnimationComponent(sprites,*ent)));
     ent->addHealth(new HealthComponent(*ent,maxHealth));
     ent->setFriendly(true);
     ent->addComponent(*(new UnitAttackComponent(1,.1,100,100,false,*ent)));
@@ -480,7 +481,7 @@ void HealUnitComponent::update()
     }
 }
 
-HealBuildingAssembler::HealBuildingAssembler() : UnitAssembler("HealBuilding",{30,30},&greenCross,false,100,0,1000,true,10)
+HealBuildingAssembler::HealBuildingAssembler() : UnitAssembler("HealBuilding",{30,30},{&greenCross},false,100,0,1000,true,10)
 {
     //addComponent(*(new HealUnitComponent(1,*this)));
     addUnitToBucket(*this,allShopItems);
@@ -493,7 +494,7 @@ Object* HealBuildingAssembler::assemble()
     Unit* ent = new Unit(movable);
     ent->addRect((new MoveComponent(0,{0,0,dimen.x,dimen.y},*ent)));
     ent->addClickable((new ClickableComponent(name,*ent)));
-    ent->addRender((new AnimationComponent(*sprite,*ent)));
+    ent->addRender((new UnitAnimationComponent(sprites,*ent)));
     ent->addHealth(new HealthComponent(*ent,maxHealth));
     ent->setFriendly(true);
     ent->addComponent(*(new HealUnitComponent(1,100,*ent)));

@@ -20,7 +20,7 @@ class CommandableComponent : public Component, public ComponentContainer<Command
     AntManager* currentTask = nullptr;
 public:
     CommandableComponent(Entity& entity);
-    void setTarget(const glm::vec2& moveTo, std::shared_ptr<Object>* obj);
+    void setTarget(const glm::vec2& moveTo, std::shared_ptr<Object>* obj, bool isLong); //islong is whether or not we should set longTarget for UnitAttackComponents. Ignored if UnitAttackComponent doesn't exist or obj is null
     void update();
     void collide(Entity& entity);
     void startTask(); //sets completedTask to false

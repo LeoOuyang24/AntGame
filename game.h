@@ -95,6 +95,8 @@ class GameWindow : public Window //the gamewindow is mostly static because most 
     static std::weak_ptr<Map> level;
     static Manager manager;
     static Window* gameOver;
+    static GameWindow* actualWindow; //the singleton window
+
     static Debug debug;
     static Player player;
     static FogMaker fogMaker;
@@ -122,6 +124,7 @@ public:
     static Player& getPlayer();
     static FogMaker& getFogMaker();
     void setWorldMap(WindowSwitchButton& butt);
+    static void staticAddPanel(Panel& panel, bool absolute);
     static void requestNGon(int n, const glm::vec2& center, double side, const glm::vec4& color, double angle, bool filled, float z, bool absolute = false); //easier way to render polygons without having to call getCamera();
     static void requestRect(const glm::vec4& rect, const glm::vec4& color, bool filled, double angle, float z, bool absolute = false); //if absolute is true, the coordinates are taken as screen coordinates
     static void requestLine(const glm::vec4& line, const glm::vec4& color, float z, bool absolute);

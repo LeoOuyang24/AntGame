@@ -15,7 +15,7 @@ CommandableComponent::CommandableComponent(Entity& entity) : Component(entity), 
 
 }
 
-void CommandableComponent::setTarget(const glm::vec2& moveTo, std::shared_ptr<Object>* obj)
+void CommandableComponent::setTarget(const glm::vec2& moveTo, std::shared_ptr<Object>* obj, bool isLong)
 {
     glm::vec2 otherTarg =entity->getComponent<MoveComponent>()->getTarget();
     if (otherTarg.x != moveTo.x || otherTarg.y != moveTo.y)
@@ -26,7 +26,14 @@ void CommandableComponent::setTarget(const glm::vec2& moveTo, std::shared_ptr<Ob
         UnitAttackComponent* attack = entity->getComponent<UnitAttackComponent>();
         if (attack)
         {
-            attack->setLongTarget(moveTo,obj,false);
+            if (isLong)
+            {
+                attack->setLongTarget(moveTo,obj,false);
+            }
+            else if (obj)
+            {
+                attack->setShortTarget(*obj);
+            }
         }
         else
         {
@@ -71,7 +78,7 @@ void CommandableComponent::update()
             completedTask = true;
         }
 
-                GameWindow::requestNGon(10,currentTask->getTargetPoint(),1,{completedTask,0,0,1},0,true,1);
+               // GameWindow::requestNGon(10,currentTask->getTargetPoint(),1,{completedTask,0,0,1},0,true,1);
 
     }
 }
@@ -86,8 +93,12 @@ void CommandableComponent::collide(Entity& other)
         command->getCurrentTask() == currentTask &&
         (command->getCompletedTask() && pointDistance(ourPath->getCenter(),ourPath->getTarget()) <= currentTask->getMaxDistance()))
     {
-        setTarget(ourPath->getCenter(),nullptr);
-        completedTask = true;
+         AttackComponent* attack = entity->getComponent<AttackComponent>();
+       if (!attack || !attack->getTargetUnit())
+        {
+            setTarget(ourPath->getCenter(),nullptr,true);
+                completedTask = true;
+        }
     }
    // std::cout << getCompletedTask() << std::endl;
 
@@ -408,7 +419,7 @@ void ProduceUnitComponent::display(const glm::vec4& rect)
     for (int it = 0; it < size; ++it)
     {
         glm::vec4 renderRect = GameWindow::getCamera().toAbsolute({rect.x + .1*rect.z,rect.y + .1*rect.a*(it),.1*rect.a,.1*rect.a});
-        toProduce[it]->sprite->request({renderRect,0,NONE,
+        toProduce[it]->sprites.walking->request({renderRect,0,NONE,
                                             {1,1,1,1},&RenderProgram::basicProgram,GameWindow::fontZ} ,{});
         if (it == 0)
         {
