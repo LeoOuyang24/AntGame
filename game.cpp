@@ -3,42 +3,11 @@
 
 #include "debug.h"
 #include "game.h"
-#include "ants.h"
 #include "sequence.h"
 #include "navigation.h"
 #include "enemyAssemblers.h"
 
 SpriteWrapper frame;
-
-Manager::TaskNode::TaskNode(Manager& t) : task(t, Player::selectColor)
-{
-
-}
-
-Manager::TaskNode::TaskNode(AntManager&& t) : task(std::move(t))
-{
-
-}
-
-bool Manager::TaskNode::hasChildren()
-{
-    for (int i = 0; i < AntManager::maxChildren; ++i)
-    {
-        if (child[i].get())
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-Manager::TaskNode::~TaskNode()
-{
-    for (int i = 0; i < AntManager::maxChildren; ++i)
-    {
-        child[i].reset();
-    }
-}
 
 Manager::Manager()
 {
@@ -48,20 +17,10 @@ const ObjPtr Manager::getSelectedUnit() const
 {
     return selectedUnit;
 }
-const AntManager* Manager::getCurrentTask() const
-{
-    auto task = currentTask.lock().get();
-    if (task)
-    {
-        return &(task->task);
-    }
-    return nullptr;
-}
 
 void Manager::init(const glm::vec4& region)
 {
    // tree.reset(new RawQuadTree(region));
-    tasks.reserve(maxTasks);
 }
 
 Unit* Manager::generateCreature()
@@ -127,147 +86,11 @@ void Manager::spawnCreatures(Anthill& hill, double minR, double maxR) //spawn cr
 
 }
 
-int Manager::processAntManagers(std::shared_ptr<TaskNode>& node,int index, int y, int x)
-{
-    TaskNode* nodePtr = node.get();
-    if (nodePtr)
-    {
-        y++;
-        std::string key = "";
-        TaskNode* parent = parentTask.lock().get();
-        node->task.updateAnts();
-        if (nodePtr == parent)
-        {
-            key = "~";
-        }
-        else if(index > -1)
-        {
-            key = convert(index + 1);
-        }
-
-        else
-        {
-            if ( parent != nullptr)
-            {
-                if (nodePtr == parent->child[0].get())
-                {
-                    key = "a";
-                }
-                else if (nodePtr == parent->child[1].get())
-                {
-                    key = "s";
-                }
-                else if (nodePtr == parent->child[2].get())
-                {
-                    key = "d";
-                }
-                else if (nodePtr == parent->child[3].get())
-                {
-                    key = "f";
-                }
-            }
-        }
-        node->task.render({10*x + 1,y*25,30,20},key);
-        if (nodePtr->task.getAnts().size() > 0)
-        {
-            for (int i = 0; i < AntManager::maxChildren; ++i)
-            {
-               y = processAntManagers(node->child[i],-1,y , x + 1);
-            }
-        }
-    }
-    return y;
-}
-
-void Manager::updateAntManagers()
-{
-
-    int size = tasks.size();
-    int previous = 0;
-    for (int i = 0; i < size; ++i)
-    {
-        previous = processAntManagers(tasks[i],i,previous,0);
-    }
-    int pressed = KeyManager::getJustPressed();
-    auto taskNode = currentTask.lock().get();
-    if (pressed != -1)
-    {
-        int index = (pressed - SDLK_1); //this is is the same as (pressed-SDLK1%maxTasks) except it always returns a positive number
-        if (index < (int)tasks.size() && index >= 0) //we have to use .size() rather than the size variable here because size might change
-        {
-            currentTask = tasks[index];
-            if (tasks[index]->hasChildren())
-            {
-                parentTask = currentTask;
-            }
-            else
-            {
-                parentTask.reset();
-            }
-            Camera* cam = &(GameWindow::getCamera());
-            glm::vec2 center = currentTask.lock().get()->task.getCenter();
-            if (!pointInVec(cam->getRect(),center.x,center.y,0))
-            {
-                cam->center(center);
-            }
-        }
-        else if (taskNode)
-        {
-            auto task = &(taskNode->task);
-            switch (pressed)
-                {
-                    case SDLK_TAB:
-                        split();
-                        parentTask = currentTask;
-                        break;
-                    case SDLK_BACKQUOTE:
-                        currentTask = parentTask;
-                        break;
-                    case SDLK_F1:
-                        parentTask = currentTask;
-                        break;
-                    default:
-                        auto parent = parentTask.lock().get();
-                        if (parent)
-                        {
-                            auto oldTask = currentTask;
-                            switch (pressed)
-                            {
-                            case SDLK_a:
-                                currentTask = parent->child[0];
-                                break;
-                            case SDLK_s:
-                                currentTask = parent->child[1];
-                                break;
-                            case SDLK_d:
-                                currentTask = parent->child[2];
-                                break;
-                            case SDLK_f:
-                                currentTask = parent->child[3];
-                                break;
-                            }
-                            if (!currentTask.lock().get())
-                            {
-                                currentTask = oldTask;
-                            }
-                        }
-                }
-        }
-    }
-    if (MouseManager::getJustClicked() == SDL_BUTTON_LEFT)
-    {
-        currentTask.reset();
-        parentTask.reset();
-    }
-
-}
-
 void Manager::updateEntities()
 {
     Map* level = (GameWindow::getLevel());
 
     ObjectStorage* entities = &(level->getEntities());
-    const glm::vec4* selectRect = &(GameWindow::getSelection());
     RawQuadTree* tree = level->getTree();
     AntManager* newTask = nullptr;
     auto it2 = entities->begin();
@@ -309,32 +132,6 @@ void Manager::updateEntities()
                     //std::cout << current << std::endl;
                     GameWindow::getFogMaker().requestPolyFog(rectPos->getCenter(),100,10);
                 }
-                if (current->getComponent<Ant::AntMoveComponent>())
-                {
-                    if (released == SDL_BUTTON_LEFT && i->second->getRect().collides(*selectRect))
-                    {
-                        if (!newTask)
-                        {
-                            tasks.emplace_back(new TaskNode(*this));
-                            auto shared = tasks[tasks.size() - 1];
-                            currentTask = shared;
-                            parentTask.reset();
-                            newTask = &(shared->task);
-                        }
-                        newTask->addAnt((i->second));
-                        //std::cout << newTask->getAnts().size() << " "<< tasks[0]->task.getAnts().size() << std::endl;
-                        //selectedUnits.emplace_back(ants[i->first]);
-                    }
-                }
-                else
-                {
-                    if (current->clicked())
-                   {
-                       //current->getClickable().click(true);
-                       //selectedUnits.emplace_back(entities[current]);
-                       newSelected = current;
-                   }
-                }
             }
             else
             {
@@ -361,23 +158,6 @@ void Manager::updateEntities()
     }
 }
 
-void Manager::split()
-{
-    auto current = currentTask.lock().get();
-    if (current)
-    {
-        auto arr = current->task.split(AntManager::maxChildren);
-        for (int i = 0; i < AntManager::maxChildren; ++i)
-        {
-           // if (i < pieces)
-            {
-                current->child[i].reset(new TaskNode(std::move(arr[i])));
-
-            }
-        }
-    }
-}
-
 void Manager::update()
 {
     //std::vector<Unit*> selected;
@@ -388,13 +168,6 @@ void Manager::update()
 
     updateEntities();
 
-
-    auto curTask = currentTask.lock().get();
-    if (curTask)
-    {
-        curTask->task.getInput();
-        //std::cout << currentTask->getAnts().size() << std::endl;
-    }
     Map* level = GameWindow::getLevel();
     if (Debug::getSpawnCreatures() && level && level->getAnthill() && (!spawner.isSet() || spawner.timePassed(std::min(180000 - SDL_GetTicks(),(Uint32)1000))))
     {
@@ -410,10 +183,6 @@ void Manager::update()
     //tree->render(disp);
 }
 
-void Manager::reset()
-{
-    tasks.clear();
-}
 
 class AntClickable;
 
@@ -423,11 +192,11 @@ Camera::Camera()
 
 }
 
-void Camera::init(int w, int h)
+void Camera::init(Unit& play, int w, int h)
 {
     RenderCamera::init(w,h);
     baseDimen = {w,h};
-
+    player = &play;
     move = new MoveComponent(1,rect,*this);
     addComponent(*(move));
 }
@@ -450,7 +219,7 @@ void Camera::update()
     {
         auto mousePos = MouseManager::getMousePos();
         auto screenDimen = RenderProgram::getScreenDimen();
-        int speed = 1;
+        /*int speed = 1;
         if (mousePos.first >= screenDimen.x - 1 || mousePos.first <= 0)
         {
             rect.x += absMin((mousePos.first - speed), (mousePos.first - screenDimen.x +1 + speed ))*DeltaTime::deltaTime;
@@ -459,9 +228,9 @@ void Camera::update()
         if (mousePos.second >= screenDimen.y - 1 || mousePos.second <= 0)
         {
             rect.y +=  absMin((mousePos.second - speed), (mousePos.second - screenDimen.y + 1+ speed ))*DeltaTime::deltaTime;
-        }
-        rect.x = std::max(bounds.x,std::min(bounds.x + bounds.z - rect.z,rect.x));
-        rect.y = std::max(bounds.y, std::min(bounds.y + bounds.a  - rect.a , rect.y));
+        }*/
+        rect.x = std::max(bounds.x,std::min(bounds.x + bounds.z - rect.z,player->getCenter().x - rect.z/2));
+        rect.y = std::max(bounds.y, std::min(bounds.y + bounds.a  - rect.a , player->getCenter().y - rect.a/2));
         zoomGoal = -1;
 
         auto mouseWheel = MouseManager::getMouseWheel();
@@ -567,8 +336,8 @@ GameWindow::GameWindow() : Window({0,0},nullptr,{0,0,0,0})
     menuHeight = .2*screenDimen.y;
     rect.z = screenDimen.x;
     rect.a = screenDimen.y;
-    camera.init(screenDimen.x,screenDimen.y);
     player.init();
+    camera.init(*player.getPlayer(),screenDimen.x,screenDimen.y);
     actualWindow = this;
     Window::camera = &camera;
   /*  auto ptr = evilMoonAssembler.assemble();
@@ -591,9 +360,11 @@ void GameWindow::onSwitch(Window& from)
         glm::vec4 levelRect = levelPtr->getRect();
         camera.setBounds({levelRect.x,levelRect.y,levelRect.z,levelRect.a + menuHeight});
         camera.center({levelRect.z/2,levelRect.a/2});
+        levelPtr->addUnit(*player.getPlayer(),levelRect.z/2,levelRect.a/2,true);
         gameOver = new Window({screenDimen.x/10, screenDimen.y/10},nullptr, {1,0,0,1});
         gameOver->addPanel(*(new QuitButton(*this)));
         manager.init(levelPtr->getRect());
+        //levelPtr->addUnit(*(playerAssembler.assemble()),levelRect.z/2 + 100,levelRect.a/2 + 100,true);
     }
     debug.init();
    // player.init();
@@ -629,14 +400,14 @@ void GameWindow::updateTop(float z)
                 labels[i]->update();
             }
         }
-        player.update();
+       // player.update();
 
       //  GameWindow::requestNGon(10,camera.toWorld(pairtoVec(MouseManager::getMousePos())),30,{0,0,0,0},0,true,3);
 
        // requestRect(camera.getRect(),{0,0,0,.5},true,0,2,0);
 
         debug.update();
-        manager.updateAntManagers();
+        //manager.updateAntManagers();
 
         //everything rendered before this is rendered as if it were under fog (unless it has a z higher than fog obviously)
        if (Debug::getShowFog())
@@ -664,7 +435,7 @@ void GameWindow::updateTop(float z)
     // std::cout << camera.getRect().x << " " << camera.getRect().x + camera.getRect().z << std::endl;
        // camera.reserveZoom();
         renderTopBar();
-        renderSelectedUnits();
+        //renderSelectedUnits();
 
         if (level.lock().get()->getChangeLevel())
         {
@@ -703,7 +474,7 @@ void GameWindow::renderSelectedUnits()
     glm::vec2 screenDimen = RenderProgram::getScreenDimen();
     glm::vec4 wholeRect = {0,rect.a - menuHeight,rect.z, menuHeight};
    // printRect(wholeRect);
-    player.render({wholeRect.x + wholeRect.z - 1.1*wholeRect.a, wholeRect.y - wholeRect.a, wholeRect.a,wholeRect.a});
+    //player.render({wholeRect.x + wholeRect.z - 1.1*wholeRect.a, wholeRect.y - wholeRect.a, wholeRect.a,wholeRect.a});
     glm::vec4 selectedAntsRect = {0,wholeRect.y, .7*wholeRect.z, wholeRect.a};
     glm::vec4 selectedUnitRect = {selectedAntsRect.x + selectedAntsRect.z, wholeRect.y, wholeRect.z - selectedAntsRect.z, wholeRect.a};
     glm::vec2 margin = {.05*wholeRect.z,.2*menuHeight}; //the horizontal and vertical margins to render the selected ants and selected unit
@@ -716,7 +487,6 @@ void GameWindow::renderSelectedUnits()
                             selectedUnitRect.x*cameraRect->z/screenDimen.x,
                              (selectedUnitRect.y + selectedUnitRect.a)*cameraRect->a/screenDimen.y},{0,0,0,1},interfaceZ);
 
-    const AntManager* antManager = manager.getCurrentTask();
     Object* selectedUnit = manager.getSelectedUnit().lock().get();
     if (selectedUnit)
     {
@@ -730,31 +500,8 @@ void GameWindow::renderSelectedUnits()
         {
             health->render({selectedRect.x + selectedRect.z + spacing.x, selectedRect.y , selectedRect.z}, interfaceZ);
         }
-        ResourceComponent* resource = selectedUnit->getComponent<ResourceComponent>();
-        if (resource)
-        {
-            resource->render({selectedRect.x + selectedRect.z + spacing.x, selectedRect.y + spacing.y, selectedRect.z},interfaceZ);
-        }
         selectedUnit->getClickable().click(true);
         selectedUnit->getClickable().display(selectedAntsRect);
-    }
-    else if (antManager)
-    {
-        auto selectedUnits = &(antManager->getAnts());
-        int size = selectedUnits->size();
-        for (int i = 0; i < size; ++i)
-        {
-            Entity* current = selectedUnits->at(i).lock().get();
-            if (current)
-            {
-                glm::vec4 outlineRect = { selectedAntsRect.x + margin.x + i%antsPerRow*(spacing.x + antRectWidth),selectedAntsRect.y + margin.y + i/antsPerRow*spacing.y,antRectWidth,antRectWidth};
-                HealthComponent* health = current->getComponent<HealthComponent>();
-                double healthRatio = health->getHealth()/health->getMaxHealth();//how much health this ant currently has;
-                current->getComponent<RenderComponent>()->render({camera.toAbsolute({outlineRect.x + 2, outlineRect.y + 2, outlineRect.z - 4, outlineRect.a - 4})
-                                                                 ,0,NONE,{1-healthRatio,0,0,1},&RenderProgram::basicProgram,fontZ});
-                GameWindow::requestRect(outlineRect,{1,0,1,1},false,0,interfaceZ,true);
-            }
-        }
     }
     GameWindow::requestRect(wholeRect,{0,1,0,1},true,0,interfaceZ,true);
 }
@@ -764,10 +511,6 @@ float GameWindow::getMenuHeight()
     return menuHeight;
 }
 
-const glm::vec4& GameWindow::getSelection()
-{
-    return player.getSelection();
-}
 Camera& GameWindow::getCamera()
 {
     return camera;

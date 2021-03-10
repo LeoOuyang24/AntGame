@@ -381,7 +381,6 @@ Map* Map::generateLevel(const glm::vec4& levelRect) // Doesn't generate terrain 
             chunk->addUnit(*(resource.assemble()),chosen.x + fmod(rand(),(maxObjectSize/2 - dimen.x/2)),
             chosen.y + fmod(rand(),(maxObjectSize/2 - dimen.y/2)),true);
     }
-    chunk->mainHill = std::static_pointer_cast<Anthill>(chunk->addUnit(*(new Anthill({chunkDimen/2,chunkDimen/2})),true));
     return chunk;
    // addUnit(*(new Gate({chunkDimen/2, chunkDimen/2 + 100})));
 }

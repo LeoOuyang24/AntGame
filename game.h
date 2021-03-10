@@ -25,36 +25,20 @@ class Manager //handles updating units
     constexpr static int maxTasks = 10;
     friend class AntManager;
     friend class GameWindow;
-    struct TaskNode
-    {
-        AntManager task;
-        std::shared_ptr<TaskNode> child[AntManager::maxChildren];
-        TaskNode(Manager& manager); //for creating an empty AntManager
-        TaskNode(AntManager&& t );
-        bool hasChildren(); //returns true if any one of the children are not null
-        ~TaskNode();
-    };
     glm::vec2 target;
-    std::vector<std::shared_ptr<TaskNode>> tasks;
   //  std::vector<UnitPtr> selectedUnits;
     ObjPtr selectedUnit;
     DeltaTime spawner; //marks the last time something spawned
     Unit* generateCreature(); //chooses a random creature to spawn
     //void spawnCreatures(); //spawn a creature at a random position
     void spawnCreatures(Anthill& hill, double minR, double maxR); //spawn creatures near an anthill at a certain radius
-    std::weak_ptr<TaskNode> currentTask; //the current antmanager
-    std::weak_ptr<TaskNode> parentTask; //the current parent task
-    int processAntManagers(std::shared_ptr<TaskNode>& node, int index, int y, int x); //updates an AntManager and all of its children. y and x are the amount of displacement to render the task. index is the index of the antmanager, < 0 if its a child antmanager. Returns the y of the next AntManager
+
     void updateEntities();
-    void split();
 public:
     Manager();
     const ObjPtr getSelectedUnit() const;
-    const AntManager* getCurrentTask() const;
     void init(const glm::vec4& region);
     void update(); //updates and spawn entities
-    void updateAntManagers(); //updates antmanagers. Separate from update because we want this to be rendered away from the fog
-    void reset();
 };
 
 class GameWindow;
@@ -68,10 +52,11 @@ class Camera : public RenderCamera, Entity
     double zoomSpeed = .0001;
     double oldZoom;
     static double minZoom, maxZoom;
+    Unit* player = nullptr;
     MoveComponent* move;
 public:
     Camera();
-    void init(int w, int h);
+    void init(Unit& play, int w, int h);
     void update();
     void setBounds(const glm::vec4& newBounds);
     void center(const glm::vec2& point); //centers the camera around point
@@ -116,7 +101,6 @@ public:
     static float interfaceZ;
     static float fontZ; //z for rendering text on top of the interface
     bool quit = false;
-    const static glm::vec4& getSelection();
     static Camera& getCamera();
     static const Manager& getManager();
     static Map* getLevel();

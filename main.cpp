@@ -102,7 +102,6 @@ int main(int args, char* argsc[])
             std::cout << "Time to setup everything before worldMap: " << SDL_GetTicks() << "\n";
 
     WorldMapWindow worldMap;
-
     interface.switchCurrent(&worldMap);
     worldMap.generate();
 

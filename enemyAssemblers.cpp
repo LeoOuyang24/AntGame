@@ -1,6 +1,5 @@
 #include "enemyAssemblers.h"
 #include "animation.h"
-#include "ants.h"
 
 EvilMoonAssembler::EvilMoonAssembler() : UnitAssembler("evilMoon", {20,20}, {&basicEnemyAnime},true,100,.1,100,0)
 {

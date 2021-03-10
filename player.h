@@ -11,47 +11,34 @@ class Factory;
 
 class Player //tracks player stats (resources, money). Also handles player inputs
 {
-    int resource = 0;
-    enum Mode{
-        SELECTING, //default mode, player can select units
-        BUILDING //player is building structures
-    };
-    bool updateSelect(); //updates select rect. Returns true if the mouse is down
-    glm::vec4 selection = {0,0,0,0};
-    glm::vec2 origin; //last point the mouse was at
-    Mode mode;
-    typedef  std::set<UnitAssembler*> UnitSet;
-    UnitSet buildings; //list of structures we can create
-    UnitSet units; //list of units we can produce
-    Window* buildingWindow = nullptr;
-    Window* unitWindow = nullptr;
-    Window* currentWindow = nullptr;
-    UnitAssembler* currentBuilding = nullptr;
-    class ConstructButton : public Button
-    {
-        Player* player;
-        UnitAssembler* assembler;
-    public:
-        ConstructButton(const glm::vec4& rect, Player& player_, UnitAssembler& building_);
-        void press();
-    };
+    int resource;
     int gold = 100;
+    Unit* player = nullptr;
 public:
     static const glm::vec4 selectColor;
     Player();
     void init(); //initiaites the start state. Sets the starting amount of resources, starting buildings, etc.
+    Unit* getPlayer();
     int getResource();
     void addResource(int r); //used to increase or decrease resources. Resources can't be negative
     int getGold();
     void addGold(int g);
-    void update();
-    void render(const glm::vec4& windowSize);
-    const glm::vec4& getSelection();
-    void setCurrentBuilding(UnitAssembler* building);
-    void addBuilding(UnitAssembler& building);
-    void addUnit(UnitAssembler& unit, bool isUnit);
-    std::set<UnitAssembler*>& getUnits();
 };
+
+class PlayerAssembler : public UnitAssembler
+{
+    class PlayerControls : public MoveComponent
+    {
+    public:
+        PlayerControls(float speed, const glm::vec4& rect, Unit& player);
+        void update();
+    };
+public:
+    PlayerAssembler();
+    Object* assemble();
+};
+
+extern PlayerAssembler playerAssembler;
 
 class InactiveComponent : public Component, public ComponentContainer<InactiveComponent> //represents how long an entity is inactive for. Usually because a building is under construction
 {

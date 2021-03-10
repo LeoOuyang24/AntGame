@@ -10,7 +10,7 @@
 
 const glm::vec4 Player::selectColor = {1,1,1,.5};
 
-bool Player::updateSelect()
+/*bool Player::updateSelect()
 {
     if (MouseManager::isPressed(SDL_BUTTON_LEFT))
     {
@@ -34,21 +34,7 @@ bool Player::updateSelect()
         }
     }
     return false;
-}
-
-Player::ConstructButton::ConstructButton(const glm::vec4& rect, Player& player_,UnitAssembler& building_) :
-    Button(rect,nullptr,building_.sprites.walking,{},nullptr,{0,0,0,0}),player(&player_), assembler(&building_)
-{
-
-}
-
-void Player::ConstructButton::press()
-{
-    if (player && assembler)
-    {
-        player->setCurrentBuilding(assembler);
-    }
-}
+}*/
 
 Player::Player()
 {
@@ -57,16 +43,15 @@ Player::Player()
 
 void Player::init()
 {
-    buildingWindow = new Window({.2*RenderProgram::getScreenDimen().y,.2*RenderProgram::getScreenDimen().y}
-                          ,nullptr,{0,1,1,1});
-    unitWindow =  new Window({.2*RenderProgram::getScreenDimen().y,.2*RenderProgram::getScreenDimen().y}
-                          ,nullptr,{0,1,1,1});
-    currentWindow = unitWindow;
    // addBuilding(factAssembler);
    // addBuilding(turretAssembler);
-   addUnit(antAssembler,true);
-   addUnit(evilMoonAssembler,false);
+    player = static_cast<Unit*>(playerAssembler.assemble());
     addResource(100);
+}
+
+Unit* Player::getPlayer()
+{
+    return player;
 }
 
 int Player::getResource()
@@ -89,134 +74,67 @@ void Player::addGold(int g)
     gold = std::max(gold + g, 0);
 }
 
-void Player::update()
+PlayerAssembler::PlayerControls::PlayerControls(float speed, const glm::vec4& rect, Unit& player) : MoveComponent(speed,rect , player)
 {
- //       PolyRender::requestRect(GameWindow::getCamera().toScreen(selection),{1,0,0,.5},true,0,1);
 
-    glm::vec2 screenDimen = RenderProgram::getScreenDimen();
-   // Font::tnr.requestWrite({"Resources: " + convert(resource),GameWindow::getCamera().toAbsolute({screenDimen.x - 200, 50, 100,100}),0,{0,0,0,1},GameWindow::interfaceZ});
+}
 
-    switch(KeyManager::getJustPressed())
+void PlayerAssembler::PlayerControls::update()
+{
+    glm::vec2 move = {0,0};
+    if (KeyManager::findNumber(SDLK_d) != -1)
     {
-    case SDLK_b:
-        if (mode == BUILDING)
+        move.x += 1;
+    }
+    if (KeyManager::findNumber(SDLK_a) != -1)
+    {
+        move.x -= 1;
+    }
+    if (KeyManager::findNumber(SDLK_w) != -1)
+    {
+        move.y -= 1;
+    }
+    if (KeyManager::findNumber(SDLK_s) != -1)
+    {
+        move.y += 1;
+    }
+    if (move.x != 0 || move.y != 0)
         {
-            mode = SELECTING;
+            float angle = atan2(move.y,move.x);
+            move = {cos(angle)*speed,sin(angle)*speed};
+            if (GameWindow::getLevel()->getMesh().getWallRect(rect + glm::vec4(move.x,0,0,0) ) != glm::vec4(0))
+            {
+                move.x = 0;
+            }
+            if (GameWindow::getLevel()->getMesh().getWallRect(rect + glm::vec4(0,move.y,0,0)) != glm::vec4(0))
+            {
+                move.y = 0;
+            }
+            setTarget(getCenter() + move);
         }
         else
         {
-            mode = BUILDING;
+            setTarget(getCenter());
         }
-        break;
-    case SDLK_SPACE:
-        currentWindow = currentWindow == unitWindow ? buildingWindow : unitWindow;
-        break;
-    }
-
-    switch (mode)
-    {
-        case SELECTING:
-            if (updateSelect())
-            {
-                GameWindow::requestRect(selection,selectColor,true,0,-.1);
-            }
-            break;
-        case BUILDING:
-            auto mousePos = GameWindow::getCamera().toWorld(pairtoVec(MouseManager::getMousePos()));
-            glm::vec4 color = selectColor;
-            if(currentBuilding)
-            {
-                glm::vec2 dimen = currentBuilding->dimen;
-                glm::vec4 structRect = {mousePos.x - dimen.x/2,mousePos.y - dimen.y/2,dimen.x, dimen.y};
-                bool collides = !GameWindow::getLevel()->getMesh().notInWall(structRect);
-                if (!collides)
-                {
-                    Map* level = GameWindow::getLevel();
-                    RawQuadTree* tree = level->getTree();
-                    auto vec = tree->getNearest(structRect);
-                    int size = vec.size();
-                    for (int i = 0; i < size; ++i)
-                    {
-                        if (vec[i]->collides(structRect))
-                        {
-                            collides = true;
-                            break;
-                        }
-                    }
-                }
-                else
-                {
-                    color = {1,0,0,1};
-                }
-                GameWindow::requestRect(structRect,color,true,0,0,0);
-                if (MouseManager::getJustClicked() == SDL_BUTTON_LEFT && !collides && getResource() >= currentBuilding->prodCost)
-                {
-                    Object* ptr = (currentBuilding->assemble());
-                    RectComponent* rect = &ptr->getRect();
-                    rect->setPos({mousePos.x - dimen.x/2, mousePos.y - dimen.y/2});
-                    InactiveComponent* inactive = new InactiveComponent(currentBuilding->prodTime,*ptr);
-                    ptr->addComponent(*inactive);
-                    GameWindow::getLevel()->addUnit(*(ptr), ptr->getFriendly());
-                    inactive->init();
-                    addResource(-1*currentBuilding->prodCost);
-                }
-            }
-            break;
-    }
-    if (mode != SELECTING)
-    {
-        selection = {0,0,0,0};
-    }
-
+    MoveComponent::update();
 }
 
-void Player::render(const glm::vec4& windowSize)
+PlayerAssembler::PlayerAssembler() : UnitAssembler("Player",{30,30},{&basicSoldierAnime,&basicShootingAnime},true,100,.5,0,0,true,0)
 {
-    currentWindow->updateBlit(GameWindow::interfaceZ,GameWindow::getCamera(),true, windowSize);
-   // GameWindow::requestRect(windowSize,{0,1,1,1},true,0,GameWindow::interfaceZ,true);
+
 }
 
-const glm::vec4& Player::getSelection()
+Object* PlayerAssembler::assemble()
 {
-    return selection;
+    Unit* player = new Unit(movable);
+    player->addHealth(new HealthComponent(*player,maxHealth));
+    player->addRect(new PlayerControls(speed,{0,0,dimen.x,dimen.y},*player));
+    player->addRender(new UnitAnimationComponent(sprites,*player));
+    player->addClickable(new ClickableComponent(name,*player));
+    return player;
 }
 
-void Player::setCurrentBuilding(UnitAssembler* building)
-{
-    currentBuilding = building;
-}
-
-void Player::addBuilding(UnitAssembler& building)
-{
-    if (buildings.insert(&building).second) //insert the element if it's not already in the set. If it's new, add the ConstructButton
-    {
-
-        glm::vec4 rect = buildingWindow->getRect();
-        int size = (buildingWindow->countPanels());
-        double butWidth = .25*rect.z;
-        double butHeight = .25*rect.a;
-        buildingWindow->addPanel(*(new ConstructButton({butWidth*fmod(size,rect.z/butWidth),butHeight*(size/((int)(rect.z/butWidth))),butWidth,butHeight},*this,building)));
-    }
-}
-
-void Player::addUnit(UnitAssembler& unit, bool isUnit)
-{
-    Window* ptr = isUnit ? unitWindow : buildingWindow;
-    UnitSet* setPtr = isUnit ? &units : &buildings;
-    if (setPtr->insert(&unit).second)
-    {
-        glm::vec4 rect = ptr->getRect();
-        int size = ptr->countPanels();
-        double butWidth = .25  *rect.z;
-        double butHeight = .25*rect.a;
-        ptr->addPanel(*(new ConstructButton({butWidth*fmod(size,rect.z/butWidth),butHeight*(size/((int)(rect.z/butWidth))),butWidth,butHeight},*this,unit)));
-    }
-}
-
-std::set<UnitAssembler*>& Player::getUnits()
-{
-    return units;
-}
+PlayerAssembler playerAssembler;
 
 InactiveComponent::InactiveComponent(double duration, Entity& entity) : waitTime(duration), Component(entity), ComponentContainer<InactiveComponent>(entity)
 {

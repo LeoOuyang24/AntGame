@@ -176,38 +176,6 @@ public:
     Structure(ClickableComponent& click, RectComponent& rect, RenderComponent& render, HealthComponent& health);
 };
 
-class ResourceComponent : public Component, public ComponentContainer<ResourceComponent> //represents the amount of resources this object has
-{
-protected:
-    double resource;
-    int maxResource;
-public:
-    ResourceComponent(int amount, Entity& entity);
-    int getResource();
-    int getMaxResource();
-    void setResource(double amount);
-    void collect(Object& other);
-    void render(const glm::vec3& rect, float z);
-    ~ResourceComponent();
-};
-
-class CorpseComponent : public Component, public ComponentContainer<CorpseComponent> //the corpse component spawns a corpse object after the entity dies
-{
-    int amount = 0;
-    RenderComponent* render = nullptr;
-public:
-    CorpseComponent(Unit& unit, int amount_);
-    void onDeath();
-    virtual ~CorpseComponent();
-};
-
-class ResourceUnit : public Unit
-{
-public:
-    ResourceUnit(int resources, const glm::vec4& rect);
-    virtual ~ResourceUnit();
-};
-
 class PathComponent : public MoveComponent, public ComponentContainer<PathComponent> //a MoveComponent that holds a whole path rather than just a single target
 {
     glm::vec4 curNodeRect = {0,0,0,0}; //used in setPos to keep track of the nodeRect we were changed to last. This makes changePos more efficient if we have to call it numerous times (when units are pushing each other, for example)
@@ -312,13 +280,6 @@ public:
     ~SeigeComponent();
 };
 
-class ResourceEatComponent : public ApproachComponent, public ComponentContainer<ResourceEatComponent> //finds and eats the nearest ResourceCountComponent, including anthills
-{
-public:
-    ResourceEatComponent(Unit& unit);
-    void update();
-    virtual ~ResourceEatComponent();
-};
 
 class ProjectileComponent : public MoveComponent, public ComponentContainer<ProjectileComponent>
 {

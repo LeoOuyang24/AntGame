@@ -24,7 +24,6 @@ void ShopButton::press()
             {
                 player->addUnit(*assembler);
             }*/
-            player->addUnit(*assembler,assembler->movable);
         }
     }
 }
@@ -96,6 +95,34 @@ void ShopWindow::onSwitch(Window& previous)
     }
 }
 
+void MouseCamera::init(int w, int h, const glm::vec4& bounds_)
+{
+    bounds = bounds_;
+    RenderCamera::init(w,h);
+}
+
+void MouseCamera::update()
+{
+    {
+        auto mousePos = MouseManager::getMousePos();
+        auto screenDimen = RenderProgram::getScreenDimen();
+        int speed = 1;
+        if (mousePos.first >= screenDimen.x - 1 || mousePos.first <= 0)
+        {
+            rect.x += absMin((mousePos.first - speed), (mousePos.first - screenDimen.x +1 + speed ))*DeltaTime::deltaTime;
+            //std::cout << absMin((mousePos.first - speed), (mousePos.first - screenDimen.x +1 + speed ))*DeltaTime::deltaTime << "\n";
+        }
+        if (mousePos.second >= screenDimen.y - 1 || mousePos.second <= 0)
+        {
+            rect.y +=  absMin((mousePos.second - speed), (mousePos.second - screenDimen.y + 1+ speed ))*DeltaTime::deltaTime;
+        }
+        rect.x = std::max(bounds.x,std::min(bounds.x + bounds.z - rect.z,rect.x));
+        rect.y = std::max(bounds.y, std::min(bounds.y + bounds.a  - rect.a , rect.y));
+        //    GameWindow::requestRect({screenDimen.x/2 - 5, screenDimen.y/2 - 5,10,10},{0,0,0,1},true,0,0,true);
+
+    }
+}
+
 WorldMapWindow::LevelButton::LevelButton(LevelButton* prev_, LevelButton* next_,WorldMapWindow& window, Map& level, const glm::vec4& rect) :
                                                                                             Button(rect,nullptr,nullptr,{},nullptr,{1,1,0,1}),
                                                                                             window(&window), level(&level), prev(prev_),next(next_)
@@ -139,7 +166,7 @@ void WorldMapWindow::LevelButton::update(float x, float y, float z, const glm::v
     }
     //glm::vec2 point = window->getCamera().toScreen({x,y});
     Button::update(x,y,z,blit);
-    PolyRender::requestNGon(10,{x,y},10,{1,0,0,1},0,true,1);
+    //PolyRender::requestNGon(10,{x,y},10,{1,0,0,1},0,true,1);
 }
 
 
@@ -174,19 +201,14 @@ WorldMapWindow::LevelButton* WorldMapWindow::addLevel(Map& level,LevelButton* pr
 void WorldMapWindow::switchToGame()
 {
     GameWindow::setLevel(levels[currentLevel]);
-    if (currentLevel)
-    {
-        currentLevel->getAnthill()->setButtons();
-    }
+
     currentLevel = nullptr;
 }
 
 
 WorldMapWindow::WorldMapWindow() : Window({0,0,10000,10000},nullptr,{0,0,1,1})
 {
-    auto screenDimen = RenderProgram::getScreenDimen();
-    camera.init(screenDimen.x,screenDimen.y);
-    camera.setBounds(rect);
+    camera.init(RenderProgram::getScreenDimen().x,RenderProgram::getScreenDimen().y,rect);
     setCamera(&camera);
     planetPlanetDistance = rect.z/20;
   //  addPanel(*(new OnOffButton(OnOffMode::DYNAMIC,*shopWindow,{100,100,100,100},nullptr,{"Shop"},&Font::tnr,{1,1,1,1})));
@@ -231,7 +253,7 @@ int WorldMapWindow::getPlanetPlanetDistance()
     return planetPlanetDistance;
 }
 
-const Camera& WorldMapWindow::getCamera()
+const MouseCamera& WorldMapWindow::getCamera()
 {
     return camera;
 }

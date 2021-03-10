@@ -73,11 +73,11 @@ void Debug::DebugGameWindow::update()
 {
     if (addTerrain && MouseManager::getJustReleased() == SDL_BUTTON_LEFT)
     {
-        auto rect = GameWindow::getSelection();
+       /* auto rect = GameWindow::getSelection();
         if (GameWindow::getLevel())
         {
             GameWindow::getLevel()->addTerrain(GameWindow::getSelection());
-        }
+        }*/
     }
     if (KeyManager::getJustPressed() == SDLK_F5)
     {

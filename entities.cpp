@@ -572,82 +572,7 @@ Structure::Structure(ClickableComponent& click, RectComponent& rect, RenderCompo
     addComponent(*(new RepelComponent(*this)));
 }
 
-ResourceComponent::ResourceComponent(int amount, Entity& entity) : Component(entity), ComponentContainer<ResourceComponent>(entity), resource(amount), maxResource(amount)
-{
 
-}
-
-int ResourceComponent::getResource()
-{
-    return resource;
-}
-int ResourceComponent::getMaxResource()
-{
-    return maxResource;
-}
-void ResourceComponent::setResource(double amount)
-{
-    resource = std::max(std::min(resource + amount, (double)maxResource),0.0);
-}
-
-void ResourceComponent::render(const glm::vec3& rect, float z)
-{
-    renderMeter(rect,{0,1,0,1},resource,maxResource,z);
-}
-
-void ResourceComponent::collect(Object& other)
-{
-    if (entity && !((Object*)entity)->getDead())
-    {
-          Ant::AntMoveComponent* antMove = other.getComponent<Ant::AntMoveComponent>();
-        if (antMove)
-        {
-            antMove->setCarrying(1);
-        }
-
-        resource -=1;
-        if (resource <= 0)
-        {
-            ((Object*)(entity))->setDead(true);
-        }
-    }
-
-}
-
-ResourceComponent::~ResourceComponent()
-{
-
-}
-
-CorpseComponent::CorpseComponent(Unit& unit, int amount_) : Component(unit), ComponentContainer<CorpseComponent>(&unit), amount(amount_), render(unit.getComponent<RenderComponent>())
-{
-
-}
-
-CorpseComponent::~CorpseComponent()
-{
-
-}
-
-void CorpseComponent::onDeath()
-{
-    if (entity)
-    {
-        ResourceUnit* resource = new ResourceUnit(amount,entity->getComponent<RectComponent>()->getRect());
-        GameWindow::getLevel()->addUnit(*(resource), false);
-    }
-}
-
-ResourceUnit::ResourceUnit(int resources, const glm::vec4& rect) : Unit(*(new ClickableComponent("Resource", *this)), *(new RectComponent(rect, *this)), *(new RectRenderComponent({1,1,1,1},*this)), *(new HealthComponent(*this,1,false)))
-{
-    addComponent(*(new ResourceComponent(resources,*this)));
-    health->setVisible(false);
-}
-
-ResourceUnit::~ResourceUnit()
-{
-
-}
 
 PathComponent::PathComponent(double speed, const glm::vec4& rect, Entity& unit) : MoveComponent(speed,rect,unit), ComponentContainer<PathComponent> (unit)
 {
@@ -691,15 +616,6 @@ void PathComponent::setPos(const glm::vec2& pos)
         }
     }
     //MoveComponent::setPos(pos);
-    CommandableComponent* command = entity->getComponent<CommandableComponent>();
-    if(velocity == 0 && (!command || !command->getCurrentTask() || command->getCompletedTask() ||command->getCurrentTask()->getCurrentTask() == AntManager::Task::IDLE))
-    {
-        changePos(adjPos + glm::vec2(rect.z/2,rect.a/2)); //changePos sets center rather than top-left corner. Here we have to adjust it.
-    }
-    else
-    {
-        MoveComponent::setPos(adjPos);
-    }
 }
 
 void PathComponent::changePos(const glm::vec2& pos)
@@ -1024,40 +940,6 @@ SeigeComponent::~SeigeComponent()
 
 }
 
-ResourceEatComponent::ResourceEatComponent(Unit& unit) : ApproachComponent(unit), ComponentContainer<ResourceEatComponent>(unit)
-{
-
-}
-
-void ResourceEatComponent::update()
-{
-    Object* targetPtr = getTargetUnit();
-    Object* owner = ((Object*)entity);
-    if (owner)
-    {
-        if (!targetPtr)
-        {
-            Object* nearest = findNearestUnit<ResourceComponent>(500,false,*GameWindow::getLevel()->getTree());
-            if (nearest)
-            {
-                setTarget((GameWindow::getLevel()->getUnit((static_cast<Object*>(nearest)))));
-            }
-        }
-        else
-        {
-            if ( targetPtr->getRect().collides(owner->getRect().getRect()))
-            {
-                targetPtr->getComponent<ResourceComponent>()->collect(*owner);
-            }
-        }
-    }
-    ApproachComponent::update();
-}
-
-ResourceEatComponent::~ResourceEatComponent()
-{
-
-}
 
 void ProjectileComponent::onCollide(Unit& other)
 {

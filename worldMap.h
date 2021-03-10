@@ -29,6 +29,14 @@ public:
     //don't need a destructor to clear buttons because we add the buttons as panels
 };
 
+class MouseCamera : public RenderCamera//camera that moves with mouse
+{
+    glm::vec4 bounds;
+public:
+    void init(int w, int h, const glm::vec4& bounds_);
+    void update();
+};
+
 class WorldMapWindow : public Window
 {
     class LevelButton : public Button
@@ -49,14 +57,14 @@ class WorldMapWindow : public Window
     void setCurrentLevel(Map& level);
     LevelButton* addLevel(Map& level, LevelButton* prev, LevelButton* next); //generates a levelbutton given a map and adds it to the panels. Returns the levelButton generated
     void switchToGame(); //called when switching to the gamewindow
-    Camera camera;
+    MouseCamera camera;
 public:
     WorldMapWindow();
     LevelButton* generate(int count = -1, LevelButton* start = nullptr, LevelButton* end = nullptr); //generates count levelButtons and levels. If count is -1, will generate a random # of levels. The first level generated will have start as its prev and the last level generated will have end as its end. Returns the first levelButton generated
     void update(float x,float y, float z, const glm::vec4& blit);
     Map* getCurrentLevel();
     int getPlanetPlanetDistance();
-    const Camera& getCamera();
+    const MouseCamera& getCamera();
     class WorldSwitchToGame : public CondSwitchButton
     {
         WorldMapWindow* worldMap =nullptr;
