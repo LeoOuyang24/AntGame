@@ -16,14 +16,15 @@ void ShopButton::press()
         {
             soldOut = true;
             player->addGold(-1*assembler->goldCost);
-            if (!assembler->movable)
+            /*if (!assembler->movable)
             {
                 player->addBuilding(*assembler);
             }
             else
             {
                 player->addUnit(*assembler);
-            }
+            }*/
+            player->addUnit(*assembler,assembler->movable);
         }
     }
 }

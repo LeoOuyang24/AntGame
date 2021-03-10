@@ -36,17 +36,17 @@ bool Player::updateSelect()
     return false;
 }
 
-Player::BuildingButton::BuildingButton(const glm::vec4& rect, Player& player_,UnitAssembler& building_) :
-    Button(rect,nullptr,building_.sprites.walking,{},nullptr,{0,0,0,0}),player(&player_), building(&building_)
+Player::ConstructButton::ConstructButton(const glm::vec4& rect, Player& player_,UnitAssembler& building_) :
+    Button(rect,nullptr,building_.sprites.walking,{},nullptr,{0,0,0,0}),player(&player_), assembler(&building_)
 {
 
 }
 
-void Player::BuildingButton::press()
+void Player::ConstructButton::press()
 {
-    if (player && building)
+    if (player && assembler)
     {
-        player->setCurrentBuilding(building);
+        player->setCurrentBuilding(assembler);
     }
 }
 
@@ -59,10 +59,13 @@ void Player::init()
 {
     buildingWindow = new Window({.2*RenderProgram::getScreenDimen().y,.2*RenderProgram::getScreenDimen().y}
                           ,nullptr,{0,1,1,1});
+    unitWindow =  new Window({.2*RenderProgram::getScreenDimen().y,.2*RenderProgram::getScreenDimen().y}
+                          ,nullptr,{0,1,1,1});
+    currentWindow = unitWindow;
    // addBuilding(factAssembler);
    // addBuilding(turretAssembler);
-   addUnit(antAssembler);
-   addBuilding(evilMoonAssembler);
+   addUnit(antAssembler,true);
+   addUnit(evilMoonAssembler,false);
     addResource(100);
 }
 
@@ -104,6 +107,9 @@ void Player::update()
         {
             mode = BUILDING;
         }
+        break;
+    case SDLK_SPACE:
+        currentWindow = currentWindow == unitWindow ? buildingWindow : unitWindow;
         break;
     }
 
@@ -166,7 +172,7 @@ void Player::update()
 
 void Player::render(const glm::vec4& windowSize)
 {
-    buildingWindow->updateBlit(GameWindow::interfaceZ,GameWindow::getCamera(),true, windowSize);
+    currentWindow->updateBlit(GameWindow::interfaceZ,GameWindow::getCamera(),true, windowSize);
    // GameWindow::requestRect(windowSize,{0,1,1,1},true,0,GameWindow::interfaceZ,true);
 }
 
@@ -182,20 +188,29 @@ void Player::setCurrentBuilding(UnitAssembler* building)
 
 void Player::addBuilding(UnitAssembler& building)
 {
-    if (buildings.insert(&building).second) //insert the element if it's not already in the set. If it's new, add the buildingButton
+    if (buildings.insert(&building).second) //insert the element if it's not already in the set. If it's new, add the ConstructButton
     {
 
         glm::vec4 rect = buildingWindow->getRect();
         int size = (buildingWindow->countPanels());
         double butWidth = .25*rect.z;
         double butHeight = .25*rect.a;
-        buildingWindow->addPanel(*(new BuildingButton({butWidth*fmod(size,rect.z/butWidth),butHeight*(size/((int)(rect.z/butWidth))),butWidth,butHeight},*this,building)));
+        buildingWindow->addPanel(*(new ConstructButton({butWidth*fmod(size,rect.z/butWidth),butHeight*(size/((int)(rect.z/butWidth))),butWidth,butHeight},*this,building)));
     }
 }
 
-void Player::addUnit(UnitAssembler& unit)
+void Player::addUnit(UnitAssembler& unit, bool isUnit)
 {
-    units.insert(&unit);
+    Window* ptr = isUnit ? unitWindow : buildingWindow;
+    UnitSet* setPtr = isUnit ? &units : &buildings;
+    if (setPtr->insert(&unit).second)
+    {
+        glm::vec4 rect = ptr->getRect();
+        int size = ptr->countPanels();
+        double butWidth = .25  *rect.z;
+        double butHeight = .25*rect.a;
+        ptr->addPanel(*(new ConstructButton({butWidth*fmod(size,rect.z/butWidth),butHeight*(size/((int)(rect.z/butWidth))),butWidth,butHeight},*this,unit)));
+    }
 }
 
 std::set<UnitAssembler*>& Player::getUnits()

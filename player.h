@@ -20,16 +20,19 @@ class Player //tracks player stats (resources, money). Also handles player input
     glm::vec4 selection = {0,0,0,0};
     glm::vec2 origin; //last point the mouse was at
     Mode mode;
-    std::set<UnitAssembler*> buildings; //list of structures we can create
-    std::set<UnitAssembler*> units; //list of units we can produce
+    typedef  std::set<UnitAssembler*> UnitSet;
+    UnitSet buildings; //list of structures we can create
+    UnitSet units; //list of units we can produce
     Window* buildingWindow = nullptr;
+    Window* unitWindow = nullptr;
+    Window* currentWindow = nullptr;
     UnitAssembler* currentBuilding = nullptr;
-    class BuildingButton : public Button
+    class ConstructButton : public Button
     {
         Player* player;
-        UnitAssembler* building;
+        UnitAssembler* assembler;
     public:
-        BuildingButton(const glm::vec4& rect, Player& player_, UnitAssembler& building_);
+        ConstructButton(const glm::vec4& rect, Player& player_, UnitAssembler& building_);
         void press();
     };
     int gold = 100;
@@ -46,7 +49,7 @@ public:
     const glm::vec4& getSelection();
     void setCurrentBuilding(UnitAssembler* building);
     void addBuilding(UnitAssembler& building);
-    void addUnit(UnitAssembler& unit);
+    void addUnit(UnitAssembler& unit, bool isUnit);
     std::set<UnitAssembler*>& getUnits();
 };
 
