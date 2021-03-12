@@ -12,10 +12,10 @@ void ShopButton::press()
 {
     if (player && assembler && !soldOut)
     {
-        if (assembler->goldCost <= player->getGold())
-        {
+        //if (assembler->goldCost <= player->getGold())
+       /* {
             soldOut = true;
-            player->addGold(-1*assembler->goldCost);
+            player->addGold(-1*assembler->goldCost);*/
             /*if (!assembler->movable)
             {
                 player->addBuilding(*assembler);
@@ -24,13 +24,13 @@ void ShopButton::press()
             {
                 player->addUnit(*assembler);
             }*/
-        }
+        //}
     }
 }
 
 void ShopButton::update(float x, float y, float z, const glm::vec4& scale)
 {
-    glm::vec4 renderRect = this->scale(scale);
+   /* glm::vec4 renderRect = this->scale(scale);
     float finalZ = z + baseZ + .01;
     if(assembler)
     {
@@ -50,7 +50,7 @@ void ShopButton::update(float x, float y, float z, const glm::vec4& scale)
       //  std::cout << "ASDF" << std::endl;
         redX.request({renderRect,0, NONE, {1,1,1,1}, &RenderProgram::basicProgram, finalZ + .01});
     }
-   Button::update(x,y,z,scale);
+   Button::update(x,y,z,scale);*/
 }
 
 void ShopButton::changeAssembler(UnitAssembler* assembler)

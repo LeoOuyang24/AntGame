@@ -9,8 +9,26 @@
 
 class Factory;
 
+
+class PlayerAssembler : public UnitAssembler
+{
+    class PlayerControls : public MoveComponent
+    {
+        Entity* pistol;
+    public:
+        PlayerControls(float speed, const glm::vec4& rect, Unit& player);
+        void update();
+    };
+public:
+    PlayerAssembler();
+    Object* assemble();
+    ~PlayerAssembler();
+};
+
 class Player //tracks player stats (resources, money). Also handles player inputs
 {
+   PlayerAssembler playerAssembler;
+
     int resource;
     int gold = 100;
     Unit* player = nullptr;
@@ -25,20 +43,6 @@ public:
     void addGold(int g);
 };
 
-class PlayerAssembler : public UnitAssembler
-{
-    class PlayerControls : public MoveComponent
-    {
-    public:
-        PlayerControls(float speed, const glm::vec4& rect, Unit& player);
-        void update();
-    };
-public:
-    PlayerAssembler();
-    Object* assemble();
-};
-
-extern PlayerAssembler playerAssembler;
 
 class InactiveComponent : public Component, public ComponentContainer<InactiveComponent> //represents how long an entity is inactive for. Usually because a building is under construction
 {

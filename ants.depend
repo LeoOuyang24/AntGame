@@ -1454,10 +1454,10 @@
 	"render.h"
 	"components.h"
 
-1615348833 source:c:\users\leoou\onedrive\desktop\projects\spacegame\animation.cpp
+1615420393 source:c:\users\leoou\onedrive\desktop\projects\spacegame\animation.cpp
 	"animation.h"
 
-1615348833 c:\users\leoou\onedrive\desktop\projects\spacegame\animation.h
+1615420354 c:\users\leoou\onedrive\desktop\projects\spacegame\animation.h
 	"render.h"
 
 1615348833 source:c:\users\leoou\onedrive\desktop\projects\spacegame\antmanager.cpp
@@ -1468,7 +1468,7 @@
 	<memory>
 	"entities.h"
 
-1615396450 c:\users\leoou\onedrive\desktop\projects\spacegame\entities.h
+1615586221 c:\users\leoou\onedrive\desktop\projects\spacegame\entities.h
 	"glInterface.h"
 	"SDLhelper.h"
 	"render.h"
@@ -1492,13 +1492,13 @@
 	"player.h"
 	"fog.h"
 
-1615348834 c:\users\leoou\onedrive\desktop\projects\spacegame\world.h
+1615419057 c:\users\leoou\onedrive\desktop\projects\spacegame\world.h
 	"glInterface.h"
 	"SDLhelper.h"
 	"components.h"
 	"friendlyAssemblers.h"
 
-1615396837 c:\users\leoou\onedrive\desktop\projects\spacegame\friendlyassemblers.h
+1615591806 c:\users\leoou\onedrive\desktop\projects\spacegame\friendlyassemblers.h
 	"entities.h"
 
 1615348833 c:\users\leoou\onedrive\desktop\projects\spacegame\ants.h
@@ -1507,7 +1507,7 @@
 	"components.h"
 	"friendlyAssemblers.h"
 
-1615398814 c:\users\leoou\onedrive\desktop\projects\spacegame\player.h
+1615591898 c:\users\leoou\onedrive\desktop\projects\spacegame\player.h
 	<set>
 	"glInterface.h"
 	"friendlyAssemblers.h"
@@ -1543,14 +1543,14 @@
 1615348833 c:\users\leoou\onedrive\desktop\projects\spacegame\effects.h
 	"render.h"
 
-1615392996 source:c:\users\leoou\onedrive\desktop\projects\spacegame\enemyassemblers.cpp
+1615404519 source:c:\users\leoou\onedrive\desktop\projects\spacegame\enemyassemblers.cpp
 	"enemyAssemblers.h"
 	"animation.h"
 
 1615348833 c:\users\leoou\onedrive\desktop\projects\spacegame\enemyassemblers.h
 	"friendlyAssemblers.h"
 
-1615396541 source:c:\users\leoou\onedrive\desktop\projects\spacegame\entities.cpp
+1615592820 source:c:\users\leoou\onedrive\desktop\projects\spacegame\entities.cpp
 	"SDLHelper.h"
 	"render.h"
 	"entities.h"
@@ -1559,6 +1559,7 @@
 	"navigation.h"
 	"animation.h"
 	"friendlyAssemblers.h"
+	"weaponAssemblers.h"
 	"effects.h"
 	"debug.h"
 
@@ -1566,14 +1567,14 @@
 	"game.h"
 	"fog.h"
 
-1615397660 source:c:\users\leoou\onedrive\desktop\projects\spacegame\friendlyassemblers.cpp
+1615592611 source:c:\users\leoou\onedrive\desktop\projects\spacegame\friendlyassemblers.cpp
 	"friendlyAssemblers.h"
 	"animation.h"
 	"ants.h"
 	"game.h"
 	"effects.h"
 
-1615403095 source:c:\users\leoou\onedrive\desktop\projects\spacegame\main.cpp
+1615404124 source:c:\users\leoou\onedrive\desktop\projects\spacegame\main.cpp
 	<iostream>
 	<time.h>
 	<typeinfo>
@@ -1596,7 +1597,7 @@
 	"player.h"
 	"game.h"
 
-1615348833 source:c:\users\leoou\onedrive\desktop\projects\spacegame\navigation.cpp
+1615578859 source:c:\users\leoou\onedrive\desktop\projects\spacegame\navigation.cpp
 	<algorithm>
 	<unordered_set>
 	"entities.h"
@@ -1611,7 +1612,7 @@
 	"entities.h"
 	"game.h"
 
-1615403553 source:c:\users\leoou\onedrive\desktop\projects\spacegame\game.cpp
+1615501666 source:c:\users\leoou\onedrive\desktop\projects\spacegame\game.cpp
 	"SDLHelper.h"
 	"vanilla.h"
 	"debug.h"
@@ -1620,7 +1621,7 @@
 	"navigation.h"
 	"enemyAssemblers.h"
 
-1615398216 source:c:\users\leoou\onedrive\desktop\projects\spacegame\world.cpp
+1615579343 source:c:\users\leoou\onedrive\desktop\projects\spacegame\world.cpp
 	<queue>
 	"world.h"
 	"ants.h"
@@ -1628,12 +1629,12 @@
 	"navigation.h"
 	"animation.h"
 
-1615403342 source:c:\users\leoou\onedrive\desktop\projects\spacegame\worldmap.cpp
+1615416130 source:c:\users\leoou\onedrive\desktop\projects\spacegame\worldmap.cpp
 	"worldMap.h"
 	"game.h"
 	"animation.h"
 
-1615398918 source:c:\users\leoou\onedrive\desktop\projects\spacegame\player.cpp
+1615591819 source:c:\users\leoou\onedrive\desktop\projects\spacegame\player.cpp
 	"vanilla.h"
 	"FreeTypeHelper.h"
 	"player.h"
@@ -1641,4 +1642,14 @@
 	"navigation.h"
 	"animation.h"
 	"enemyAssemblers.h"
+	"weaponAssemblers.h"
+
+1615592611 source:c:\users\leoou\onedrive\desktop\projects\spacegame\weaponassemblers.cpp
+	"weaponAssemblers.h"
+	"animation.h"
+	"game.h"
+	"entities.h"
+
+1615586104 c:\users\leoou\onedrive\desktop\projects\spacegame\weaponassemblers.h
+	"friendlyAssemblers.h"
 

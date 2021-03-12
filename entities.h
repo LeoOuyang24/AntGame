@@ -54,7 +54,7 @@ struct UnitAnimSet
 
 class UnitAnimationComponent : public AnimationComponent, public ComponentContainer<UnitAnimationComponent> //used to show different animations for different actions.
 {
-   const UnitAnimSet*  animeSet = nullptr; //we use a pointer so we can point to an ObjectAssembler's UnitAnimeSet rather than copying;
+   const UnitAnimSet* animeSet; //we use a pointer so we can point to an ObjectAssembler's UnitAnimeSet rather than copying;
 public:
     UnitAnimationComponent(const UnitAnimSet& set, Unit& entity);
     void update();
@@ -244,7 +244,7 @@ public:
     ~ApproachComponent();
 };
 
-class AttackComponent : public ApproachComponent, public ComponentContainer<AttackComponent>
+class AttackComponent : public Component, public ComponentContainer<AttackComponent>
 {
 protected:
     struct AttackData //represents all parameters that can be modified by outside sources
@@ -254,31 +254,18 @@ protected:
     };
     AttackData modData;
     DeltaTime attackTimer;
-    virtual bool canAttack(Object* ptr); //returns true if we can attack the target. Doesn't take into account attackTimer because even if we are waiting for the timer to tick down, we should still stop moving
+    virtual bool canAttack(); //returns true if we can attack the target. Doesn't take into account attackTimer because even if we are waiting for the timer to tick down, we should still stop moving
 public:
     const AttackData baseData;
     AttackComponent(float damage_, int endLag_, float range_, Entity& unit);
-    bool isAttacking(); //used by other components to tell if the AttackComponent is attacking
     void setRange(float range);
     void setDamage(float damage);
-    void setAttackSpeed(float increase); //sets %increase. Example: passing in .1 will increase attack speed by 10%, -.1 will decrease by 10%
-    virtual void attack(HealthComponent* health); //this is a pointer so you can legally pass in a null pointer. This function will make sure it's not null
+    void setAttackSpeed(float increase);
+    virtual void attack(const glm::vec2& pos); //this is a pointer so you can legally pass in a null pointer. This function will make sure it's not null
     virtual void update();
-    using ApproachComponent::setTarget;
-    virtual void setTarget(const glm::vec2& target,  std::shared_ptr<Object>* unit); //unit is a pointer so you can move to a point rather than a unit
     ~AttackComponent();
 };
 
-
-class Anthill;
-class SeigeComponent : public ApproachComponent, public ComponentContainer<SeigeComponent> //a component that causes the unit to attack anthills; ants if no anthilsl are nearby. USed when signalling
-{
-    std::weak_ptr<Anthill> targetHill; //this is separate from targetUnit because we want to move always move towards the same anthill, even after changing targets to attack something
-public:
-    SeigeComponent(Unit& entity, Anthill& hill);
-    void update();
-    ~SeigeComponent();
-};
 
 
 class ProjectileComponent : public MoveComponent, public ComponentContainer<ProjectileComponent>
@@ -286,8 +273,8 @@ class ProjectileComponent : public MoveComponent, public ComponentContainer<Proj
 
 public:
     typedef void (*ProjCollideFunc)(Unit& other, ProjectileComponent& thisProjectile); //function for ProjectileComponents' collide function
-    ProjectileComponent(double damage, bool friendly,const glm::vec2& target, double speed, const glm::vec4& rect, Unit& entity,ProjCollideFunc collideFun_ = nullptr);
-    ProjectileComponent(double damage, bool friendly, const glm::vec2& target, double xspeed, double yspeed, const glm::vec4& rect, Unit& entity, ProjCollideFunc collideFun_ = nullptr);
+    ProjectileComponent(double damage, bool friendly,const glm::vec2& target, double speed, const glm::vec4& rect, Object& entity,ProjCollideFunc collideFun_ = nullptr);
+    ProjectileComponent(double damage, bool friendly, const glm::vec2& target, double xspeed, double yspeed, const glm::vec4& rect, Object& entity, ProjCollideFunc collideFun_ = nullptr);
     void setShooter(Object& obj);
     void collide(Entity& other);
     virtual void update();
@@ -300,7 +287,7 @@ protected:
     virtual void onCollide(Unit& other); //what to actually call when we collide, since the collide code doesn't really change.
 };
 
-class UnitAttackComponent : public AttackComponent, public ComponentContainer<UnitAttackComponent>
+class UnitAttackComponent : public ApproachComponent, public ComponentContainer<UnitAttackComponent>
 {
     typedef std::pair<std::weak_ptr<Object>,glm::vec2> TargetInfo;
     std::weak_ptr<Object> shortTarget; //represents short-term target. Is attacked because it's in range
@@ -319,12 +306,12 @@ public:
 };
 
 class ProjectileAssembler;
-class ProjectileAttackComponent : public UnitAttackComponent, public ComponentContainer<ProjectileAttackComponent> //attack component that shoots a projectile
+class ProjectileAttackComponent : public AttackComponent, public ComponentContainer<ProjectileAttackComponent> //attack component that shoots a projectile
 {
     ProjectileAssembler* assembler = nullptr;
 public:
-    ProjectileAttackComponent(ProjectileAssembler& ass, int endLag, double range, double searchRange_,bool f, Unit& entity);
-    virtual void attack(HealthComponent* health);
+    ProjectileAttackComponent(ProjectileAssembler& ass, int endLag, double range, double searchRange_,bool f, Entity& entity);
+    virtual void attack(const glm::vec2& pos);
 };
 
 #endif // ENTITIES_H_INCLUDED

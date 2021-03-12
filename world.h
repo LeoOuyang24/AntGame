@@ -91,7 +91,6 @@ struct Map
     bool getChangeLevel();
     void findShard(); //finds a shard (increments foundShards by 1)
     int getFoundShards();
-    Anthill* getAnthill();
     static Map* generateLevel(const glm::vec4& rect = {0,0,chunkDimen,chunkDimen}); //generates terrain and shards. Should only be called when mesh is not null.
     ~Map();
 
@@ -114,7 +113,6 @@ private:
     constexpr static int maxObjectSize = 100; //the longest any one dimension of an entity can be
     const static glm::vec4 playerArea; //area that walls can't spawn because the player's stuff will be there
     bool changeLevel = false; //whether or not to changeLevel
-    std::weak_ptr<Anthill> mainHill;
     ObjectStorage entities;
     glm::vec4 rect;
     SPStorage<Terrain> terrain;

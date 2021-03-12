@@ -74,7 +74,7 @@ void PickUpResource::PickUpResourceComponent::onUse(Entity& entity)
     GameWindow::getPlayer().addResource(amount);
 }
 
-PickUpResource::PickUpResource() : ObjectAssembler("Resource", {40,40},{&resourceAnime},false)
+PickUpResource::PickUpResource() : ObjectAssembler("Resource", {40,40},{&resourceAnime},true)
 {
 
 }
@@ -124,6 +124,7 @@ std::shared_ptr<Object> Map::addUnit(Object& entity, bool friendly)
     }
     if (!entity.getMovable())
     {
+        printRect(entity.getRect().getRect());
         mesh->smartAddNode(entity.getRect().getRect());
     }
     //ptr.reset();
@@ -266,11 +267,6 @@ void Map::findShard()
 int Map::getFoundShards()
 {
     return foundShards;
-}
-
-Anthill* Map::getAnthill()
-{
-    return mainHill.lock().get();
 }
 
 Map* Map::generateLevel(const glm::vec4& levelRect) // Doesn't generate terrain on the bottom most row. It's simply too big a hassle to ensure that inaccessible areas don't spawn on the bottom row

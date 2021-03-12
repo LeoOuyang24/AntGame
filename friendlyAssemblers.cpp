@@ -4,22 +4,28 @@
 #include "game.h"
 #include "effects.h"
 
-ObjectAssembler::ObjectAssembler( std::string name_, const glm::vec2& rect_,const UnitAnimSet& anime, bool mov, bool friendly_, int goldCost_) :
-    dimen(rect_), name(name_), sprites(anime), movable(mov), friendly(friendly_), goldCost(goldCost_)
+ObjectAssembler::ObjectAssembler( std::string name_, const glm::vec2& rect_,const UnitAnimSet& anime, bool mov, bool friendly_) :
+    dimen(rect_), name(name_), sprites(anime), movable(mov), friendly(friendly_)
 {
 
 }
 
+ObjectAssembler::~ObjectAssembler()
+{
+    std::cout << "Deleted: " << name <<"\n";
+}
+
 Object* ObjectAssembler::assemble()
 {
+
     Object* obj= new Object(name,{0,0,dimen.x,dimen.y},sprites.walking,movable);
     obj->setFriendly(friendly);
     return obj;
 }
 
 
-UnitAssembler::UnitAssembler( std::string name_,const glm::vec2& rect_, const UnitAnimSet& wrap, bool mov, double maxHealth_, float speed, double prodTime_, int prodCost, bool friendly_, int goldCost) :
-     ObjectAssembler( name_,rect_, wrap, mov,friendly_,goldCost), maxHealth(maxHealth_), speed(speed), prodTime(prodTime_), prodCost(prodCost)
+UnitAssembler::UnitAssembler( std::string name_,const glm::vec2& rect_, const UnitAnimSet& wrap, bool mov, double maxHealth_, float speed,bool friendly_) :
+     ObjectAssembler( name_,rect_, wrap, mov,friendly_), maxHealth(maxHealth_), speed(speed)
 {
         if (movable) //if is a unit, add to units
         {
@@ -33,7 +39,6 @@ UnitAssembler::UnitAssembler( std::string name_,const glm::vec2& rect_, const Un
 
 Object* UnitAssembler::assemble()
 {
-
     return new Unit(name,{0,0,dimen.x,dimen.y}, sprites.walking, movable, maxHealth);
 }
 
@@ -51,18 +56,19 @@ Unit* UnitAssembler::commandUnitAssemble()
     return ent;
 }
 
-ProjectileAssembler::ProjectileAssembler(double damage_, std::string name_,const glm::vec2& rect_, AnimationWrapper* anime, double maxHealth_, float speed, double prodTime_, int prodCost, bool friendly_, int goldCost) :
-                                        damage(damage_),UnitAssembler(name_,rect_,{anime},true,maxHealth_,speed, prodTime_,prodCost,friendly_,goldCost)
+ProjectileAssembler::ProjectileAssembler(double damage_, std::string name_,const glm::vec2& rect_, AnimationWrapper* anime, double maxHealth_, float speed, bool friendly_) :
+                                        damage(damage_),UnitAssembler(name_,rect_,{anime},true,maxHealth_,speed, friendly_)
 {
 
 }
 
 Object* ProjectileAssembler::assemble(Object& shooter, const glm::vec2& point, const glm::vec2& target)
 {
-    Object* obj = assemble();
-    obj->getRect().setPos(point);
-    obj->getComponent<MoveComponent>()->setTarget(target);
+    Object* obj = new Object(movable);
+    obj->addRect(new ProjectileComponent(damage,friendly,target,speed,{point.x,point.y,dimen.x,dimen.y},*obj));
+    obj->addRender(new AnimationComponent(*sprites.walking,*obj));
     obj->getComponent<ProjectileComponent>()->setShooter(shooter);
+    obj->setFriendly(friendly);
     return obj;
 }
 

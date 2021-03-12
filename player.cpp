@@ -7,6 +7,7 @@
 #include "navigation.h"
 #include "animation.h"
 #include "enemyAssemblers.h"
+#include "weaponAssemblers.h"
 
 const glm::vec4 Player::selectColor = {1,1,1,.5};
 
@@ -76,11 +77,12 @@ void Player::addGold(int g)
 
 PlayerAssembler::PlayerControls::PlayerControls(float speed, const glm::vec4& rect, Unit& player) : MoveComponent(speed,rect , player)
 {
-
+    pistol = pistolAssembler.assemble(&player);
 }
 
 void PlayerAssembler::PlayerControls::update()
 {
+    pistol->update();
     glm::vec2 move = {0,0};
     if (KeyManager::findNumber(SDLK_d) != -1)
     {
@@ -119,7 +121,7 @@ void PlayerAssembler::PlayerControls::update()
     MoveComponent::update();
 }
 
-PlayerAssembler::PlayerAssembler() : UnitAssembler("Player",{30,30},{&basicSoldierAnime,&basicShootingAnime},true,100,.5,0,0,true,0)
+PlayerAssembler::PlayerAssembler() : UnitAssembler("Player",{30,30},{&basicSoldierAnime,&basicShootingAnime},true,100,1,true)
 {
 
 }
@@ -131,10 +133,14 @@ Object* PlayerAssembler::assemble()
     player->addRect(new PlayerControls(speed,{0,0,dimen.x,dimen.y},*player));
     player->addRender(new UnitAnimationComponent(sprites,*player));
     player->addClickable(new ClickableComponent(name,*player));
+    player->setFriendly(friendly);
     return player;
 }
 
-PlayerAssembler playerAssembler;
+PlayerAssembler::~PlayerAssembler()
+{
+
+}
 
 InactiveComponent::InactiveComponent(double duration, Entity& entity) : waitTime(duration), Component(entity), ComponentContainer<InactiveComponent>(entity)
 {

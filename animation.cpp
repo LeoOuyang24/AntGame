@@ -9,6 +9,9 @@ SpriteWrapper shieldIcon;
 AnimationWrapper defaultAnime;
 AnimationWrapper shardAnime;
 AnimationWrapper resourceAnime;
+
+AnimationWrapper pistolAnime;
+
 AnimationWrapper basicSoldierAnime;
 AnimationWrapper basicShootingAnime;
 AnimationWrapper turretSprite;
@@ -45,6 +48,8 @@ void initSprites()
     defaultAnime.init(new BaseAnimation("sprites/oldMan.png",.001,6,1));
     shardAnime.init(new BaseAnimation("sprites/orb.png", .01, 12,8,{0,0,6,4}));
     resourceAnime.init(new BaseAnimation("sprites/orb.png",.01,12,8,{.5,.5,6,4}));
+
+    pistolAnime.init(new BaseAnimation("sprites/pistol1.png",.01,1,1));
 
     basicSoldierAnime.init(new BaseAnimation("sprites/astronaut.png", .01, 3,1));
     basicShootingAnime.init(new BaseAnimation("sprites/astroShooting.png",.1,3,2));

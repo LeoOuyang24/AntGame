@@ -75,10 +75,6 @@ void Manager::spawnCreatures(Anthill& hill, double minR, double maxR) //spawn cr
         {
             unitAttack->setLongTarget(closestPointOnVec(hill.getRect().getRect(),{x,y}),&level->getUnit(&hill),false);
         }
-        else if (attack)
-        {
-            attack->setTarget(level->getUnit(&hill));
-        }
         level->addUnit(*toSpawn);
     }
 
@@ -169,12 +165,12 @@ void Manager::update()
     updateEntities();
 
     Map* level = GameWindow::getLevel();
-    if (Debug::getSpawnCreatures() && level && level->getAnthill() && (!spawner.isSet() || spawner.timePassed(std::min(180000 - SDL_GetTicks(),(Uint32)1000))))
+    /*if (Debug::getSpawnCreatures() && level && level->getAnthill() && (!spawner.isSet() || spawner.timePassed(std::min(180000 - SDL_GetTicks(),(Uint32)1000))))
     {
         spawnCreatures(*level->getAnthill() , level->getRect().z, level->getRect().z);
         spawner.reset();
         spawner.set();
-    }
+    }*/
    /* else if (selectedUnit)
     {
         selectedUnit->getClickable().click(true);
@@ -439,7 +435,7 @@ void GameWindow::updateTop(float z)
 
         if (level.lock().get()->getChangeLevel())
         {
-            if (switchToMap)
+            if (false)
             {
                 switchToMap->press();
             }

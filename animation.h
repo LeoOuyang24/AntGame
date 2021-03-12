@@ -13,6 +13,8 @@ extern AnimationWrapper defaultAnime;
 extern AnimationWrapper shardAnime;
 extern AnimationWrapper resourceAnime;
 
+extern AnimationWrapper pistolAnime;
+
 extern AnimationWrapper basicSoldierAnime;
 extern AnimationWrapper basicShootingAnime;
 extern AnimationWrapper turretSprite;

@@ -1,5 +1,14 @@
 This document keeps track of considered changes made to the resources as well as why they were made. Consider this a "learning from the past" kind of document. 
 
+3/12/2021:
+	Changed previous decision about how assembled objects should always function even if the assembler is destroyed. Things like ProjectileAssembler require the parent assembler to still be functional for things like the projectile. 
+
+3/11/2021:
+	UnitAnimationComponent now no longer keeps a pointer to a UnitAnimationSet because doing so caused things to break if the assembler ever was destroyed. Assembled objects should always function even if the ObjectAssembler is destroyed. (Removed 3/12/2021)
+
+3/9/2021:	
+	Decided to temporarily abandon AntsGame for a simpler roguelike to help Mia with her college apps and to release a simpler game for my first game.
+
 3/1/2021:
 	Added tempArmor to the HealthComponent to help in keeping track of armor. By simply adding and subtracting from armor, we run into the issue that we have to reset armor to 0 at some point but because some components that wnat to modify it occur before HealthComponent::update() and some occur after, it's not easy setting armor to 0 and not overwrite any armor increases or decreases. Temp armor serves as a counter of all the armor modifications. While it does mean that any armor modifications will not take place until HealthComponent::update, this is only applicable for the first frame that an armor modification is made and only applicable to damage dealt before the update called which is a small enough deficit for us to overlook.
 

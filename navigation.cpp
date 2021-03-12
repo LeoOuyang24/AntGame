@@ -392,6 +392,7 @@ glm::vec4 NavMesh::getWallRect(const glm::vec4& rect)
     {
         if (near[i]->collides(rect))
         {
+
             return static_cast<RectPositional*>(near[i])->getRect();
         }
     }

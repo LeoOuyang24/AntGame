@@ -7,6 +7,7 @@
 #include "navigation.h"
 #include "animation.h"
 #include "friendlyAssemblers.h"
+#include "weaponAssemblers.h"
 #include "effects.h"
 #include "debug.h"
 
@@ -160,7 +161,7 @@ void AnimationComponent::update()
             glm::vec2 target = move->getCenter();
             AttackComponent* approach = entity->getComponent<AttackComponent>();
 
-            if (approach && approach->isAttacking()) //typically happens if we are attacking a unit
+          /*  if (approach && approach->isAttacking()) //typically happens if we are attacking a unit
             {
                 Object* targetUnit = approach->getTargetUnit();
                 if (targetUnit) //this should be guaranteed to be true
@@ -192,7 +193,7 @@ void AnimationComponent::update()
             else
             {
                 target.y += 1; //we want our angle to be 0, so we set target to a value that would force it to be 0.
-            }
+            }*/
             angle = atan2(move->getCenter().y - target.y,move->getCenter().x - target.x) + M_PI/2;
             //GameWindow::requestLine(glm::vec4(target,move->getCenter()),{1,0,0,1},1,false);
 
@@ -216,7 +217,7 @@ UnitAnimationComponent::UnitAnimationComponent(const UnitAnimSet& set, Unit& ent
 void UnitAnimationComponent::update()
 {
     AttackComponent* attack = entity->getComponent<AttackComponent>();
-    if (attack && attack->isAttacking() && animeSet->attacking)
+    if (attack &&  animeSet->attacking)
     {
         sprite = animeSet->attacking;
     }
@@ -388,7 +389,7 @@ void HealthComponent::addArmor(int val)
 
 void HealthComponent::takeDamage(double amount, Object& attacker)
 {
-    lastAttacker = GameWindow::getLevel()->getUnit(&attacker);
+    //lastAttacker = GameWindow::getLevel()->getUnit(&attacker);
     if (amount > 0)
     {
         amount *= 1 - (armor/100.0);
@@ -812,27 +813,16 @@ ApproachComponent::~ApproachComponent()
 }
 
 
-bool AttackComponent::canAttack(Object* ptr)
+bool AttackComponent::canAttack()
 {
 
-    if (ptr)
-    {
-        RectComponent* otherRect = &ptr->getRect();
-        return  move && ptr->getComponent<HealthComponent>() && vecDistance(otherRect->getRect(),move->getRect()) <= modData.range;
-            //&& GameWindow::getLevel()->getMesh().straightLine(glm::vec4(otherRect->getCenter(), move->getCenter())) ;
-    }
-    return false;
+   return true;
 }
 
-AttackComponent::AttackComponent(float damage_, int endLag_, float range_, Entity& unit) : ApproachComponent(unit), ComponentContainer<AttackComponent>(&unit),
+AttackComponent::AttackComponent(float damage_, int endLag_, float range_, Entity& unit) : Component(unit), ComponentContainer<AttackComponent>(&unit),
                                                                                             baseData({range_,damage_,endLag_}), modData({range_,damage_,endLag_})
 {
 
-}
-
-bool AttackComponent::isAttacking()
-{
-    return canAttack(targetUnit.lock().get());
 }
 
 void AttackComponent::setRange(float range)
@@ -848,98 +838,29 @@ void AttackComponent::setAttackSpeed(float increase)
     modData.endLag /= std::max(1 + increase,.001f); //do this to prevent dividing by 0
 }
 
-void AttackComponent::attack(HealthComponent* health)
+void AttackComponent::attack(const glm::vec2& pos)
 {
-    health->takeDamage(modData.damage,*static_cast<Unit*>(entity));
+    //health->takeDamage(modData.damage,*static_cast<Unit*>(entity));
 }
 
 void AttackComponent::update()
 {
-    Object* ptr = targetUnit.lock().get();
   //  std::cout << ptr << std::endl;
-    if (canAttack(ptr)) //attack if we are able to.
+    if (canAttack()) //attack if we are able to.
     {
         if (attackTimer.timePassed(modData.endLag) || !attackTimer.isSet())
         {
-            attack(ptr->getComponent<HealthComponent>());
+            attack(GameWindow::getCamera().toWorld(pairtoVec(MouseManager::getMousePos())));
             attackTimer.set();
         }
-        if (move)
-        {
-            move->setSpeed(0);
-            if (!pointInVec(ptr->getRect().getRect(),move->getTarget().x, move->getTarget().y,0))
-            {
-                //std::cout << "ASDF" << std::endl;
-                 /*there is a small chance that if an enemy enters our attack range at the same time that set it as a target,
-                  we won't have our move->getTarget = to the enemy target. We set it here so that AnimationComponent renders our angle correctly.*/
-              //  move->setTarget(ptr->getCenter()); //
-            }
-        }
-    }
-    else //otherwise, move
-    {
-        //GameWindow::requestNGon(10,entity->getComponent<RectComponent>()->getCenter(),10,{1,0,0,.1},0,true,1);
-        ApproachComponent::update();
     }
     modData = baseData;
-}
-
-void AttackComponent::setTarget(const glm::vec2& target, std::shared_ptr<Object>* unit) //unit is a pointer so you can move to a point rather than a unit
-{
-    if (move)
-    {
-        if (unit)
-        {
-            if (targetUnit.lock().get() != unit->get())
-            {
-                targetUnit = *unit;
-            }
-        }
-        else
-        {
-
-            move->setTarget(target);
-            targetUnit.reset();
-        }
-    }
 }
 
 AttackComponent::~AttackComponent()
 {
 
 }
-
-
-
-SeigeComponent::SeigeComponent(Unit& entity, Anthill& hill) : ApproachComponent(entity), ComponentContainer<SeigeComponent>(entity),
- targetHill(std::dynamic_pointer_cast<Anthill>(GameWindow::getLevel()->getUnit(&hill)))
-{
-
-}
-
-void SeigeComponent::update()
-{
-    if ( Object* owner = ((Object*)entity))
-    {
-        if (!targetUnit.lock().get())
-        {
-            if (Object* u = owner->getComponent<HealthComponent>()->getLastAttacker())
-            {
-                setTarget(GameWindow::getLevel()->getUnit(u));
-            }
-            else
-            {
-                setTarget(GameWindow::getLevel()->getUnit(targetHill.lock().get()));
-            }
-        }
-    }
-
-}
-SeigeComponent::~SeigeComponent()
-{
-
-}
-
 
 void ProjectileComponent::onCollide(Unit& other)
 {
@@ -953,13 +874,13 @@ void ProjectileComponent::onCollide(Unit& other)
     }
 }
 
-ProjectileComponent::ProjectileComponent(double damage, bool friendly,const glm::vec2& target, double speed, const glm::vec4& rect, Unit& entity,ProjCollideFunc collideFun_) : MoveComponent(speed, rect, entity),
+ProjectileComponent::ProjectileComponent(double damage, bool friendly,const glm::vec2& target, double speed, const glm::vec4& rect, Object& entity,ProjCollideFunc collideFun_) : MoveComponent(speed, rect, entity),
                         ComponentContainer<ProjectileComponent>(entity), damage(damage), friendly(friendly), collideFunc(collideFun_)
 {
     setTarget(target);
 }
 
-ProjectileComponent::ProjectileComponent(double damage, bool friendly,const glm::vec2& target, double xspeed, double yspeed, const glm::vec4& rect, Unit& entity,ProjCollideFunc collideFun_) :
+ProjectileComponent::ProjectileComponent(double damage, bool friendly,const glm::vec2& target, double xspeed, double yspeed, const glm::vec4& rect, Object& entity,ProjCollideFunc collideFun_) :
                         ProjectileComponent(damage,friendly,target,sqrt(xspeed*xspeed + yspeed*yspeed),rect,entity,collideFunc)
 {
 
@@ -972,18 +893,21 @@ void ProjectileComponent::setShooter(Object& obj)
 
 void ProjectileComponent::collide(Entity& other)
 {
-    Unit* unit = static_cast<Unit*>(entity);
-    Unit* otherUnit = static_cast<Unit*>(&other);
-    if (unit && friendly != otherUnit->getFriendly() ) //if we collided with an enemy (or friendly unit if enemy projectile)
+    if (other.getComponent<HealthComponent>())
     {
-        unit->setDead(true);
-        if (shooter)
+        Object* obj = static_cast<Object*>(entity);
+        Unit* otherUnit = static_cast<Unit*>(&other);
+        if (obj && obj->getFriendly() != otherUnit->getFriendly() ) //if we collided with an enemy (or friendly unit if enemy projectile)
         {
-            onCollide(*unit);
-        }
-        else
-        {
-            otherUnit->getHealth().takeDamage(damage,*unit);
+            obj->setDead(true);
+            if (shooter)
+            {
+                onCollide(*otherUnit);
+            }
+            else
+            {
+                otherUnit->getHealth().takeDamage(damage,*obj);
+            }
         }
     }
 }
@@ -998,7 +922,7 @@ void ProjectileComponent::update()
 
 }
 
-UnitAttackComponent::UnitAttackComponent(double damage_, int endLag_, double range_,double searchRange_, bool f, Entity& entity) : AttackComponent(damage_,endLag_,range_,entity),
+UnitAttackComponent::UnitAttackComponent(double damage_, int endLag_, double range_,double searchRange_, bool f, Entity& entity) : ApproachComponent(entity),
 ComponentContainer<UnitAttackComponent>(entity), notFriendly(f), searchRange(searchRange_), activated(false) //coincidentally, activated should always be the same value as f
 {
 
@@ -1017,7 +941,7 @@ void UnitAttackComponent::update()
         {
             setShortTarget(level->getUnit(nearby));
         }
-        else if (activated && (longTarget.second != move->getTarget() || targetUnit.lock().get() != longTarget.first.lock().get())) //if there's nothing nearby to fight, set the target to the long target
+       /* else if (activated && (longTarget.second != move->getTarget() || targetUnit.lock().get() != longTarget.first.lock().get())) //if there's nothing nearby to fight, set the target to the long target
         {
             if (longTarget.first.lock().get())
             {
@@ -1029,11 +953,11 @@ void UnitAttackComponent::update()
                // std::cout << longTarget.second.x << " " << longTarget.second.y << std::endl;
                 AttackComponent::setTarget(longTarget.second,nullptr);
             }
-        }
+        }*/
     }
     else if (ent && targetUnit.lock().get() != ent)
     {
-        AttackComponent::setTarget(GameWindow::getLevel()->getEntities()[ent]);
+     //   AttackComponent::setTarget(GameWindow::getLevel()->getEntities()[ent]);
     }
    /* if (shortTarget.lock().get() && ((Unit*)entity)->getFriendly() && targetUnit.lock().get())
     {
@@ -1050,13 +974,13 @@ void UnitAttackComponent::update()
     {
         ignore = false;
     }
-    AttackComponent::update();
+    ApproachComponent::update();
 }
 
 void UnitAttackComponent::setTarget(const glm::vec2& target,std::shared_ptr<Object>* unit)
 {
     setLongTarget(target,unit,false);
-    AttackComponent::setTarget(target,unit);
+    //AttackComponent::setTarget(target,unit);
 }
 
 void UnitAttackComponent::setLongTarget(const glm::vec2& target, std::shared_ptr<Object>* unit, bool ignore)
@@ -1081,7 +1005,7 @@ void UnitAttackComponent::setShortTarget(std::shared_ptr<Object>& unit)
 {
     if (shortTarget.lock().get() != unit.get())
     {
-        AttackComponent::setTarget(unit);
+       // AttackComponent::setTarget(unit);
         if (unit.get())
         {
             shortTarget = unit;
@@ -1107,14 +1031,27 @@ void UnitAttackComponent::setShortTarget(std::shared_ptr<Object>& unit)
 }
 
 
-ProjectileAttackComponent::ProjectileAttackComponent(ProjectileAssembler& ass, int endLag, double range,double searchRange_,bool f,  Unit& entity) :
-        UnitAttackComponent(0,endLag,range,searchRange_,f, entity), ComponentContainer<ProjectileAttackComponent>(entity),assembler(&ass)
+ProjectileAttackComponent::ProjectileAttackComponent(ProjectileAssembler& ass, int endLag, double range,double searchRange_,bool f,  Entity& entity) :
+        AttackComponent(0,endLag,f, entity), ComponentContainer<ProjectileAttackComponent>(entity),assembler(&ass)
 {
+
 
 }
 
-void ProjectileAttackComponent::attack(HealthComponent* health)
+void ProjectileAttackComponent::attack(const glm::vec2& mousePos)
 {
-    Object* unit = assembler->assemble(*static_cast<Object*>(entity),entity->getComponent<RectComponent>()->getCenter(),targetUnit.lock().get()->getRect().getCenter());
-    GameWindow::getLevel()->addUnit(*unit,true);
+    Object* unit = nullptr;
+    glm::vec2 center;
+    WeaponComponent* weapon = entity->getComponent<WeaponComponent>();
+    if (weapon) //if this component belongs to a weapon, use the owner center
+    {
+        unit = weapon->getOwner();
+        center = unit->getCenter();
+    }
+    else //otherwise, assume owner has a rect
+    {
+        unit = static_cast<Object*>(entity);
+        center = entity->getComponent<RectComponent>()->getCenter();
+    }
+    GameWindow::getLevel()->addUnit(*assembler->assemble(*unit,center,mousePos),true);
 }
