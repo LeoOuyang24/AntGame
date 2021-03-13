@@ -5,6 +5,7 @@
 #include "SDLhelper.h"
 
 #include "components.h"
+#include "tiles.h"
 #include "friendlyAssemblers.h"
 
 class NavMesh;
@@ -111,6 +112,7 @@ private:
 
     constexpr static int chunkDimen = 2500;
     constexpr static int maxObjectSize = 100; //the longest any one dimension of an entity can be
+    const int tileDimen = 125;
     const static glm::vec4 playerArea; //area that walls can't spawn because the player's stuff will be there
     bool changeLevel = false; //whether or not to changeLevel
     ObjectStorage entities;
@@ -118,6 +120,7 @@ private:
     SPStorage<Terrain> terrain;
   //  std::vector<std::shared_ptr<Label>> labels;
     std::shared_ptr<RawQuadTree> tree;
+    std::list<std::pair<glm::vec2,SpriteWrapper*>> tiles;
     int foundShards = 0;
 
     friend class GameWindow;

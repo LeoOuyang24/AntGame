@@ -103,14 +103,29 @@ void PlayerAssembler::PlayerControls::update()
     if (move.x != 0 || move.y != 0)
         {
             float angle = atan2(move.y,move.x);
-            move = {cos(angle)*speed,sin(angle)*speed};
-            if (GameWindow::getLevel()->getMesh().getWallRect(rect + glm::vec4(move.x,0,0,0) ) != glm::vec4(0))
+            move = {cos(angle)*speed*DeltaTime::deltaTime,sin(angle)*speed*DeltaTime::deltaTime};
+            glm::vec4 wall;
+            if ((wall = GameWindow::getLevel()->getMesh().getWallRect(rect + glm::vec4(move.x,0,0,0) )) != glm::vec4(0))
             {
-                move.x = 0;
+                if (rect.x < wall.x)
+                {
+                    move.x = wall.x - rect.z - rect.x - 1;
+                }
+                else
+                {
+                    move.x = (wall.x + wall.z + 1) - rect.x;
+                }
             }
-            if (GameWindow::getLevel()->getMesh().getWallRect(rect + glm::vec4(0,move.y,0,0)) != glm::vec4(0))
+            if ((wall = GameWindow::getLevel()->getMesh().getWallRect(rect + glm::vec4(0,move.y,0,0))) != glm::vec4(0))
             {
-                move.y = 0;
+                if (rect.y < wall.y)
+                {
+                    move.y = wall.y - rect.a - rect.y - 1;
+                }
+                else
+                {
+                    move.y = wall.y + wall.a + 1 - rect.y;
+                }
             }
             setTarget(getCenter() + move);
         }
@@ -121,7 +136,7 @@ void PlayerAssembler::PlayerControls::update()
     MoveComponent::update();
 }
 
-PlayerAssembler::PlayerAssembler() : UnitAssembler("Player",{30,30},{&basicSoldierAnime,&basicShootingAnime},true,100,1,true)
+PlayerAssembler::PlayerAssembler() : UnitAssembler("Player",{30,30},{&basicSoldierAnime,&basicShootingAnime},true,100,.5,true)
 {
 
 }

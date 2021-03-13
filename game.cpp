@@ -386,8 +386,6 @@ void GameWindow::updateTop(float z)
 
         camera.update();
 
-        level.lock().get()->render();
-
         int size = labels.size();
         for (int i = 0; i < size; ++i)
         {
@@ -406,17 +404,18 @@ void GameWindow::updateTop(float z)
         //manager.updateAntManagers();
 
         //everything rendered before this is rendered as if it were under fog (unless it has a z higher than fog obviously)
-       if (Debug::getShowFog())
+       /*if (Debug::getShowFog())
        {
            fogMaker.renderFog(); //anything rendered after this is only shown if it were in a sight bubble.
 
             glDisable(GL_DEPTH_TEST);
             glStencilFunc(GL_NOTEQUAL,1,0xFF);
             glStencilMask(0x00);
-       }
-
+       }*/
+        level.lock().get()->render();
         manager.update();
-        PolyRender::render();
+
+       /* PolyRender::render();
         SpriteManager::render();
         FontManager::update();
 
@@ -426,7 +425,7 @@ void GameWindow::updateTop(float z)
             glStencilFunc(GL_ALWAYS,1,0xFF);
             glStencilMask(0xFF);
             glEnable(GL_DEPTH_TEST); //anything rendered after this will be discarded if they are under the fog.*/
-        }
+        //}
         renderAbsolute = true;
     // std::cout << camera.getRect().x << " " << camera.getRect().x + camera.getRect().z << std::endl;
        // camera.reserveZoom();
