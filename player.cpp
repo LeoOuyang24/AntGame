@@ -9,6 +9,231 @@
 #include "enemyAssemblers.h"
 #include "weaponAssemblers.h"
 
+InventoryComponent::InventoryComponent(Unit& player) : Component(player), ComponentContainer<InventoryComponent>(player)
+{
+    pistol = pistolAssembler.assemble(&player);
+}
+
+Entity* InventoryComponent::getWeapon()
+{
+    return pistol;
+}
+
+void InventoryComponent::update()
+{
+    if (pistol)
+    {
+        pistol->getComponent<WeaponComponent>()->update();
+      //  pistol->update();
+    }
+}
+
+WeaponAnimationComponent::WeaponAnimationComponent(AnimationWrapper* arm_, const glm::vec2& armOffset_, AnimationWrapper& sprite, Unit& owner) : UnitAnimationComponent(sprite,owner),
+                                                                                                                                        ComponentContainer<WeaponAnimationComponent>(owner),
+                                                                                                                                         arm(arm_), armOffset(armOffset_)
+{
+
+}
+
+bool WeaponAnimationComponent::doMirror()
+{
+    if (entity && entity->getComponent<RectComponent>())
+    {
+    glm::vec2 mousePos = GameWindow::getCamera().toWorld(pairtoVec(MouseManager::getMousePos()));
+        glm::vec4 rect = entity->getComponent<RectComponent>()->getRect();
+    float angle = atan2(mousePos.y - (rect.y + rect.a/2), mousePos.x - (rect.x + rect.a/2));
+    return abs(round(angle)) < M_PI/2;
+    }
+    return false;
+}
+
+void WeaponAnimationComponent::update()
+{
+    if (arm && sprite)
+    {
+        SpriteParameter armParam;
+        glm::vec2 dimen = sprite->getDimen();
+        glm::vec2 armDimen = arm->getDimen();
+        glm::vec4 rect = entity->getComponent<RectComponent>()->getRect();
+        bool mirror = doMirror();
+        if (!mirror)
+        {
+         armParam.rect = {rect.x - armOffset.x/dimen.x*rect.z,rect.y + armOffset.y/dimen.y*rect.a,armDimen.x/dimen.x*rect.z,armDimen.y/dimen.y*rect.a};
+
+        }
+        else
+        {
+            armParam.rect = {rect.x + rect.z + armOffset.x/dimen.x*rect.z,rect.y + armOffset.y/dimen.y*rect.a,-1*armDimen.x/dimen.x*rect.z,armDimen.y/dimen.y*rect.a};
+        }
+        armParam.rect = GameWindow::getCamera().toScreen(armParam.rect);
+        armParam.z = param.z + 1;
+        arm->request(armParam);
+        if (entity->getComponent<InventoryComponent>())
+        {
+            Entity* weapon = entity->getComponent<InventoryComponent>()->getWeapon();
+            if (weapon)
+            {
+                AnimationComponent* weaponAnime = weapon->getComponent<AnimationComponent>();
+                RectComponent* weaponRectComp = weapon->getComponent<RectComponent>();
+                if (weaponAnime && weaponRectComp)
+                {
+                    glm::vec4 weaponRect = weaponRectComp->getRect();
+                    glm::vec2 mousePos = GameWindow::getCamera().toWorld(pairtoVec(MouseManager::getMousePos()));
+                    armParam.radians = atan2(mousePos.y - (rect.y + rect.a/2), mousePos.x - (rect.x + rect.a/2));
+                    if (!mirror)
+                    {
+                        armParam.radians += M_PI;
+                        armParam.rect = {rect.x - weaponRect.z/2,rect.y + rect.a/2 - weaponRect.a/2, weaponRect.z,weaponRect.a};//repurpose armParam for the weapon
+                    }
+                    else
+                    {
+                        armParam.rect = {rect.x + rect.z + weaponRect.z/2, rect.y + rect.a/2 - weaponRect.a/2, -1*weaponRect.z, weaponRect.a};
+                    }
+                    //armParam.effect = MIRROR;
+                    armParam.rect = GameWindow::getCamera().toScreen(armParam.rect);
+                    armParam.z = param.z + .5;
+                    weaponAnime->render(armParam);
+                }
+            }
+        }
+    }
+    UnitAnimationComponent::update();
+}
+
+PlayerAssembler::PlayerControls::PlayerControls(float speed, const glm::vec4& rect, Unit& player) : MoveComponent(speed,rect , player)
+{
+
+}
+
+void PlayerAssembler::PlayerControls::update()
+{
+    glm::vec2 move = {0,0};
+    if (KeyManager::findNumber(SDLK_d) != -1)
+    {
+        move.x += 1;
+    }
+    if (KeyManager::findNumber(SDLK_a) != -1)
+    {
+        move.x -= 1;
+    }
+    if (KeyManager::findNumber(SDLK_w) != -1)
+    {
+        move.y -= 1;
+    }
+    if (KeyManager::findNumber(SDLK_s) != -1)
+    {
+        move.y += 1;
+    }
+    if (move.x != 0 || move.y != 0)
+        {
+            float angle = atan2(move.y,move.x);
+            move = {cos(angle)*speed*DeltaTime::deltaTime,sin(angle)*speed*DeltaTime::deltaTime};
+            glm::vec4 wall;
+            if ((wall = GameWindow::getLevel()->getMesh().getWallRect(rect + glm::vec4(move.x,0,0,0) )) != glm::vec4(0))
+            {
+                if (rect.x < wall.x)
+                {
+                    move.x = wall.x - rect.z - rect.x - 1;
+                }
+                else
+                {
+                    move.x = (wall.x + wall.z + 1) - rect.x;
+                }
+            }
+            if ((wall = GameWindow::getLevel()->getMesh().getWallRect(rect + glm::vec4(0,move.y,0,0))) != glm::vec4(0))
+            {
+                if (rect.y < wall.y)
+                {
+                    move.y = wall.y - rect.a - rect.y - 1;
+                }
+                else
+                {
+                    move.y = wall.y + wall.a + 1 - rect.y;
+                }
+            }
+            setTarget(getCenter() + move);
+        }
+        else
+        {
+            setTarget(getCenter());
+        }
+    MoveComponent::update();
+}
+
+PlayerAssembler::PlayerHealth::PlayerHealth(Entity& entity, float health_) : HealthComponent(entity, health_)
+{
+    invulTime = 250;
+}
+
+void PlayerAssembler::PlayerHealth::takeDamage(double amount, Object& attacker)
+{
+    if (isDamaging(amount))
+    {
+        ForcesComponent* forces = entity->getComponent<ForcesComponent>();
+        RectComponent* rect = entity->getComponent<RectComponent>();
+        if (forces && rect)
+        {
+            glm::vec2 center = rect->getCenter();
+            glm::vec2 otherCenter = attacker.getCenter();
+            float angle = atan2(center.y - otherCenter.y, center.x - otherCenter.x);
+            forces->addForce({angle,5});
+        }
+    }
+    HealthComponent::takeDamage(amount,attacker);
+}
+
+PlayerAssembler::PlayerRender::PlayerRender(AnimationWrapper* arm_, const glm::vec2& offset, AnimationWrapper& wrap, Unit& owner) : WeaponAnimationComponent(arm_,offset,wrap,owner)
+{
+
+}
+
+void PlayerAssembler::PlayerRender::update()
+{
+    HealthComponent* health = entity->getComponent<HealthComponent>();
+    if (health && health->isInvincible() > 0)
+    {
+        param.tint.a = DeltaTime::getCurrentFrame() % 10 < 5;
+        if (health->isInvincible() > .75)
+        {
+            SpriteParameter param = {GameWindow::getCamera().toScreen(entity->getComponent<RectComponent>()->getRect())};
+            param.effect = doMirror() ? MIRROR : NONE;
+            playerHurt.request(param);
+        }
+        else
+        {
+                WeaponAnimationComponent::update();
+        }
+
+    }
+    else
+    {
+        WeaponAnimationComponent::update();
+    }
+}
+
+PlayerAssembler::PlayerAssembler() : UnitAssembler("Player",{25,47},playerAnime,true,100,.5,true)
+{
+
+}
+
+Object* PlayerAssembler::assemble()
+{
+    Unit* player = new Unit(movable);
+    player->addHealth(new PlayerHealth(*player,maxHealth));
+    player->addRect(new PlayerControls(speed,{0,0,dimen.x,dimen.y},*player));
+    player->addRender(new PlayerRender(&playerArm,{3,49},*sprite,*player));
+    player->addClickable(new ClickableComponent(name,*player));
+    player->addComponent(*(new InventoryComponent(*player)));
+    player->addComponent(*(new EntityForces(*player)));
+    player->setFriendly(friendly);
+    return player;
+}
+
+PlayerAssembler::~PlayerAssembler()
+{
+
+}
+
 const glm::vec4 Player::selectColor = {1,1,1,.5};
 
 /*bool Player::updateSelect()
@@ -75,87 +300,7 @@ void Player::addGold(int g)
     gold = std::max(gold + g, 0);
 }
 
-PlayerAssembler::PlayerControls::PlayerControls(float speed, const glm::vec4& rect, Unit& player) : MoveComponent(speed,rect , player)
-{
-    pistol = pistolAssembler.assemble(&player);
-}
 
-void PlayerAssembler::PlayerControls::update()
-{
-    pistol->update();
-    glm::vec2 move = {0,0};
-    if (KeyManager::findNumber(SDLK_d) != -1)
-    {
-        move.x += 1;
-    }
-    if (KeyManager::findNumber(SDLK_a) != -1)
-    {
-        move.x -= 1;
-    }
-    if (KeyManager::findNumber(SDLK_w) != -1)
-    {
-        move.y -= 1;
-    }
-    if (KeyManager::findNumber(SDLK_s) != -1)
-    {
-        move.y += 1;
-    }
-    if (move.x != 0 || move.y != 0)
-        {
-            float angle = atan2(move.y,move.x);
-            move = {cos(angle)*speed*DeltaTime::deltaTime,sin(angle)*speed*DeltaTime::deltaTime};
-            glm::vec4 wall;
-            if ((wall = GameWindow::getLevel()->getMesh().getWallRect(rect + glm::vec4(move.x,0,0,0) )) != glm::vec4(0))
-            {
-                if (rect.x < wall.x)
-                {
-                    move.x = wall.x - rect.z - rect.x - 1;
-                }
-                else
-                {
-                    move.x = (wall.x + wall.z + 1) - rect.x;
-                }
-            }
-            if ((wall = GameWindow::getLevel()->getMesh().getWallRect(rect + glm::vec4(0,move.y,0,0))) != glm::vec4(0))
-            {
-                if (rect.y < wall.y)
-                {
-                    move.y = wall.y - rect.a - rect.y - 1;
-                }
-                else
-                {
-                    move.y = wall.y + wall.a + 1 - rect.y;
-                }
-            }
-            setTarget(getCenter() + move);
-        }
-        else
-        {
-            setTarget(getCenter());
-        }
-    MoveComponent::update();
-}
-
-PlayerAssembler::PlayerAssembler() : UnitAssembler("Player",{30,30},{&basicSoldierAnime,&basicShootingAnime},true,100,.5,true)
-{
-
-}
-
-Object* PlayerAssembler::assemble()
-{
-    Unit* player = new Unit(movable);
-    player->addHealth(new HealthComponent(*player,maxHealth));
-    player->addRect(new PlayerControls(speed,{0,0,dimen.x,dimen.y},*player));
-    player->addRender(new UnitAnimationComponent(sprites,*player));
-    player->addClickable(new ClickableComponent(name,*player));
-    player->setFriendly(friendly);
-    return player;
-}
-
-PlayerAssembler::~PlayerAssembler()
-{
-
-}
 
 InactiveComponent::InactiveComponent(double duration, Entity& entity) : waitTime(duration), Component(entity), ComponentContainer<InactiveComponent>(entity)
 {

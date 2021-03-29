@@ -6,6 +6,7 @@
 #include "navigation.h"
 #include "animation.h"
 #include "tiles.h"
+#include "enemyAssemblers.h"
 
 Terrain::TerrainRender::TerrainRender(const glm::vec4& color, Entity& ent) : RectRenderComponent(color, ent), ComponentContainer<Terrain::TerrainRender>(ent)
 {
@@ -19,7 +20,7 @@ void Terrain::TerrainRender::update()
 
 Terrain::Terrain(int x, int y, int w, int h) : Object(*(new ClickableComponent("Terrain", *this)), *(new RectComponent({x,y,w,h},*this)), *(new RectRenderComponent({.5,.5,.5,1},*this)))
 {
-    addComponent(*(new RepelComponent(*this)));
+
 }
 
 void ItemComponent::onUse(Entity& other)
@@ -48,11 +49,10 @@ Shard::ShardComponent::ShardComponent(Entity& owner) : ItemComponent(owner), Com
 
 void Shard::ShardComponent::onUse(Entity& other)
 {
-    if (GameWindow::getLevel())
-    GameWindow::getLevel()->findShard();
+
 }
 
-Shard::Shard() : ObjectAssembler("Shard", {40,40},{&shardAnime}, true)
+Shard::Shard() : ObjectAssembler("Shard", {40,40},{shardAnime}, true)
 {
 
 }
@@ -75,7 +75,7 @@ void PickUpResource::PickUpResourceComponent::onUse(Entity& entity)
     GameWindow::getPlayer().addResource(amount);
 }
 
-PickUpResource::PickUpResource() : ObjectAssembler("Resource", {40,40},{&resourceAnime},true)
+PickUpResource::PickUpResource() : ObjectAssembler("Resource", {40,40},{resourceAnime},true)
 {
 
 }
@@ -131,7 +131,6 @@ std::shared_ptr<Object> Map::addUnit(Object& entity, bool friendly)
     }
     if (!entity.getMovable())
     {
-        printRect(entity.getRect().getRect());
         mesh->smartAddNode(entity.getRect().getRect());
     }
     //ptr.reset();
@@ -178,6 +177,26 @@ void Map::moveObject(Object& obj, double x, double y)
     tree->update(obj.getRect(), *tree.get());
     //std::cout << obj.getCenter().x << std::endl;
    // std::cout << getChunk(obj).ants.size() << oldChunk->ants.size() << std::endl;
+}
+
+UnitAssembler& Map::generateCreature()
+{
+    int random = rand()%5;
+    return evilMoonAssembler;
+}
+
+void Map::spawnCreature()
+{
+    UnitAssembler* toSpawn = &generateCreature();
+  //  const glm::vec4* camera = &(GameWindow::getCamera().getRect());
+    glm::vec2 entityRect = (toSpawn->dimen);
+    auto area = getMesh().getRandomArea({rect.x + rect.z/2, rect.y + rect.a/2}, 0, std::min(rect.z/2,rect.a/2));
+    if (area.z - entityRect.x > 0 && area.a - entityRect.y > 0) //if we have enough space
+    {
+        int x = rand()%((int)(area.z -  entityRect.x)) + area.x; //we want to make sure our object spawns outside of the camera's view and doesn't spawn partially out of the map
+        int y = rand() % ((int)(area.a - entityRect.y)) + area.y;
+        addUnit(*static_cast<Unit*>(toSpawn->assemble()),x + entityRect.x/2,y + entityRect.y/2,false);//adjust for center
+    }
 }
 
 void Map::remove(Object& unit)
@@ -234,7 +253,14 @@ void Map::render()
     {
         terrain[i]->update();
     }    GameWindow::getFogMaker().requestRectFog(playerArea);
+
   //  mesh->render();
+}
+
+void Map::update()
+{
+    render();
+
 }
 
 const glm::vec4& Map::getRect() //returns rect of the current Chunk
@@ -248,7 +274,7 @@ RawQuadTree* Map::getTree()
 
 void Map::reset()
 {
-    foundShards = 0;
+
 }
 
 void Map::setChangeLevel(bool l)
@@ -260,19 +286,18 @@ bool Map::getChangeLevel()
     return changeLevel;
 }
 
-void Map::findShard()
+bool Map::finishedLevel()
 {
-    foundShards++;
-    if (foundShards == 5)
+     bool noEnemies = true;
+    for (auto it = entities.begin(); it != entities.end(); ++it)
     {
-        addUnit(*(new Gate(playerArea.x + playerArea.z/2, playerArea.y + playerArea.a/2*3/2)),false);
-        foundShards = 0;
+        if (!it->first->getFriendly())
+        {
+            noEnemies = false;
+            break;
+        }
     }
-}
-
-int Map::getFoundShards()
-{
-    return foundShards;
+    return  noEnemies;
 }
 
 Map* Map::generateLevel(const glm::vec4& levelRect) // Doesn't generate terrain on the bottom most row. It's simply too big a hassle to ensure that inaccessible areas don't spawn on the bottom row
@@ -367,24 +392,14 @@ Map* Map::generateLevel(const glm::vec4& levelRect) // Doesn't generate terrain 
             dists.push({line,empty});
         }
     }
-    Shard shard;
-    PickUpResource resource;
-    glm::vec2 dimen = shard.dimen;
-    for (int i = 0; i < 5; ++i) //add shards
+
+    int rando = 1;
+    for (int i = 0; i < rando; ++i)
     {
-        glm::vec2 chosen = emptySpots[rand()%emptySpots.size()];
-        chunk->addUnit(*(shard.assemble()),chosen.x + fmod(rand(),(maxObjectSize/2 - dimen.x/2)),
-                chosen.y + fmod(rand(),(maxObjectSize/2 - dimen.y/2)),true);
+        chunk->spawnCreature();
     }
-    dimen = resource.dimen;
-    for (int i = 0; i < rand()%100; ++i)
-    {
-            glm::vec2 chosen = emptySpots[rand()%emptySpots.size()];
-            chunk->addUnit(*(resource.assemble()),chosen.x + fmod(rand(),(maxObjectSize/2 - dimen.x/2)),
-            chosen.y + fmod(rand(),(maxObjectSize/2 - dimen.y/2)),true);
-    }
+    chunk->addUnit(*(new Gate(*chunk,chunkDimen/2,chunkDimen/2)),true);
     return chunk;
-   // addUnit(*(new Gate({chunkDimen/2, chunkDimen/2 + 100})));
 }
 
 Map::~Map()
@@ -392,67 +407,38 @@ Map::~Map()
 
 }
 
-Map::Gate::NextAreaButton::NextAreaButton() : Button({0,0,64,16},nullptr,nullptr,{"Next Area!"},&Font::tnr,{0,1,0,1})
+Map::Gate::NextAreaComponent::NextAreaComponent(Map& map_, Entity& entity) : Component(entity), ComponentContainer<NextAreaComponent>(&entity), level(&map_)
 {
 
 }
 
-void Map::Gate::NextAreaButton::press()
+Map* Map::Gate::NextAreaComponent::getLevel()
 {
-    Map* level = (GameWindow::getLevel());
-    if (level)
+    return level;
+}
+
+void Map::Gate::NextAreaComponent::collide(Entity& entity)
+{
+    if (&entity == GameWindow::getPlayer().getPlayer() && level && KeyManager::findNumber(SDLK_e) != -1)
     {
         level->setChangeLevel(true);
         GameWindow::getPlayer().addGold(10);
     }
 }
 
-Map::Gate::NextAreaButton::~NextAreaButton()
+Map::Gate::Gate(Map& level, int x, int y) : Object(*(new ClickableComponent("Gate",*this)),*(new RectComponent({x,y,64,64},*this)), *(new AnimationComponent(portalAnime,*this)))
 {
-
-}
-
-Map::Gate::Gate(int x, int y) : Object(*(new ClickableComponent("Gate",*this)),*(new RectComponent({x,y,64,64},*this)), *(new AnimationComponent(portalAnime,*this)))
-{
-    getClickable().addButton(*(new NextAreaButton()));
+    addComponent(*(new NextAreaComponent(level, *this)));
+    addComponent(*(new TangibleComponent([](Entity* entity){
+                                         return entity->getComponent<Map::Gate::NextAreaComponent>()->getLevel()->finishedLevel();
+                                         },*this)));
+   // getClickable().addButton(*(new NextAreaButton()));
 }
 
 Map::Gate::~Gate()
 {
 
 }
-
-/*Map::Chunk::Chunk(const glm::vec4& rect_)
-{
-    this->rect = rect_;
-    tree.reset(new RawQuadTree(rect_));
-}
-
-
-glm::vec4& Map::Chunk::getRect()
-{
-    return rect;
-}
-
-void Map::Chunk::remove(Object& unit)
-{
-    tree->remove(unit.getRect());
-    entities.erase(&unit);
-}
-
-void Map::Chunk::clear()
-{
-    while (entities.size() > 0)
-    {
-        remove(*(entities.begin()->first));
-    }
-    terrain.clear();
-}
-
-Map::Chunk::~Chunk()
-{
-    clear();
-}*/
 
 
 

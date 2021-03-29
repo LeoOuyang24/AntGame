@@ -5,9 +5,10 @@
 
 struct WeaponAssembler
 {
+    const glm::vec2 dimen;
     AnimationWrapper* const sprite = nullptr;
     const float damage = 0;
-    WeaponAssembler(AnimationWrapper* spr, float damage_);
+    WeaponAssembler(const glm::vec2& dimen_, AnimationWrapper* spr, float damage_);
     Entity* assemble(Unit* user);
 };
 

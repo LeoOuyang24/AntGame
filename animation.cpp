@@ -10,8 +10,9 @@ AnimationWrapper defaultAnime;
 AnimationWrapper shardAnime;
 AnimationWrapper resourceAnime;
 
-AnimationWrapper pistolAnime;
-
+AnimationWrapper playerAnime;
+AnimationWrapper playerArm;
+AnimationWrapper playerHurt;
 AnimationWrapper basicSoldierAnime;
 AnimationWrapper basicShootingAnime;
 AnimationWrapper turretSprite;
@@ -28,6 +29,7 @@ AnimationWrapper tankAnime;
 AnimationWrapper commanderAnime;
 AnimationWrapper iceTurretAnime;
 
+AnimationWrapper pistolAnime;
 
 AnimationWrapper explosionAnime;
 AnimationWrapper fireBlastSprite;
@@ -39,6 +41,16 @@ AnimationWrapper portalAnime;
 
 void initSprites()
 {
+
+    playerAnime.init(new BaseAnimation("sprites/astro/astro2.png",4,4,1,{0,0,4,1}));
+    playerArm.init(new BaseAnimation("sprites/astro/astroArm.png",1,1,1));
+    playerHurt.init(new BaseAnimation("sprites/astro/astrohurt.png",0,1,1));
+    pistolAnime.init(new BaseAnimation("sprites/gun2.png",.01,1,1));
+
+
+
+    basicEnemyAnime.init(new BaseAnimation("sprites/evilMoon.png", .01,3,1));
+
     fireIcon.init("sprites/fire-icon.png");
     freezeIcon.init("sprites/freeze-icon.png");
     coinIcon.init("sprites/gold_icon.png");
@@ -49,23 +61,8 @@ void initSprites()
     shardAnime.init(new BaseAnimation("sprites/orb.png", .01, 12,8,{0,0,6,4}));
     resourceAnime.init(new BaseAnimation("sprites/orb.png",.01,12,8,{.5,.5,6,4}));
 
-    pistolAnime.init(new BaseAnimation("sprites/pistol1.png",.01,1,1));
-
-    basicSoldierAnime.init(new BaseAnimation("sprites/astronaut.png", .01, 3,1));
-    basicShootingAnime.init(new BaseAnimation("sprites/astroShooting.png",.1,3,2));
-    turretSprite.init(new BaseAnimation("sprites/turret.png",0,1,1));
-    basicEnemyAnime.init(new BaseAnimation("sprites/evilMoon.png", .01,3,1));
-    greenCross.init(new BaseAnimation("sprites/greencross.png",0,1,1));
-    blasterAnime.init(new BaseAnimation("sprites/blaster.png",0.01,3,1));
     tankRocketAnime.init(new BaseAnimation("sprites/blastRocket.png",0,1,1));
-    incineratorAnime.init(new BaseAnimation("sprites/incinerator.png",.01,3,1));
-    freezeUnitAnime.init(new BaseAnimation("sprites/freezeUnit.png",.01,3,1) );
-    mercenaryAnime.init(new BaseAnimation("sprites/mercenary.png",.01,3,1));
-    minigunEnthAnime.init(new BaseAnimation("sprites/minigunEnth.png",.01,3,1));
-    shrimpSuitAnime.init(new BaseAnimation("sprites/shrimp.png",.01,3,1));
-    tankAnime.init(new BaseAnimation("sprites/tank.png",0,1,1));
-    commanderAnime.init(new BaseAnimation("sprites/commander.png",.01,3,1));
-    iceTurretAnime.init(new BaseAnimation("sprites/iceTurret.png",0,1,1));
+
 
     explosionAnime.init(new BaseAnimation("sprites/explosion.png",.1,3,4));
     fireBlastSprite.init(new BaseAnimation("sprites/fireBlast.png",0,1,1));

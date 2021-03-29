@@ -13,8 +13,9 @@ extern AnimationWrapper defaultAnime;
 extern AnimationWrapper shardAnime;
 extern AnimationWrapper resourceAnime;
 
-extern AnimationWrapper pistolAnime;
-
+extern AnimationWrapper playerAnime;
+extern AnimationWrapper playerArm;
+extern AnimationWrapper playerHurt;
 extern AnimationWrapper basicSoldierAnime;
 extern AnimationWrapper basicShootingAnime;
 extern AnimationWrapper turretSprite;
@@ -30,6 +31,8 @@ extern AnimationWrapper shrimpSuitAnime;
 extern AnimationWrapper tankAnime;
 extern AnimationWrapper commanderAnime;
 extern AnimationWrapper iceTurretAnime;
+
+extern AnimationWrapper pistolAnime;
 
 extern AnimationWrapper explosionAnime;
 extern AnimationWrapper fireBlastSprite;

@@ -82,30 +82,33 @@ struct Map
     void moveObject(Object& obj, double x, double y); //can move either ants or objects. Sets their center
     ObjectStorage& getEntities();
     NavMesh& getMesh(); //might be null if init hasn't been called
+    UnitAssembler& generateCreature();
+    void spawnCreature(); //spawn creatures at a random spot
     void remove(Object& unit);
     void clearEnemies();
     void render();
+    void update();
     const glm::vec4& getRect();
     RawQuadTree* getTree();
     void reset();
     void setChangeLevel(bool l);
     bool getChangeLevel();
-    void findShard(); //finds a shard (increments foundShards by 1)
-    int getFoundShards();
+    bool finishedLevel(); //returns whether or not the portal should spawn and end the level
     static Map* generateLevel(const glm::vec4& rect = {0,0,chunkDimen,chunkDimen}); //generates terrain and shards. Should only be called when mesh is not null.
     ~Map();
 
     class Gate : public Object
     {
-        class NextAreaButton : public Button
+        class NextAreaComponent : public Component, public ComponentContainer<NextAreaComponent>
         {
+            Map* level = nullptr;
         public:
-            NextAreaButton();
-            void press();
-            ~NextAreaButton();
+            NextAreaComponent(Map& level_, Entity& entity);
+            Map* getLevel();
+            void collide(Entity& entity);
         };
     public:
-        Gate(int x, int y);
+        Gate(Map& level, int x, int y);
         ~Gate();
     };
 private:

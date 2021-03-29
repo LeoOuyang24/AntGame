@@ -38,6 +38,8 @@ StatusEffectAssembler chillEffect = StatusEffectAssembler([](StatusEffect& effec
                                    AnimationComponent* anime = effect.unit->getComponent<AnimationComponent>();
                                    if (anime)
                                    {
-                                       anime->setTint({0,.5,0,1});
+                                       SpriteParameter blue;
+                                       blue.tint = {0,.5,0,1};
+                                       anime->setParam(blue);
                                    }
                                    },freezeIcon);

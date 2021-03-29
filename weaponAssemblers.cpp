@@ -3,7 +3,7 @@
 #include "game.h"
 #include "entities.h"
 
-WeaponAssembler::WeaponAssembler(AnimationWrapper* spr, float damage_) : sprite(spr), damage(damage_)
+WeaponAssembler::WeaponAssembler(const glm::vec2& dimen_, AnimationWrapper* spr, float damage_) : dimen(dimen_),sprite(spr), damage(damage_)
 {
 
 }
@@ -12,6 +12,7 @@ Entity* WeaponAssembler::assemble(Unit* unit)
 {
     Entity* ent = new Entity();
     ent->addComponent(*(new AnimationComponent(*sprite,*ent)));
+    ent->addComponent(*(new RectComponent({0,0,dimen.x,dimen.y},*ent)));
     return ent;
 }
 
@@ -27,6 +28,21 @@ Unit* WeaponComponent::getOwner()
 
 void WeaponComponent::update()
 {
+    RectComponent* rect = entity->getComponent<RectComponent>();
+    if (rect)
+    {
+        glm::vec4 ownerRect = owner->getRect().getRect();
+        rect->setPos(glm::vec2(ownerRect.x + ownerRect.z - (1*ownerRect.z + rect->getRect().z/2),ownerRect.y + ownerRect.a/2 - rect->getRect().a/2));
+        AnimationComponent* animation = entity->getComponent<AnimationComponent>();
+        if (animation)
+        {
+            SpriteParameter param;
+           // param.effect = MIRROR;
+            glm::vec2 mousePos = GameWindow::getCamera().toWorld(pairtoVec(MouseManager::getMousePos()));
+            param.radians = atan2(mousePos.y - rect->getCenter().y, mousePos.x - rect->getCenter().x);
+            animation->setParam(param,AnimationParameter());
+        }
+    }
     if (MouseManager::isPressed(SDL_BUTTON_LEFT))
     {
         attack1->update();
@@ -41,11 +57,11 @@ void WeaponComponent::update()
     }
 }
 
-PistolAssembler::PistolBulletAssembler::PistolBulletAssembler() : ProjectileAssembler(1,"Pistol Bullet",{64,64},&tankRocketAnime,1,1,true)
+PistolAssembler::PistolBulletAssembler::PistolBulletAssembler() : ProjectileAssembler(1,"Pistol Bullet",{50,50},tankRocketAnime,1,true)
 {
 
 }
-PistolAssembler::PistolAssembler() : WeaponAssembler(&pistolAnime,1)
+PistolAssembler::PistolAssembler() : WeaponAssembler({45,15},&pistolAnime,1)
 {
 
 }

@@ -6,6 +6,7 @@
 #include "SDLhelper.h"
 #include "render.h"
 
+#include "animation.h"
 #include "components.h"
 #include "navigation.h"
 
@@ -15,6 +16,14 @@ void renderTimeMeter(const glm::vec4& rect, const glm::vec4& color, DeltaTime& a
 class Unit;
 Unit* convertPosToUnit(Positional* pos); //static casts pos to rectcomponent and casts owner to Unit
 
+class TangibleComponent : public Component, public ComponentContainer<TangibleComponent> //returns a bool based on if the entity should update
+{
+    typedef bool (*TangibleFunction)(Entity* ent);
+    TangibleFunction isTangible;
+public:
+    TangibleComponent(TangibleFunction isTangible_, Entity& entity);
+    bool getTangible();
+};
 
 class ClickableComponent : public Component, public ComponentContainer<ClickableComponent> //clickable component handles user inputs, like when the user selects the unit or presses a button
 {
@@ -35,28 +44,22 @@ public:
 class AnimationComponent : public RenderComponent, public ComponentContainer<AnimationComponent>
 {
 protected:
-    glm::vec4 tint = glm::vec4(1); //sometimes we want to modify our animation from outside sources (usually status effects)
+    SpriteParameter param; //only tint, effect, renderProgram, and z matter
     AnimationWrapper* sprite = nullptr;
     AnimationParameter animeParam;
 public:
     AnimationComponent(AnimationWrapper& anime, Entity& entity, RenderCamera* camera);
     AnimationComponent(AnimationWrapper& anime, Entity& entity);
-    void render(const SpriteParameter& param);
-    void setTint(const glm::vec4& param);
+    virtual void render(const SpriteParameter& param);
+    void setParam(const SpriteParameter& param, const AnimationParameter& animeParam = AnimationParameter());
     void update();
-};
-
-struct UnitAnimSet
-{
-    AnimationWrapper* const walking = nullptr;
-    AnimationWrapper* const attacking = nullptr;
 };
 
 class UnitAnimationComponent : public AnimationComponent, public ComponentContainer<UnitAnimationComponent> //used to show different animations for different actions.
 {
-   const UnitAnimSet* animeSet; //we use a pointer so we can point to an ObjectAssembler's UnitAnimeSet rather than copying;
 public:
-    UnitAnimationComponent(const UnitAnimSet& set, Unit& entity);
+    UnitAnimationComponent( AnimationWrapper& set, Unit& entity);
+    virtual bool doMirror(); //whether we should mirror the sprite
     void update();
 };
 
@@ -124,17 +127,21 @@ class HealthComponent : public Component, public ComponentContainer<HealthCompon
     double maxHealth = 0;
     int displacement = 0; //height above the entity
     bool visible = true;
-    DeltaTime invincible; //keeps track of how many frames of invincibility
     std::weak_ptr<Object> lastAttacker;// the last thing that attacked this unit
     std::map<SpriteWrapper*,std::list<StatusEffect>> effects; //ordered map because we frequently iterate through this map. Each status effect should be uniquely identified by its sprite
     void addHealth(double amount); //increases health by amount. Health cannot exceed maxHealth nor go below 0
+protected:
+    DeltaTime invincible; //keeps track of how many frames of invincibility
+    float invulTime = 10; //milliseconds of invincibility
+    bool isDamaging(double amount); //returns true if amount is positive and we are not invincible
 public:
     HealthComponent(Entity& entity, double health_,  int displacement_ = 20);
     void addArmor(int val);
-    void takeDamage(double amount, Object& attacker ); //the key difference between this and add health is that this keeps track of which attackComponent dealt the damage. Negative damage heals the target
+    virtual void takeDamage(double amount, Object& attacker ); //the key difference between this and add health is that this keeps track of which attackComponent dealt the damage. Negative damage heals the target
     void addEffect(StatusEffect effect);
     double getHealth();
     double getMaxHealth();
+    float isInvincible(); //returns proportion of time left invincible. <= 0 is no longer invincible. Returns 0 is invulTime is 0 or if invincible timer is not set
     void update(); //render health bar and reset invincibility frames
     void render(const glm::vec3& rect, float z); //renders the healthbar at the given location with the given width. The height will always be height so rect.a is the z value to render at.
     void setVisible(bool value);
@@ -162,12 +169,12 @@ public:
 
 };
 
-
-class RepelComponent : public Component, public ComponentContainer<RepelComponent> //component that repels objects on collision
+class EntityForces : public ForcesComponent, public ComponentContainer<EntityForces>
 {
+    glm::vec4 curNodeRect = glm::vec4(0);
 public:
-    RepelComponent(Object& unit);
-    void collide(Entity& other);
+    EntityForces(Entity& entity);
+    void update();
 };
 
 class Structure : public Unit
@@ -266,8 +273,6 @@ public:
     ~AttackComponent();
 };
 
-
-
 class ProjectileComponent : public MoveComponent, public ComponentContainer<ProjectileComponent>
 {
 
@@ -292,7 +297,7 @@ class UnitAttackComponent : public ApproachComponent, public ComponentContainer<
     typedef std::pair<std::weak_ptr<Object>,glm::vec2> TargetInfo;
     std::weak_ptr<Object> shortTarget; //represents short-term target. Is attacked because it's in range
     TargetInfo longTarget; //represents a target that the player explicitly chose. Could be an empty position with no enemy to attack
-
+    double damage;
     bool activated = false; //whether this component should affect MoveComponent. Exists solely to make sure our unit doesn't move to 0,0 upon spawn. Since all of our units are spawned at (0,0) and then moved, we can't just set the position in the constructor
     bool notFriendly = false; //the type of enemy to attack
     bool ignore = false; //whether to ignore enemies or not
@@ -300,7 +305,7 @@ class UnitAttackComponent : public ApproachComponent, public ComponentContainer<
 public:
     UnitAttackComponent(double damage_, int endLag_, double range_,double searchRange_,bool f, Entity& entity);
     void update();
-    void setTarget(const glm::vec2& point,  std::shared_ptr<Object>* unit); //sets long target before calling AttackComponent::setTarget
+    void collide(Entity& other);
     void setLongTarget(const glm::vec2& point, std::shared_ptr<Object>* unit, bool ignore); //sets longTarget. Essentially only used when the player sets the target. Ignores the point if a target unit is provided. Doesn't immediately set the target, you must wait for update to set the target
     void setShortTarget(std::shared_ptr<Object>& unit); //sets shortTarget. Only used when there is a nearby enemy. Immediately sets unit as the new target
 };

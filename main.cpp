@@ -90,8 +90,8 @@ int main(int args, char* argsc[])
     PolyRender::init(screenWidth,screenHeight);
     Font::init(screenWidth, screenHeight);
 
-    initTileSets();
     initSprites();
+    initTileSets();
 
     SDL_Event e;
     bool quit = false;
@@ -165,7 +165,7 @@ int main(int args, char* argsc[])
         SDL_GL_SwapWindow(window);
         DeltaTime::update();
         eventsEmpty = true;
-        fastPrint("Ticks: " + convert(DeltaTime::deltaTime) + "\n");
+        //fastPrint("Ticks: " + convert(DeltaTime::deltaTime) + "\n");
         //SDL_Delay(10);
       //  std::cout << DeltaTime::deltaTime << std::endl;
     }

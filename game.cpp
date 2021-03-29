@@ -23,69 +23,10 @@ void Manager::init(const glm::vec4& region)
    // tree.reset(new RawQuadTree(region));
 }
 
-Unit* Manager::generateCreature()
-{
-    int random = rand()%5;
-
-    return static_cast<Unit*>(evilMoonAssembler.assemble());
-}
-
-/*void Manager::spawnCreatures()
-{
-
-    Unit* toSpawn = generateCreature();
-    Map* level = &(GameWindow::getLevel());
-    const glm::vec4* mapSize = &(level->getRect(level->getCurrentChunk()));
-    const glm::vec4* camera = &(GameWindow::getCamera().getRect());
-    const glm::vec4* entityRect = &(toSpawn->getRect().getRect());
-    auto area = level->getMesh().getRandomArea(level->getRect());
-    if (area.z - entityRect->z > 0 && area.a - entityRect->a > 0) //if we have enough space
-    {
-        int x = rand()%((int)(area.z -  entityRect->z)) + area.x; //we want to make sure our object spawns outside of the camera's view and doesn't spawn partially out of the map
-        bool cameraInTheWay = (x >= camera->x && x <= camera->x + camera->z); //if we chose an x coordinate that may overlap with the camera's rect, we need to adjust our y coordinate
-        int y = rand() % ((int)(area.a - entityRect->a - camera->a*cameraInTheWay)) + area.y;
-        //modify coordinates so our object doesn't spawn in the player's view
-        y += camera->a*(y > camera->y)*cameraInTheWay;
-        toSpawn->getRect().setPos({x,y});
-        level->addUnit(*toSpawn);
-    }
-
-}*/
-
-void Manager::spawnCreatures(Anthill& hill, double minR, double maxR) //spawn creatures near an anthill at a certain radius
-{
-    Unit* toSpawn = generateCreature();
-    Map* level = (GameWindow::getLevel());
-    const glm::vec4* mapSize = &(level->getRect());
-  //  const glm::vec4* camera = &(GameWindow::getCamera().getRect());
-    const glm::vec4* entityRect = &(toSpawn->getRect().getRect());
-    auto area = level->getMesh().getRandomArea(hill.getCenter(), minR, maxR);
-    //printRect(area);
-    if (area.z - entityRect->z > 0 && area.a - entityRect->a > 0) //if we have enough space
-    {
-        int x = rand()%((int)(area.z -  entityRect->z)) + area.x; //we want to make sure our object spawns outside of the camera's view and doesn't spawn partially out of the map
-       // bool cameraInTheWay = (x >= camera->x && x <= camera->x + camera->z); //if we chose an x coordinate that may overlap with the camera's rect, we need to adjust our y coordinate
-        int y = rand() % ((int)(area.a - entityRect->a)) + area.y;
-        //modify coordinates so our object doesn't spawn in the player's view
-        //y += camera->a*(y > camera->y)*cameraInTheWay;
-        toSpawn->getRect().setPos({x,y});
-        UnitAttackComponent* unitAttack = toSpawn->getComponent<UnitAttackComponent>();
-        AttackComponent* attack = toSpawn->getComponent<AttackComponent>();
-        if (unitAttack)
-        {
-            unitAttack->setLongTarget(closestPointOnVec(hill.getRect().getRect(),{x,y}),&level->getUnit(&hill),false);
-        }
-        level->addUnit(*toSpawn);
-    }
-
-   // std::cout << point.x << " " << point.y << std::endl;
-
-}
-
 void Manager::updateEntities()
 {
     Map* level = (GameWindow::getLevel());
-
+    glm::vec4 levelRect = level->getRect();
     ObjectStorage* entities = &(level->getEntities());
     RawQuadTree* tree = level->getTree();
     AntManager* newTask = nullptr;
@@ -102,31 +43,44 @@ void Manager::updateEntities()
     {
         ++it2;
         Object* current = i->first;
+        TangibleComponent* tang = current->getComponent<TangibleComponent>();
+        if (tang && !tang->getTangible()) //don't process intangible objects
+        {
+            continue;
+        }
         RectPositional* rectPos = &(current->getRect());
       //  std::cout << rectPos->getRect().x << std::endl;
         RawQuadTree* oldTree = tree->find(*rectPos);
         HealthComponent* health = current->getComponent<HealthComponent>();
-        if (!current->getDead() && (!health || health->getHealth() > 0))
+        if (oldTree && vecIntersect(rectPos->getRect(),levelRect) && !current->getDead() && (!health || health->getHealth() > 0))
         {
             InactiveComponent* inactive = current->getComponent<InactiveComponent>();
             if (!inactive || inactive->done())
             {
                 current->update();
-                tree->update(*rectPos,*oldTree);
-                positionalVec vec = tree->getNearest(*(rectPos));
-                for (int j = vec.size() - 1; j >= 0; j --)
+                if (vecIntersect(rectPos->getRect(),levelRect))
                 {
-                    Entity* ptr = &(((RectComponent*)vec[j])->getEntity());
-                    if ( ptr != i->first && (!static_cast<Object*>(ptr)->getDead()) && vec[j]->collides(rectPos->getRect()))
+                    tree->update(*rectPos,*oldTree);
+                    positionalVec vec = tree->getNearest(*(rectPos));
+                    for (int j = vec.size() - 1; j >= 0; j --)
                     {
-                        i->second->collide(*ptr);
-                        ptr->collide(*(i->second.get()));
+                        Entity* ptr = &(((RectComponent*)vec[j])->getEntity());
+                        if ( ptr != i->first && (!static_cast<Object*>(ptr)->getDead()) && vec[j]->collides(rectPos->getRect()))
+                        {
+                            i->second->collide(*ptr);
+                            ptr->collide(*(i->second.get()));
+                        }
+                    }
+                    if (current->getFriendly())
+                    {
+                        //std::cout << current << std::endl;
+                        GameWindow::getFogMaker().requestPolyFog(rectPos->getCenter(),100,10);
                     }
                 }
-                if (current->getFriendly())
+                else
                 {
-                    //std::cout << current << std::endl;
-                    GameWindow::getFogMaker().requestPolyFog(rectPos->getCenter(),100,10);
+                    current->onDeath();
+                    level->remove(*(current));
                 }
             }
             else
@@ -156,27 +110,10 @@ void Manager::updateEntities()
 
 void Manager::update()
 {
-    //std::vector<Unit*> selected;
-
-    //std::cout << released << std::endl;
-
-
 
     updateEntities();
 
-    Map* level = GameWindow::getLevel();
-    /*if (Debug::getSpawnCreatures() && level && level->getAnthill() && (!spawner.isSet() || spawner.timePassed(std::min(180000 - SDL_GetTicks(),(Uint32)1000))))
-    {
-        spawnCreatures(*level->getAnthill() , level->getRect().z, level->getRect().z);
-        spawner.reset();
-        spawner.set();
-    }*/
-   /* else if (selectedUnit)
-    {
-        selectedUnit->getClickable().click(true);
-    }*/
-    //glm::vec2 disp = {GameWindow::getCamera().getRect().x,GameWindow::getCamera().getRect().y};
-    //tree->render(disp);
+
 }
 
 
@@ -368,8 +305,6 @@ void GameWindow::onSwitch(Window& from)
 
 void GameWindow::updateTop(float z)
 {
-   // PolyRender::requestPolygon({{0,0,0},{0,400,0},{100,100,0},{100,400,0}},{0,0,0,1});
-    Anthill* hill = static_cast<Anthill*>(anthill.lock().get());
    /* if (!hill)
     {
         gameOver->update(x,y,clicked);
@@ -383,7 +318,6 @@ void GameWindow::updateTop(float z)
     else
     {
         renderAbsolute = false;
-
         camera.update();
 
         int size = labels.size();
@@ -394,38 +328,10 @@ void GameWindow::updateTop(float z)
                 labels[i]->update();
             }
         }
-       // player.update();
-
-      //  GameWindow::requestNGon(10,camera.toWorld(pairtoVec(MouseManager::getMousePos())),30,{0,0,0,0},0,true,3);
-
-       // requestRect(camera.getRect(),{0,0,0,.5},true,0,2,0);
 
         debug.update();
-        //manager.updateAntManagers();
-
-        //everything rendered before this is rendered as if it were under fog (unless it has a z higher than fog obviously)
-       /*if (Debug::getShowFog())
-       {
-           fogMaker.renderFog(); //anything rendered after this is only shown if it were in a sight bubble.
-
-            glDisable(GL_DEPTH_TEST);
-            glStencilFunc(GL_NOTEQUAL,1,0xFF);
-            glStencilMask(0x00);
-       }*/
-        level.lock().get()->render();
+        level.lock().get()->update();
         manager.update();
-
-       /* PolyRender::render();
-        SpriteManager::render();
-        FontManager::update();
-
-        if (Debug::getShowFog())
-        {
-            glDisable(GL_STENCIL_TEST);
-            glStencilFunc(GL_ALWAYS,1,0xFF);
-            glStencilMask(0xFF);
-            glEnable(GL_DEPTH_TEST); //anything rendered after this will be discarded if they are under the fog.*/
-        //}
         renderAbsolute = true;
     // std::cout << camera.getRect().x << " " << camera.getRect().x + camera.getRect().z << std::endl;
        // camera.reserveZoom();
@@ -434,10 +340,7 @@ void GameWindow::updateTop(float z)
 
         if (level.lock().get()->getChangeLevel())
         {
-            if (false)
-            {
-                switchToMap->press();
-            }
+            switchToMap->press();
         }
 
         Window::updateTop(z);
@@ -455,8 +358,6 @@ void GameWindow::renderTopBar()
     glm::vec4 menuRect = camera.toAbsolute({0,0,screenDimen.x,menuHeight});
     //PolyRender::requestRect(menuRect,{1,0,0,1},true,0,interfaceZ);
     Font::tnr.requestWrite({"Resources: " + convert(player.getResource()),camera.toAbsolute({screenDimen.x - .2*screenDimen.x, .01*screenDimen.y
-                                                                                    , -1,.6}),0,{1,1,1,1},GameWindow::fontZ});
-    Font::tnr.requestWrite({"Shards: " + convert(level.lock().get()->getFoundShards()),camera.toAbsolute({screenDimen.x - .2*screenDimen.x, .03*screenDimen.y
                                                                                     , -1,.6}),0,{1,1,1,1},GameWindow::fontZ});
     Font::tnr.requestWrite({"Gold: " + convert(player.getGold()),camera.toAbsolute({screenDimen.x - .2*screenDimen.x, .05*screenDimen.y
                                                                                     , -1,.6}),0,{1,1,1,1},GameWindow::fontZ});

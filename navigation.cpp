@@ -13,7 +13,8 @@ bool compareRect(const glm::vec4* o1, const glm::vec4* o2)
 
 std::size_t HashPoint::operator()(const glm::vec2& p1) const
 {
-    return pow(10,floor(log(abs(p1.x))))*abs(p1.x) + abs(p1.y);
+    int multiplier = pow(10,floor(log(abs(p1.y))));
+    return multiplier*abs(p1.x) + abs(p1.y);
 }
 
 NavMesh::NavMeshNode::NavMeshNode(const glm::vec4& rect) : RectPositional(rect)

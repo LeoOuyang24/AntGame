@@ -29,9 +29,7 @@ class Manager //handles updating units
   //  std::vector<UnitPtr> selectedUnits;
     ObjPtr selectedUnit;
     DeltaTime spawner; //marks the last time something spawned
-    Unit* generateCreature(); //chooses a random creature to spawn
-    //void spawnCreatures(); //spawn a creature at a random position
-    void spawnCreatures(Anthill& hill, double minR, double maxR); //spawn creatures near an anthill at a certain radius
+
 
     void updateEntities();
 public:

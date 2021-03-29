@@ -1,7 +1,16 @@
 This document keeps track of considered changes made to the resources as well as why they were made. Consider this a "learning from the past" kind of document. 
 
+3/24/2021:
+	Decided to have WeaponAnimationComponent control all weapon animations. This allows us to organize all player rendering in on spot. SInce rendering weapons requires rendering the arm over the weapon, it's better to concentrate everything into one function for organization.
+
+3/22/2021:
+	Removed UnitAnimeSet. UnitAnimeSet was original supposed to represent the set of all animations units would have but since it is impossible to capture all animations with a single struct, since some units maybe have a lot of animations, UnitAssemblers have been reverted to instead only take one animation, the walking animation. More Animations can be added with more components.
+
+3/15/2021:
+	ProjectileAssembler is now an ObjectASsembler rather than a UnitASsembler. UnitAssemblers describes enemies with 3 different sprites for different positions that they are facing and have health. They represent killable NPCS/enemies. Projectiles are more like Objects in the sense that they are more static objects with one sprite and no healthbar. 
+
 3/12/2021:
-	Changed previous decision about how assembled objects should always function even if the assembler is destroyed. Things like ProjectileAssembler require the parent assembler to still be functional for things like the projectile. 
+	Changed previous decision about how assembled objects should always function even if the assembler is destroyed. Things like ProjectileAttackComponent require the parent assembler to still be functional for things like the projectile. 
 
 3/11/2021:
 	UnitAnimationComponent now no longer keeps a pointer to a UnitAnimationSet because doing so caused things to break if the assembler ever was destroyed. Assembled objects should always function even if the ObjectAssembler is destroyed. (Removed 3/12/2021)
