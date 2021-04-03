@@ -396,8 +396,9 @@ Map* Map::generateLevel(const glm::vec4& levelRect) // Doesn't generate terrain 
     int rando = 1;
     for (int i = 0; i < rando; ++i)
     {
-        chunk->spawnCreature();
+        //chunk->spawnCreature();
     }
+    chunk->addUnit(*(turtFrog.assemble()),chunkDimen/2,chunkDimen/2,false);
     chunk->addUnit(*(new Gate(*chunk,chunkDimen/2,chunkDimen/2)),true);
     return chunk;
 }

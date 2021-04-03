@@ -13,6 +13,10 @@ AnimationWrapper resourceAnime;
 AnimationWrapper playerAnime;
 AnimationWrapper playerArm;
 AnimationWrapper playerHurt;
+
+AnimationWrapper turtFrogWalk;
+AnimationWrapper turtFrogAttack;
+
 AnimationWrapper basicSoldierAnime;
 AnimationWrapper basicShootingAnime;
 AnimationWrapper turretSprite;
@@ -42,12 +46,13 @@ AnimationWrapper portalAnime;
 void initSprites()
 {
 
-    playerAnime.init(new BaseAnimation("sprites/astro/astro2.png",4,4,1,{0,0,4,1}));
+    playerAnime.init(new BaseAnimation("sprites/astro/astro2.png",5,4,1,{0,0,4,1}));
     playerArm.init(new BaseAnimation("sprites/astro/astroArm.png",1,1,1));
     playerHurt.init(new BaseAnimation("sprites/astro/astrohurt.png",0,1,1));
-    pistolAnime.init(new BaseAnimation("sprites/gun2.png",.01,1,1));
+    pistolAnime.init(new BaseAnimation("sprites/gun2.png",1,1,1));
 
-
+    turtFrogWalk.init(new BaseAnimation("sprites/turtFrog.png",5,5,2,{0,0,5,1}));
+    turtFrogAttack.init(new BaseAnimation("sprites/turtFrog.png",5,5,2,{0,.5,5,1}));
 
     basicEnemyAnime.init(new BaseAnimation("sprites/evilMoon.png", .01,3,1));
 

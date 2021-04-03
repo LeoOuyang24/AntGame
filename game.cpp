@@ -383,7 +383,7 @@ void GameWindow::renderSelectedUnits()
                             selectedUnitRect.x*cameraRect->z/screenDimen.x,
                              (selectedUnitRect.y + selectedUnitRect.a)*cameraRect->a/screenDimen.y},{0,0,0,1},interfaceZ);
 
-    Object* selectedUnit = manager.getSelectedUnit().lock().get();
+    /*Object* selectedUnit = manager.getSelectedUnit().lock().get();
     if (selectedUnit)
     {
         glm::vec4 selectedRect = {selectedUnitRect.x + margin.x, selectedUnitRect.y + margin.y ,selectedUnitRect.a - margin.y*2, selectedUnitRect.a - margin.y*2};
@@ -398,7 +398,7 @@ void GameWindow::renderSelectedUnits()
         }
         selectedUnit->getClickable().click(true);
         selectedUnit->getClickable().display(selectedAntsRect);
-    }
+    }*/
     GameWindow::requestRect(wholeRect,{0,1,0,1},true,0,interfaceZ,true);
 }
 

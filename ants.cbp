@@ -112,9 +112,6 @@
 		<Unit filename="ants.h">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="components.h">
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
 		<Unit filename="creature.h">
 			<Option target="Release" />
 		</Unit>

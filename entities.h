@@ -57,8 +57,10 @@ public:
 
 class UnitAnimationComponent : public AnimationComponent, public ComponentContainer<UnitAnimationComponent> //used to show different animations for different actions.
 {
+    AnimationWrapper* tempSprite = nullptr;
 public:
     UnitAnimationComponent( AnimationWrapper& set, Unit& entity);
+    void request(AnimationWrapper& sprite_, const SpriteParameter& param, const AnimationParameter& animeParam); //sets both sprite and params
     virtual bool doMirror(); //whether we should mirror the sprite
     void update();
 };
@@ -190,7 +192,6 @@ class PathComponent : public MoveComponent, public ComponentContainer<PathCompon
 public:
     PathComponent(double speed, const glm::vec4& rect, Entity& unit);
     bool atPoint(const glm::vec2& point);
-    void setPos(const glm::vec2& pos); //same as MoveComponent::setPos if the target is moving, changePos if the target is standing still or part of an IDLE task. Prevents units from moving into walls. Sets top right corner
     void changePos(const glm::vec2& pos); // sets the center and target so the unit won't move
     virtual void setTarget(const glm::vec2& point);
     const glm::vec2& getTarget(); //gets the final target. //atTarget() returns whether this object is at the next point, not the final point
@@ -251,7 +252,8 @@ public:
     ~ApproachComponent();
 };
 
-class AttackComponent : public Component, public ComponentContainer<AttackComponent>
+typedef std::pair<SpriteParameter,AnimationParameter> ImgParameter;
+class Attack //represents attacks
 {
 protected:
     struct AttackData //represents all parameters that can be modified by outside sources
@@ -260,17 +262,24 @@ protected:
         int endLag = 0;
     };
     AttackData modData;
-    DeltaTime attackTimer;
-    virtual bool canAttack(); //returns true if we can attack the target. Doesn't take into account attackTimer because even if we are waiting for the timer to tick down, we should still stop moving
+    DeltaTime coolDownTimer;
+    AnimationWrapper* attackAnime = nullptr;
+    virtual void doAttack(Object* attacker, const glm::vec2& pos); //the actual hitbox spawning attack
+    virtual ImgParameter getParam(Object* attacker, const glm::vec2& pos);
 public:
     const AttackData baseData;
-    AttackComponent(float damage_, int endLag_, float range_, Entity& unit);
+    Attack( float damage_, int endLag_, float range_, Entity& unit,AnimationWrapper* attackAnime_ = nullptr);
+    virtual bool canAttack(Object* owner = nullptr,Object* ptr = nullptr); //returns true if we can attack the target. Doesn't take into account coolDownTimer. Returns false if either pointer is null
+    bool offCooldown();//returns true if the attack is off cooldown
+    virtual ImgParameter attack(Object* attacker,const glm::vec2& pos); //wrapper function for doAttack that also incorporates cooldowns. Returns animation info.
+    AnimationWrapper* getAnimation();
+    float getRange();
+    float getDamage();
+    int getEndLag();
     void setRange(float range);
     void setDamage(float damage);
     void setAttackSpeed(float increase);
-    virtual void attack(const glm::vec2& pos); //this is a pointer so you can legally pass in a null pointer. This function will make sure it's not null
-    virtual void update();
-    ~AttackComponent();
+    ~Attack();
 };
 
 class ProjectileComponent : public MoveComponent, public ComponentContainer<ProjectileComponent>
@@ -292,7 +301,7 @@ protected:
     virtual void onCollide(Unit& other); //what to actually call when we collide, since the collide code doesn't really change.
 };
 
-class UnitAttackComponent : public ApproachComponent, public ComponentContainer<UnitAttackComponent>
+class UnitAttackComponent : public ApproachComponent, public ComponentContainer<UnitAttackComponent> //Represents Enemy AI
 {
     typedef std::pair<std::weak_ptr<Object>,glm::vec2> TargetInfo;
     std::weak_ptr<Object> shortTarget; //represents short-term target. Is attacked because it's in range
@@ -302,21 +311,24 @@ class UnitAttackComponent : public ApproachComponent, public ComponentContainer<
     bool notFriendly = false; //the type of enemy to attack
     bool ignore = false; //whether to ignore enemies or not
     double searchRange = 0; //aggro range
+    std::list<Attack*> attacks;
+    void processAttack(Attack& attack);
 public:
     UnitAttackComponent(double damage_, int endLag_, double range_,double searchRange_,bool f, Entity& entity);
+    void addAttack(Attack& attack);
     void update();
     void collide(Entity& other);
-    void setLongTarget(const glm::vec2& point, std::shared_ptr<Object>* unit, bool ignore); //sets longTarget. Essentially only used when the player sets the target. Ignores the point if a target unit is provided. Doesn't immediately set the target, you must wait for update to set the target
-    void setShortTarget(std::shared_ptr<Object>& unit); //sets shortTarget. Only used when there is a nearby enemy. Immediately sets unit as the new target
+    ~UnitAttackComponent();
+
 };
 
 class ProjectileAssembler;
-class ProjectileAttackComponent : public AttackComponent, public ComponentContainer<ProjectileAttackComponent> //attack component that shoots a projectile
+class ProjectileAttack : public Attack //attack component that shoots a projectile
 {
     ProjectileAssembler* assembler = nullptr;
+    void doAttack(Object* attacker, const glm::vec2& target);
 public:
-    ProjectileAttackComponent(ProjectileAssembler& ass, int endLag, double range, double searchRange_,bool f, Entity& entity);
-    virtual void attack(const glm::vec2& pos);
+    ProjectileAttack(ProjectileAssembler& ass, int endLag, double range, double searchRange_,bool f, Entity& entity);
 };
 
 #endif // ENTITIES_H_INCLUDED

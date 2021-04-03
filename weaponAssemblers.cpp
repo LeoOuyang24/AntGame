@@ -16,7 +16,7 @@ Entity* WeaponAssembler::assemble(Unit* unit)
     return ent;
 }
 
-WeaponComponent::WeaponComponent(Entity& ent, Unit* owner_, AttackComponent* at1, AttackComponent* at2) : Component(ent),ComponentContainer<WeaponComponent>(ent),owner(owner_), attack1(at1), attack2(at2)
+WeaponComponent::WeaponComponent(Entity& ent, Unit* owner_, Attack* at1, Attack* at2) : Component(ent),ComponentContainer<WeaponComponent>(ent),owner(owner_), attack1(at1), attack2(at2)
 {
 
 }
@@ -28,7 +28,8 @@ Unit* WeaponComponent::getOwner()
 
 void WeaponComponent::update()
 {
-    RectComponent* rect = entity->getComponent<RectComponent>();
+    glm::vec2 mousePos = GameWindow::getCamera().toWorld(pairtoVec(MouseManager::getMousePos()));
+    /*RectComponent* rect = entity->getComponent<RectComponent>();
     if (rect)
     {
         glm::vec4 ownerRect = owner->getRect().getRect();
@@ -38,18 +39,17 @@ void WeaponComponent::update()
         {
             SpriteParameter param;
            // param.effect = MIRROR;
-            glm::vec2 mousePos = GameWindow::getCamera().toWorld(pairtoVec(MouseManager::getMousePos()));
             param.radians = atan2(mousePos.y - rect->getCenter().y, mousePos.x - rect->getCenter().x);
             animation->setParam(param,AnimationParameter());
         }
-    }
+    }*/
     if (MouseManager::isPressed(SDL_BUTTON_LEFT))
     {
-        attack1->update();
+        attack1->attack(owner,mousePos);
     }
     if (MouseManager::isPressed(SDL_BUTTON_RIGHT))
     {
-        attack2->update();
+        attack2->attack(owner,mousePos);
     }
     if (KeyManager::findNumber(SDLK_r) != -1)
     {
@@ -70,8 +70,8 @@ Entity* PistolAssembler::assemble(Unit* user)
 {
     Entity* pistol = WeaponAssembler::assemble(user);
     pistol->addComponent(*(new WeaponComponent(*pistol,user,
-                                                new ProjectileAttackComponent(bullet,1000,0,0,false,*pistol),
-                                               new ProjectileAttackComponent(bullet,3,0,0,false,*pistol))));
+                                                new ProjectileAttack(bullet,1000,0,0,false,*pistol),
+                                               new ProjectileAttack(bullet,3,0,0,false,*pistol))));
     return pistol;
 }
 

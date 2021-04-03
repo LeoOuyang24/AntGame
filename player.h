@@ -72,10 +72,6 @@ public:
     void addGold(int g);
 };
 
-
-
-
-
 class InactiveComponent : public Component, public ComponentContainer<InactiveComponent> //represents how long an entity is inactive for. Usually because a building is under construction
 {
     DeltaTime timeLeft;

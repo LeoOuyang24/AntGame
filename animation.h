@@ -16,6 +16,10 @@ extern AnimationWrapper resourceAnime;
 extern AnimationWrapper playerAnime;
 extern AnimationWrapper playerArm;
 extern AnimationWrapper playerHurt;
+
+extern AnimationWrapper turtFrogWalk;
+extern AnimationWrapper turtFrogAttack;
+
 extern AnimationWrapper basicSoldierAnime;
 extern AnimationWrapper basicShootingAnime;
 extern AnimationWrapper turretSprite;

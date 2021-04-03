@@ -15,9 +15,9 @@ struct WeaponAssembler
 class WeaponComponent : public Component, public ComponentContainer<WeaponComponent>
 {
     Unit* owner = nullptr; //owner that's using the weapon
-    AttackComponent* attack1 = nullptr, *attack2 = nullptr, *attack3 = nullptr;
+    Attack* attack1 = nullptr, *attack2 = nullptr, *attack3 = nullptr;
 public:
-    WeaponComponent(Entity& ent, Unit* owner_, AttackComponent* at1, AttackComponent* at2);
+    WeaponComponent(Entity& ent, Unit* owner_, Attack* at1, Attack* at2);
     Unit* getOwner();
     virtual void update();
 };

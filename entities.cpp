@@ -172,7 +172,6 @@ void AnimationComponent::update()
         if (move)
         {
             glm::vec2 target = move->getCenter();
-            AttackComponent* approach = entity->getComponent<AttackComponent>();
             if (!entity->getComponent<UnitAnimationComponent>())
             {
                 angle = move->getAngle() + M_PI/2;
@@ -207,6 +206,12 @@ UnitAnimationComponent::UnitAnimationComponent(AnimationWrapper& set, Unit& enti
 
 }
 
+void UnitAnimationComponent::request(AnimationWrapper& sprite_, const SpriteParameter& param, const AnimationParameter& animeParam)
+{
+    tempSprite = &sprite_;
+    setParam(param,animeParam);
+}
+
 bool UnitAnimationComponent::doMirror()
 {
     MoveComponent* move = entity->getComponent<MoveComponent>();
@@ -219,17 +224,25 @@ bool UnitAnimationComponent::doMirror()
 
 void UnitAnimationComponent::update()
 {
-    MoveComponent* move = entity->getComponent<MoveComponent>();
+    AnimationWrapper* base = sprite; //record the old value in case sprite changes
+    if (tempSprite)
+    {
+        sprite = tempSprite;
+        tempSprite = nullptr;
+    }
 
+    MoveComponent* move = entity->getComponent<MoveComponent>();
     if (doMirror())
     {
         param.effect = MIRROR;
     }
-    if (move->getVelocity() == 0)
+    if (move->getVelocity() == 0 && animeParam.start == -1) //we check if anything else has modified animeParam to be anything else before setting to 0
     {
-        animeParam.start = SDL_GetTicks();
+        //animeParam.start = 0;//SDL_GetTicks();
     }
+
     AnimationComponent::update();
+    sprite = base;
 }
 
 RectRenderComponent::RectRenderComponent(const glm::vec4& color, Entity& unit, RenderCamera* cam) : RenderComponent(unit,cam), ComponentContainer<RectRenderComponent>(&unit), color(color)
@@ -609,40 +622,6 @@ bool PathComponent::atPoint(const glm::vec2& point)
     return pointDistance(point,this->getCenter()) <= std::min(rect.z,rect.a)/2;
 }
 
-void PathComponent::setPos(const glm::vec2& pos)
-{/*
-    glm::vec2 adjPos = pos; //adjusted position in case we are being pushed into a wall
-    glm::vec2 center = getCenter();
-    NavMesh* mesh = &GameWindow::getLevel()->getMesh();
-    if (!pointInVec(curNodeRect,adjPos,0)) //we can try to save some time by keeping track of the last node that we were moved to and trying to see if the new point is in that node as well
-        {
-            curNodeRect = mesh->getNearestNodeRect(adjPos);
-        }
-    if (curNodeRect == glm::vec4(0)) //should never happen
-    {
-        GameWindow::requestNGon(10,pos,10,{1,0,0,1},0,true,1);
-        PolyRender::renderPolygons();
-        std::cerr << "attempted to move entity outside of world boundaries to point " << pos.x << " "<< pos.y <<"\n";
-        throw std::logic_error("attempted to move entity outside of world boundaries");
-    }
-    else if (!pointInVec(curNodeRect  - glm::vec4(1,1,rect.z - 2,rect.a - 2),adjPos.x,adjPos.y,0)) //there is a possibility of being moved into a wall
-    {
-        glm::vec4 wall = mesh->getWallRect(glm::vec4(adjPos,rect.z,rect.a));
-        if (wall != glm::vec4(0))
-        {
-            if (vecIntersect(wall,{adjPos.x,rect.y,rect.z,rect.a}))
-                {
-                    adjPos.x = rect.x;
-                }
-            if (vecIntersect(wall,{rect.x,adjPos.y,rect.z,rect.a}))
-                {
-                    adjPos.y = rect.y;
-                }
-        }
-    }*/
-    changePos(pos);
-    //MoveComponent::setPos(pos);
-}
 
 void PathComponent::changePos(const glm::vec2& pos)
 {
@@ -837,52 +816,78 @@ ApproachComponent::~ApproachComponent()
 
 }
 
-
-bool AttackComponent::canAttack()
-{
-
-   return true;
-}
-
-AttackComponent::AttackComponent(float damage_, int endLag_, float range_, Entity& unit) : Component(unit), ComponentContainer<AttackComponent>(&unit),
-                                                                                            baseData({range_,damage_,endLag_}), modData({range_,damage_,endLag_})
+void Attack::doAttack(Object* attacker, const glm::vec2& pos)
 {
 
 }
 
-void AttackComponent::setRange(float range)
+ImgParameter Attack::getParam(Object* attacker, const glm::vec2& pos)
+{
+     return {SpriteParameter(),AnimationParameter()};
+}
+
+Attack::Attack( float damage_, int endLag_, float range_, Entity& unit,AnimationWrapper* anime_) : attackAnime(anime_),baseData({range_,damage_,endLag_}), modData({range_,damage_,endLag_})
+{
+
+}
+
+bool Attack::canAttack(Object* owner, Object* ptr)
+{
+    //if (owner && ptr)
+    //std::cout << (vecDistance(ptr->getRect().getRect(),owner->getRect().getRect()) <= modData.range)  <<"\n";
+    return  ptr && owner && ptr->getComponent<HealthComponent>() && (vecDistance(ptr->getRect().getRect(),owner->getRect().getRect()) <= modData.range);
+}
+
+bool Attack::offCooldown()
+{
+    return coolDownTimer.timePassed(modData.endLag) || !coolDownTimer.isSet();
+}
+
+ImgParameter Attack::attack(Object* attacker, const glm::vec2& pos)
+{
+    if (offCooldown())
+    {
+        doAttack(attacker,pos);
+        coolDownTimer.set();
+    }
+    modData = baseData;
+    return getParam(attacker,pos);
+}
+
+AnimationWrapper* Attack::getAnimation()
+{
+    return attackAnime;
+}
+
+float Attack::getRange()
+{
+    return modData.range;
+}
+float Attack::getDamage()
+{
+    return modData.damage;
+}
+int Attack::getEndLag()
+{
+    return modData.endLag;
+}
+
+void Attack::setRange(float range)
 {
     modData.range = range;
 }
-void AttackComponent::setDamage(float damage)
+void Attack::setDamage(float damage)
 {
     modData.damage = damage;
 }
-void AttackComponent::setAttackSpeed(float increase)
+void Attack::setAttackSpeed(float increase)
 {
     modData.endLag /= std::max(1 + increase,.001f); //do this to prevent dividing by 0
 }
 
-void AttackComponent::attack(const glm::vec2& pos)
-{
-    //health->takeDamage(modData.damage,*static_cast<Unit*>(entity));
-}
 
-void AttackComponent::update()
-{
-  //  std::cout << ptr << std::endl;
-    if (canAttack()) //attack if we are able to.
-    {
-        if (attackTimer.timePassed(modData.endLag) || !attackTimer.isSet())
-        {
-            attack(GameWindow::getCamera().toWorld(pairtoVec(MouseManager::getMousePos())));
-            attackTimer.set();
-        }
-    }
-    modData = baseData;
-}
 
-AttackComponent::~AttackComponent()
+Attack::~Attack()
 {
 
 }
@@ -947,16 +952,36 @@ void ProjectileComponent::update()
 
 }
 
+void UnitAttackComponent::processAttack(Attack& attack)
+{
+    Object* obj = static_cast<Object*>(entity);
+    Object* target = targetUnit.lock().get();
+    if (attack.canAttack(obj,target))
+    {
+        ImgParameter param = attack.attack(obj,target->getCenter());
+        UnitAnimationComponent* anime = entity->getComponent<UnitAnimationComponent>();
+        if (anime && attack.getAnimation())
+        {
+            anime->request(*attack.getAnimation(),param.first,param.second);
+        }
+    }
+}
+
 UnitAttackComponent::UnitAttackComponent(double damage_, int endLag_, double range_,double searchRange_, bool f, Entity& entity) : ApproachComponent(entity),
-ComponentContainer<UnitAttackComponent>(entity), damage(damage_),notFriendly(f), searchRange(searchRange_), activated(false) //coincidentally, activated should always be the same value as f
+ComponentContainer<UnitAttackComponent>(entity), damage(damage_),notFriendly(f), searchRange(searchRange_), activated(false)//coincidentally, activated should always be the same value as f
 {
 
+}
+
+void UnitAttackComponent::addAttack(Attack& attack)
+{
+    attacks.push_back(&attack);
 }
 
 void UnitAttackComponent::update()
 {
 
-    Object* ent = shortTarget.lock().get();
+    Object* ent = targetUnit.lock().get();
     Map* level = GameWindow::getLevel();
     if (!ent && level) //if we aren't already fighting something, find something nearby
     {
@@ -965,39 +990,15 @@ void UnitAttackComponent::update()
         {
             ApproachComponent::setTarget(level->getUnit(nearby));
         }
-       /* else if (activated && (longTarget.second != move->getTarget() || targetUnit.lock().get() != longTarget.first.lock().get())) //if there's nothing nearby to fight, set the target to the long target
+    }
+    if (ent && level) //don't use else if because there's a chance that both ifs can trigger
+    {
+        for (auto it = attacks.begin();it != attacks.end(); ++it)
         {
-            if (longTarget.first.lock().get())
-            {
-            //    std::cout << longTarget.first.lock().get() << std::endl;
-                AttackComponent::setTarget(longTarget.second,&level->getUnit(longTarget.first.lock().get()));
-            }
-            else
-            {
-               // std::cout << longTarget.second.x << " " << longTarget.second.y << std::endl;
-                AttackComponent::setTarget(longTarget.second,nullptr);
-            }
-        }*/
+            processAttack(**it);
+        }
     }
-    else if (ent && targetUnit.lock().get() != ent)
-    {
-     //   AttackComponent::setTarget(GameWindow::getLevel()->getEntities()[ent]);
-    }
-   /* if (shortTarget.lock().get() && ((Unit*)entity)->getFriendly() && targetUnit.lock().get())
-    {
-        //std::cout << "Short target " << canAttack(shortTarget.lock().get()) <<"\n";
-       // glm::vec4 selfRect = entity->getComponent<RectComponent>()->getRect();
-        //GameWindow::requestNGon(10,entity->getComponent<RectComponent>()->getCenter(),10,{1,0,1,1},0,true,1);
-        GameWindow::requestLine(glm::vec4(entity->getComponent<RectComponent>()->getCenter(),
-                                          shortTarget.lock().get()->getComponent<RectComponent>()->getCenter()),
-                                        {0,1,0,1},1,false);
 
-    }*/
-
-    if (move->getCenter() == longTarget.second) //if we are at the target, set our state back to ignore
-    {
-        ignore = false;
-    }
     ApproachComponent::update();
 }
 
@@ -1014,77 +1015,31 @@ void UnitAttackComponent::collide(Entity& other)
     }
 }
 
-void UnitAttackComponent::setLongTarget(const glm::vec2& target, std::shared_ptr<Object>* unit, bool ignore)
+UnitAttackComponent::~UnitAttackComponent()
 {
-    activated = true; //once moveComponent has set a target, we gets permission to affect moveComponent
-    //AttackComponent::setTarget(target,unit);
-    //std::cout << target.x << " " << target.y << " " << unit->get() << std::endl;
-    this->ignore = ignore;
-    if (unit)
+    auto end = attacks.end();
+    for (auto it = attacks.begin(); it != end; ++it)
     {
-        longTarget.first = *unit;
-        //std::cout << longTarget.first.lock().get() << std::endl;
-    }
-    else
-    {
-        longTarget.second = target;
-        longTarget.first.reset();
+        delete *it;
     }
 }
 
-void UnitAttackComponent::setShortTarget(std::shared_ptr<Object>& unit)
-{
-    if (shortTarget.lock().get() != unit.get())
-    {
-       // AttackComponent::setTarget(unit);
-        if (unit.get())
-        {
-            shortTarget = unit;
-           /* if (entity)
-            {
-                CommandableComponent* command = entity->getComponent<CommandableComponent>();
-                if (command)
-                {
-                    AntManager* curTask = command->getCurrentTask();
-                    if (curTask)
-                    {
-                        curTask->setShortTarget(*unit);
-                    }
-                }
-            }*/
-        }
-        else
-        {
-            shortTarget.reset();
-        }
-    }
 
-}
-
-
-ProjectileAttackComponent::ProjectileAttackComponent(ProjectileAssembler& ass, int endLag, double range,double searchRange_,bool f,  Entity& entity) :
-        AttackComponent(0,endLag,f, entity), ComponentContainer<ProjectileAttackComponent>(entity),assembler(&ass)
+ProjectileAttack::ProjectileAttack(ProjectileAssembler& ass, int endLag, double range,double searchRange_,bool f,  Entity& entity) :
+        Attack(0,endLag,f, entity),assembler(&ass)
 {
 
 
 }
 
-void ProjectileAttackComponent::attack(const glm::vec2& mousePos)
+void ProjectileAttack::doAttack(Object* attacker, const glm::vec2& mousePos)
 {
-    Object* unit = nullptr;
-    glm::vec2 center;
-    WeaponComponent* weapon = entity->getComponent<WeaponComponent>();
-    if (weapon) //if this component belongs to a weapon, use the owner center
+    if (attacker->getComponent<RectComponent>())
     {
-        unit = weapon->getOwner();
-        center = unit->getCenter();
+        glm::vec2 center = attacker->getComponent<RectComponent>()->getCenter();
+        float angle = atan2(center.y - mousePos.y, center.x - mousePos.x);
+        glm::vec4 levelRect = GameWindow::getLevel()->getRect(); //we want projectile to travel to the end of the map
+        GameWindow::getLevel()->addUnit(*assembler->assemble(*attacker,center,mousePos - glm::vec2(cos(angle)*levelRect.z, sin(angle)*levelRect.a)),true);
     }
-    else //otherwise, assume owner has a rect
-    {
-        unit = static_cast<Object*>(entity);
-        center = entity->getComponent<RectComponent>()->getCenter();
-    }
-    float angle = atan2(center.y - mousePos.y, center.x - mousePos.x);
-    glm::vec4 levelRect = GameWindow::getLevel()->getRect(); //we want projectile to travel to the end of the map
-    GameWindow::getLevel()->addUnit(*assembler->assemble(*unit,center,mousePos - glm::vec2(cos(angle)*levelRect.z, sin(angle)*levelRect.a)),true);
 }
+

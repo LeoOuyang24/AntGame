@@ -226,6 +226,9 @@ WorldMapWindow::LevelButton* WorldMapWindow::generate(int count, LevelButton* st
     }
     else
     {
+        if(start)
+        printRect(start->getRect());
+
         Map* level = Map::generateLevel();
         auto butt = addLevel(*level,start,nullptr);
         auto next = generate(count - 1,butt,end);
