@@ -26,11 +26,13 @@ struct Debug //class to hold all debug controls
     static bool getShowFog();
     static bool getSpawnCreatures();
     static bool getRenderPath();
+    static bool getRenderHitboxes();
 
 private:
     static bool showFog;
     static bool spawnCreatures;
     static bool renderPath; //whether or not to render left and right and their path
+    static bool renderHitBoxes;
     DebugNavMesh meshDB;
     DebugGameWindow gameDB;
 

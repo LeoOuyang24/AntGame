@@ -70,8 +70,8 @@ Entity* PistolAssembler::assemble(Unit* user)
 {
     Entity* pistol = WeaponAssembler::assemble(user);
     pistol->addComponent(*(new WeaponComponent(*pistol,user,
-                                                new ProjectileAttack(bullet,1000,0,0,false,*pistol),
-                                               new ProjectileAttack(bullet,3,0,0,false,*pistol))));
+                                                new ProjectileAttack(bullet,1000,0),
+                                               new ProjectileAttack(bullet,3,0))));
     return pistol;
 }
 

@@ -107,24 +107,25 @@ PlayerAssembler::PlayerControls::PlayerControls(float speed, const glm::vec4& re
 
 void PlayerAssembler::PlayerControls::update()
 {
-    glm::vec2 move = {0,0};
-    if (KeyManager::findNumber(SDLK_d) != -1)
-    {
-        move.x += 1;
-    }
-    if (KeyManager::findNumber(SDLK_a) != -1)
-    {
-        move.x -= 1;
-    }
-    if (KeyManager::findNumber(SDLK_w) != -1)
-    {
-        move.y -= 1;
-    }
-    if (KeyManager::findNumber(SDLK_s) != -1)
-    {
-        move.y += 1;
-    }
-    if (move.x != 0 || move.y != 0)
+
+        glm::vec2 move = {0,0};
+        if (KeyManager::findNumber(SDLK_d) != -1)
+        {
+            move.x += 1;
+        }
+        if (KeyManager::findNumber(SDLK_a) != -1)
+        {
+            move.x -= 1;
+        }
+        if (KeyManager::findNumber(SDLK_w) != -1)
+        {
+            move.y -= 1;
+        }
+        if (KeyManager::findNumber(SDLK_s) != -1)
+        {
+            move.y += 1;
+        }
+        if (move.x != 0 || move.y != 0)
         {
             float angle = atan2(move.y,move.x);
             move = {cos(angle)*speed*DeltaTime::deltaTime,sin(angle)*speed*DeltaTime::deltaTime};
@@ -218,7 +219,8 @@ PlayerAssembler::PlayerAssembler() : UnitAssembler("Player",{25,47},playerAnime,
 
 Object* PlayerAssembler::assemble()
 {
-    Unit* player = new Unit(movable);
+    Unit* player = new Unit();
+    player->addObject(new ObjectComponent(false,movable,friendly,*player));
     player->addHealth(new PlayerHealth(*player,maxHealth));
     player->addRect(new PlayerControls(speed,{0,0,dimen.x,dimen.y},*player));
     player->addRender(new PlayerRender(&playerArm,{3,49},*sprite,*player));

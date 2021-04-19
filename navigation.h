@@ -71,6 +71,7 @@ public:
     void init2(ObjectStorage& storage); //initializes the mesh by calling smartAddNode on every object
     void smartAddNode(const glm::vec4& rect); //adds a negative space
     void reset(); //clears nodeTree and negativeTree but keeps bounds
+    glm::vec4 validMove(const glm::vec4& start, const glm::vec2& displacement); //returns where start should end up without colliding into any walls;
     glm::vec4 getWallRect(const glm::vec4& rect); //returns the wall that rect intersects with. glm::vec4(0) if there is no wall
     bool notInWall(const glm::vec4& rect); //returns true if rect is in a wall.
     glm::vec4 getNearestNodeRect(const glm::vec2& point); //returns the rect of the node that the point belongs to. glm::vec4(0) if there is no nearby node

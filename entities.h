@@ -77,6 +77,24 @@ public:
     ~RectRenderComponent();
 };
 
+class ObjectComponent : public Component, public ComponentContainer<ObjectComponent>
+{
+     bool dead = false; //whether or not to remove the object
+    bool movable = false; //whether or not the object moves when pushed by another unit. False for structures, true for units
+    bool friendly = false; //whether or not the player can target the unit
+    bool inactive = false; //whether or not to update this entity
+public:
+    ObjectComponent(bool dead_, bool movable_, bool friendly_, Entity& entity);
+    bool getDead();
+    bool getMovable();
+    bool getFriendly();
+    bool getInactive();
+    void setMovable(bool movable);
+    void setFriendly(bool val);
+    void setDead(bool isDead);
+    void setInactive(bool i);
+};
+
 class Object : public Entity//environment objects. Can be seen, have a hitbox, and can be clicked on
 {
     friend class EntityAssembler;
@@ -85,17 +103,15 @@ protected:
     ClickableComponent* clickable = nullptr;
     RectComponent* rect = nullptr;
     RenderComponent* render = nullptr;
-    bool dead = false; //whether or not to remove the object
-    const bool movable = false; //whether or not the object moves when pushed by another unit. False for structures, true for units
-    bool friendly = false; //whether or not the player can target the unit
-    bool isProjectile = false; //whether or not the object is a projectile. Biggest difference is that projectiles aren't added to quadtrees
+    ObjectComponent* object = nullptr;
 public:
     Object(ClickableComponent& click, RectComponent& rect, RenderComponent& render, bool mov = true);
     Object(std::string name, const glm::vec4& rect, AnimationWrapper* rapper, bool mov = true);
-    Object(bool mov);
+    Object();
     void addRect(RectComponent* r);
     void addClickable(ClickableComponent* c);
     void addRender(RenderComponent* rend);
+    void addObject(ObjectComponent* object);
     RectComponent& getRect() const;
     glm::vec2 getCenter();
     ClickableComponent& getClickable();
@@ -161,7 +177,7 @@ protected:
 public:
     Unit(ClickableComponent& click, RectComponent& rect, RenderComponent& render, HealthComponent& health, bool mov = true);
     Unit(std::string name, const glm::vec4& rect, AnimationWrapper* anime, bool mov, double maxHealth);
-    Unit(bool mov);
+    Unit();
     void addHealth(HealthComponent* h);
     HealthComponent& getHealth();
     bool clicked();
@@ -263,12 +279,14 @@ protected:
     };
     AttackData modData;
     DeltaTime coolDownTimer;
+    int startAttack = -1; //represents the time at which we started attacking
+    AnimationSequencer* sequencer = nullptr;
     AnimationWrapper* attackAnime = nullptr;
     virtual void doAttack(Object* attacker, const glm::vec2& pos); //the actual hitbox spawning attack
     virtual ImgParameter getParam(Object* attacker, const glm::vec2& pos);
 public:
     const AttackData baseData;
-    Attack( float damage_, int endLag_, float range_, Entity& unit,AnimationWrapper* attackAnime_ = nullptr);
+    Attack( float damage_, int endLag_, float range_,AnimationWrapper* attackAnime_ = nullptr, AnimationSequencer* sequencer_ = nullptr);
     virtual bool canAttack(Object* owner = nullptr,Object* ptr = nullptr); //returns true if we can attack the target. Doesn't take into account coolDownTimer. Returns false if either pointer is null
     bool offCooldown();//returns true if the attack is off cooldown
     virtual ImgParameter attack(Object* attacker,const glm::vec2& pos); //wrapper function for doAttack that also incorporates cooldowns. Returns animation info.
@@ -280,6 +298,7 @@ public:
     void setDamage(float damage);
     void setAttackSpeed(float increase);
     ~Attack();
+
 };
 
 class ProjectileComponent : public MoveComponent, public ComponentContainer<ProjectileComponent>
@@ -290,14 +309,16 @@ public:
     ProjectileComponent(double damage, bool friendly,const glm::vec2& target, double speed, const glm::vec4& rect, Object& entity,ProjCollideFunc collideFun_ = nullptr);
     ProjectileComponent(double damage, bool friendly, const glm::vec2& target, double xspeed, double yspeed, const glm::vec4& rect, Object& entity, ProjCollideFunc collideFun_ = nullptr);
     void setShooter(Object& obj);
-    void collide(Entity& other);
+    Object* getShooter();
+    virtual void collide(Entity& other);
     virtual void update();
 private:
     bool friendly = false;
     double damage = 0;
-    Object* shooter = nullptr; //not the actual projectile unit, but whoever spawned the projectile unit. Primarily used to communicate who shot the projectile
     ProjCollideFunc collideFunc = nullptr;
 protected:
+    Object* shooter = nullptr; //not the actual projectile unit, but whoever spawned the projectile unit. Primarily used to communicate who shot the projectile
+
     virtual void onCollide(Unit& other); //what to actually call when we collide, since the collide code doesn't really change.
 };
 
@@ -323,12 +344,14 @@ public:
 };
 
 class ProjectileAssembler;
-class ProjectileAttack : public Attack //attack component that shoots a projectile
+class ProjectileAttack : public Attack //attack that shoots a projectile
 {
+protected:
     ProjectileAssembler* assembler = nullptr;
     void doAttack(Object* attacker, const glm::vec2& target);
 public:
-    ProjectileAttack(ProjectileAssembler& ass, int endLag, double range, double searchRange_,bool f, Entity& entity);
+    ProjectileAttack(ProjectileAssembler& ass,int endLag, double range,
+                     AnimationWrapper* attackAnime_ = nullptr, AnimationSequencer* sequencer_ = nullptr); //projectile Attack damage is based on projectile Assembler damage, so we don't need to provide it in the constructor
 };
 
 #endif // ENTITIES_H_INCLUDED

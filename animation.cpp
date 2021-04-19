@@ -1,5 +1,8 @@
 #include "animation.h"
 
+AnimationWrapper hitboxAnime;
+AnimationWrapper hitboxAnimeRed;
+
 SpriteWrapper fireIcon;
 SpriteWrapper freezeIcon;
 SpriteWrapper coinIcon;
@@ -16,6 +19,13 @@ AnimationWrapper playerHurt;
 
 AnimationWrapper turtFrogWalk;
 AnimationWrapper turtFrogAttack;
+
+AnimationWrapper attackAntAnime;
+AnimationWrapper attackAntAttack;
+AnimationWrapper attackAntProjectile;
+
+AnimationWrapper dinosaurAnime;
+AnimationWrapper dinosaurAttackAnime;
 
 AnimationWrapper basicSoldierAnime;
 AnimationWrapper basicShootingAnime;
@@ -45,14 +55,22 @@ AnimationWrapper portalAnime;
 
 void initSprites()
 {
-
-    playerAnime.init(new BaseAnimation("sprites/astro/astro2.png",5,4,1,{0,0,4,1}));
+    hitboxAnime.init(new BaseAnimation("sprites/HitboxSprite.png",1,1,1));
+    hitboxAnimeRed.init(new BaseAnimation("sprites/HitboxSpriteRed.png",1,1,1));
+    playerAnime.init(new BaseAnimation("sprites/astro/astro2.png",4,4,1,{0,0,4,1}));
     playerArm.init(new BaseAnimation("sprites/astro/astroArm.png",1,1,1));
     playerHurt.init(new BaseAnimation("sprites/astro/astrohurt.png",0,1,1));
     pistolAnime.init(new BaseAnimation("sprites/gun2.png",1,1,1));
 
-    turtFrogWalk.init(new BaseAnimation("sprites/turtFrog.png",5,5,2,{0,0,5,1}));
-    turtFrogAttack.init(new BaseAnimation("sprites/turtFrog.png",5,5,2,{0,.5,5,1}));
+    turtFrogWalk.init(new BaseAnimation("sprites/frog2.png",5,5,2,{0,0,5,1}));
+    turtFrogAttack.init(new BaseAnimation("sprites/frog2.png",5,5,2,{0,.5,5,1}));
+
+    attackAntAnime.init(new BaseAnimation("sprites/attackAnt.png",4,4,1));
+    attackAntAttack.init(new BaseAnimation("sprites/attackAntAttack.png",7,7,1));
+    attackAntProjectile.init(new BaseAnimation("sprites/attackAntProjectile.png",1,1,1));
+
+    dinosaurAnime.init(new BaseAnimation("sprites/dinosaur.png",3,3,1));
+    dinosaurAttackAnime.init(new BaseAnimation("sprites/dinosaurAttack.png",5,5,1));
 
     basicEnemyAnime.init(new BaseAnimation("sprites/evilMoon.png", .01,3,1));
 

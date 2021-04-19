@@ -236,11 +236,10 @@ void UnitAnimationComponent::update()
     {
         param.effect = MIRROR;
     }
-    if (move->getVelocity() == 0 && animeParam.start == -1) //we check if anything else has modified animeParam to be anything else before setting to 0
+    if (move->getVelocity() == 0 && animeParam.start == -1 && sprite == base) //we check if anything else has modified animeParam to be anything else before setting to 0
     {
-        //animeParam.start = 0;//SDL_GetTicks();
+        animeParam.start = 0;//SDL_GetTicks();
     }
-
     AnimationComponent::update();
     sprite = base;
 }
@@ -275,25 +274,66 @@ RectRenderComponent::~RectRenderComponent()
 
 }
 
-Object::Object(ClickableComponent& click, RectComponent& rect_, RenderComponent& render_, bool mov) : Entity(),movable(mov),
- clickable(&click), rect(&rect_), render(&render_)
+ObjectComponent::ObjectComponent(bool dead_, bool movable_, bool friendly_, Entity& entity) : Component(entity),
+                                                                                                ComponentContainer<ObjectComponent>(entity),
+                                                                                                dead(dead_),movable(movable_),friendly(friendly_)
+{
+
+}
+
+bool ObjectComponent::getDead()
+{
+    return dead;
+}
+bool ObjectComponent::getMovable()
+{
+    return movable;
+}
+bool ObjectComponent::getFriendly()
+{
+    return friendly;
+}
+bool ObjectComponent::getInactive()
+{
+    return inactive;
+}
+void ObjectComponent::setMovable(bool m)
+{
+    movable = m;
+}
+void ObjectComponent::setFriendly(bool f)
+{
+    friendly = f;
+}
+void ObjectComponent::setDead(bool d)
+{
+    dead = d;
+}
+void ObjectComponent::setInactive(bool i)
+{
+    inactive = i;
+}
+Object::Object(ClickableComponent& click, RectComponent& rect_, RenderComponent& render_, bool mov) : Entity(),
+ clickable(&click), rect(&rect_), render(&render_),    object(new ObjectComponent(false,mov,false,*this))
 {
     addComponent(click);
     addComponent(rect_);
     addComponent(render_);
-
+    addComponent(*object);
 
 }
 
-Object::Object(std::string name, const glm::vec4& vec, AnimationWrapper* rapper, bool mov) : Entity(), movable(mov),
-    clickable(new ClickableComponent(name, *this)), rect(new RectComponent(vec, *this)), render(new AnimationComponent(*rapper, *this))
+Object::Object(std::string name, const glm::vec4& vec, AnimationWrapper* rapper, bool mov) : Entity(),
+    clickable(new ClickableComponent(name, *this)), rect(new RectComponent(vec, *this)), render(new AnimationComponent(*rapper, *this)),
+    object(new ObjectComponent(false,mov,false,*this))
 {
     addComponent(*(clickable));
     addComponent(*(rect));
     addComponent(*(render));
+    addComponent(*object);
 }
 
-Object::Object(bool mov) : movable(mov)
+Object::Object()
 {
 
 }
@@ -311,6 +351,12 @@ void Object::addRender(RenderComponent* rend)
 {
     addComponent(*rend);
     render = rend;
+}
+
+void Object::addObject(ObjectComponent* obj)
+{
+    addComponent(*obj);
+    object = obj;
 }
 
 RectComponent& Object::getRect() const
@@ -335,27 +381,33 @@ bool Object::clicked()
 }
 bool Object::getDead()
 {
-    return dead;
+    return object && object->getDead();
 }
 
 bool Object::getMovable()
 {
-    return movable;
+    return object && object->getMovable();
 }
 
 bool Object::getFriendly()
 {
-    return friendly;
+    return object && object->getFriendly();
 }
 
 void Object::setFriendly(bool val)
 {
-    friendly = val;
+    if (object)
+    {
+        object->setFriendly(val);
+    }
 }
 
 void Object::setDead(bool isDead)
 {
-    dead = isDead;
+    if (object)
+    {
+        object->setDead(isDead);
+    }
 }
 Object::~Object()
 {
@@ -535,7 +587,7 @@ Unit::Unit(std::string name, const glm::vec4& rect, AnimationWrapper* anime, boo
     addComponent(*(health));
 }
 
-Unit::Unit(bool mov) : Object(mov)
+Unit::Unit() : Object()
 {
 
 }
@@ -574,35 +626,33 @@ EntityForces::EntityForces(Entity& entity) : ForcesComponent(entity), ComponentC
 
 void EntityForces::update()
 {
-    glm::vec2 adjPos = move->getPos() + finalForce; //adjusted position in case we are being pushed into a wall
-    glm::vec4 rect = move->getRect();
-    NavMesh* mesh = &GameWindow::getLevel()->getMesh();
-    if (!pointInVec(curNodeRect,adjPos,0)) //we can try to save some time by keeping track of the last node that we were moved to and trying to see if the new point is in that node as well
-        {
-            curNodeRect = mesh->getNearestNodeRect(adjPos);
-        }
-    if (curNodeRect == glm::vec4(0)) //should never happen
+    if (getBeingPushed())
     {
-        std::cerr << "attempted to move entity outside of world boundaries to point " << adjPos.x << " "<< adjPos.y <<"\n";
-        throw std::logic_error("attempted to move entity outside of world boundaries");
-    }
-    else if (!pointInVec(curNodeRect  - glm::vec4(1,1,rect.z - 2,rect.a - 2),adjPos.x,adjPos.y,0)) //there is a possibility of being moved into a wall
-    {
-        glm::vec4 wall = mesh->getWallRect(glm::vec4(adjPos,rect.z,rect.a));
-        if (wall != glm::vec4(0))
+        applyAllForces();
+        glm::vec2 adjPos = move->getPos() + finalForce; //adjusted position in case we are being pushed into a wall
+        glm::vec4 rect = move->getRect();
+        NavMesh* mesh = &GameWindow::getLevel()->getMesh();
+        if (!pointInVec(curNodeRect,adjPos,0)) //we can try to save some time by keeping track of the last node that we were moved to and trying to see if the new point is in that node as well
+            {
+                curNodeRect = mesh->getNearestNodeRect(adjPos);
+            }
+        if (curNodeRect == glm::vec4(0)) //should never happen, but may happen if we are moved out of bounds
         {
-            if (vecIntersect(wall,{adjPos.x,rect.y,rect.z,rect.a}))
-                {
-                    adjPos.x = rect.x;
-                }
-            if (vecIntersect(wall,{rect.x,adjPos.y,rect.z,rect.a}))
-                {
-                    adjPos.y = rect.y;
-                }
+            std::cerr << "attempted to move entity outside of world boundaries to point " << adjPos.x << " "<< adjPos.y <<"\n";
+            throw std::logic_error("attempted to move entity outside of world boundaries");
         }
+        else if (!vecContains({adjPos.x,adjPos.y,rect.z,rect.a},curNodeRect)) //there is a possibility of being moved into a wall
+        {
+            glm::vec4 newRect = mesh->validMove(rect,finalForce);
+            if (newRect.x != adjPos.x || newRect.y != adjPos.y) //if there was a wall in our way
+            {
+                forces.clear(); //clear our forces
+            }
+           adjPos = {newRect.x,newRect.y};
+        }
+        move->setPos(adjPos);
+        finalForce = glm::vec2(0);
     }
-    move->setPos(adjPos);
-    finalForce = glm::vec2(0);
 }
 
 Structure::Structure(ClickableComponent& click, RectComponent& rect, RenderComponent& render, HealthComponent& health) : Unit(click,rect,render,health,false)
@@ -823,10 +873,17 @@ void Attack::doAttack(Object* attacker, const glm::vec2& pos)
 
 ImgParameter Attack::getParam(Object* attacker, const glm::vec2& pos)
 {
+    if (sequencer && !sequencer->isDone(startAttack))
+    {
+        return {SpriteParameter(),sequencer->process(startAttack)};
+    }
      return {SpriteParameter(),AnimationParameter()};
 }
 
-Attack::Attack( float damage_, int endLag_, float range_, Entity& unit,AnimationWrapper* anime_) : attackAnime(anime_),baseData({range_,damage_,endLag_}), modData({range_,damage_,endLag_})
+Attack::Attack( float damage_, int endLag_, float range_,AnimationWrapper* anime_, AnimationSequencer* sequencer_) : attackAnime(anime_),
+                                                                                    sequencer(sequencer_),
+                                                                                    baseData({range_,damage_,endLag_}),
+                                                                                    modData({range_,damage_,endLag_})
 {
 
 }
@@ -834,8 +891,9 @@ Attack::Attack( float damage_, int endLag_, float range_, Entity& unit,Animation
 bool Attack::canAttack(Object* owner, Object* ptr)
 {
     //if (owner && ptr)
-    //std::cout << (vecDistance(ptr->getRect().getRect(),owner->getRect().getRect()) <= modData.range)  <<"\n";
-    return  ptr && owner && ptr->getComponent<HealthComponent>() && (vecDistance(ptr->getRect().getRect(),owner->getRect().getRect()) <= modData.range);
+    return  (ptr && owner && ptr->getComponent<HealthComponent>() && offCooldown() && vecDistance(ptr->getRect().getRect(),owner->getRect().getRect()) <= modData.range)
+            ||
+            (sequencer != nullptr && (!sequencer->isDone(startAttack) || startAttack != -1)); //get one last frame in. Only applies to attack animations
 }
 
 bool Attack::offCooldown()
@@ -845,10 +903,15 @@ bool Attack::offCooldown()
 
 ImgParameter Attack::attack(Object* attacker, const glm::vec2& pos)
 {
-    if (offCooldown())
+    if (offCooldown() && startAttack == -1)
     {
-        doAttack(attacker,pos);
+        startAttack = SDL_GetTicks();
         coolDownTimer.set();
+    }
+    doAttack(attacker,pos);
+    if (sequencer && sequencer->isDone(startAttack) && startAttack != -1) //get one more frame of attacking in. Some attacks trigger after the sequence is done
+    {
+        startAttack = -1;
     }
     modData = baseData;
     return getParam(attacker,pos);
@@ -919,6 +982,11 @@ ProjectileComponent::ProjectileComponent(double damage, bool friendly,const glm:
 void ProjectileComponent::setShooter(Object& obj)
 {
     shooter = &obj;
+}
+
+Object* ProjectileComponent::getShooter()
+{
+    return shooter;
 }
 
 void ProjectileComponent::collide(Entity& other)
@@ -1025,8 +1093,9 @@ UnitAttackComponent::~UnitAttackComponent()
 }
 
 
-ProjectileAttack::ProjectileAttack(ProjectileAssembler& ass, int endLag, double range,double searchRange_,bool f,  Entity& entity) :
-        Attack(0,endLag,f, entity),assembler(&ass)
+ProjectileAttack::ProjectileAttack(ProjectileAssembler& ass, int endLag, double range,
+                                   AnimationWrapper* attackAnime_, AnimationSequencer* sequencer_) :
+        Attack(ass.damage,endLag,range,attackAnime_,sequencer_),assembler(&ass)
 {
 
 
@@ -1039,7 +1108,8 @@ void ProjectileAttack::doAttack(Object* attacker, const glm::vec2& mousePos)
         glm::vec2 center = attacker->getComponent<RectComponent>()->getCenter();
         float angle = atan2(center.y - mousePos.y, center.x - mousePos.x);
         glm::vec4 levelRect = GameWindow::getLevel()->getRect(); //we want projectile to travel to the end of the map
-        GameWindow::getLevel()->addUnit(*assembler->assemble(*attacker,center,mousePos - glm::vec2(cos(angle)*levelRect.z, sin(angle)*levelRect.a)),true);
+        GameWindow::getLevel()->addUnit(*assembler->assemble(*attacker,center,mousePos - glm::vec2(cos(angle)*levelRect.z, sin(angle)*levelRect.a)),assembler->friendly);
     }
 }
+
 

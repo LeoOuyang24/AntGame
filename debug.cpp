@@ -97,6 +97,7 @@ void Debug::DebugGameWindow::update()
 bool Debug::showFog = true;
 bool Debug::spawnCreatures = true;
 bool Debug::renderPath = false;
+bool Debug::renderHitBoxes = false;
 
 Debug::Debug()
 {
@@ -127,8 +128,9 @@ void Debug::update()
         gameDB.addTerrain = !gameDB.addTerrain;
         break;
     case SDLK_F6:
-        showFog = !showFog;
-        fastPrint("Fog turned " + (std::string)(showFog ? "on" : "off") +".\n");
+        renderHitBoxes = !renderHitBoxes;
+        fastPrint("Hitbox rendering turned " + (std::string)(renderHitBoxes ? "on" : "off") +".\n");
+        break;
     }
     meshDB.update();
     gameDB.update();
@@ -147,4 +149,9 @@ bool Debug::getSpawnCreatures()
 bool Debug::getRenderPath()
 {
     return renderPath;
+}
+
+bool Debug::getRenderHitboxes()
+{
+    return renderHitBoxes;
 }

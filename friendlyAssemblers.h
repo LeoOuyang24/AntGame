@@ -21,7 +21,7 @@ struct UnitAssembler : public ObjectAssembler
     float speed = .1;
     UnitAssembler( std::string name_,const glm::vec2& rect_, AnimationWrapper& anime, bool mov, double maxHealth_, float speed,bool friendly_ = false);
     virtual Object* assemble();
-    Unit* commandUnitAssemble(); //creates a unit with a bunch of components they will need to be commanded, including CommandableComponent and ForceComponent. Does not add unitAttackComponent since that may be unique to each assembler
+    Unit* NPCUnitAssemble(); //creates a unit with a bunch of default components. Does not add unitAttackComponent since that may be unique to each assembler
 };
 
 struct ProjectileAssembler : public ObjectAssembler
@@ -30,20 +30,53 @@ struct ProjectileAssembler : public ObjectAssembler
     float speed = .1;
 
     ProjectileAssembler(double damage_, std::string name_,const glm::vec2& rect_, AnimationWrapper& anime, float speed, bool friendly_ = false);
-    Object* assemble(Object& shooter, const glm::vec2& point, const glm::vec2& target);
+    virtual Object* assemble(Object& shooter, const glm::vec2& point, const glm::vec2& target);
 };
 
-class HitboxAssembler : public ObjectAssembler
+class HitboxAssembler : public ProjectileAssembler //assembles a hitbox, which is basically a projectile that becomes inactive after a while.
 {
-    class HitboxComponent : public Component, public ComponentContainer<HitboxComponent>
+
+    class HitboxRender : public AnimationComponent, public ComponentContainer<HitboxRender> //really more of a debug component than anything. Renders the hitboxes and if they have collided with something
     {
-        float damage;
-        Positional* pos; //allocate this on the heap because the destructor deletes the positional
+        bool collided = false;
     public:
-        HitboxComponent(float damage_, Positional& pos_, Entity& entity);
-        ~HitboxComponent(); //deletes pos
+        HitboxRender(Entity& entity);
+        void collide(Entity& other);
+        void update();
     };
+    ProjectileComponent::ProjCollideFunc projCollideFunc = nullptr;
+    const int duration;
+    public:
+        class HitboxComponent : public ProjectileComponent, public ComponentContainer<HitboxComponent> //projectile component that becomes inacive after some time
+        {
+            int duration = 0;//in milliseconds
+            bool active = false;
+            DeltaTime timer;
+        public:
+            HitboxComponent(int duration, float damage, bool friendly, const glm::vec2& target,
+                                        const glm::vec4& rect,Object& entity, ProjectileComponent::ProjCollideFunc func);
+            bool getActive();
+            void collide(Entity& other);
+            void activate();
+            void deactivate();
+            void update();
+            ~HitboxComponent();
+        };
+        HitboxAssembler(int duration, float damage, std::string name, bool friendly, const glm::vec2& dimen, ProjectileComponent::ProjCollideFunc func);
+        Object* assemble(Object& shooter, const glm::vec2& point, const glm::vec2& target);
 };
+
+
+class HitboxAttack : public ProjectileAttack
+{
+    Object* hitbox = nullptr;
+    void doAttack(Object* attacker, const glm::vec2& target);
+public:
+    HitboxAttack(HitboxAssembler& ass, int endLag, double range, AnimationWrapper* attackAnime_ = nullptr, AnimationSequencer* sequencer_ = nullptr);
+};
+
+
+
 
 typedef std::vector<UnitAssembler*> UnitBucket;
 

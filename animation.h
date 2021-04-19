@@ -3,6 +3,9 @@
 
 #include "render.h"
 
+extern AnimationWrapper hitboxAnime;
+extern AnimationWrapper hitboxAnimeRed;
+
 extern SpriteWrapper fireIcon;
 extern SpriteWrapper freezeIcon;
 extern SpriteWrapper coinIcon;
@@ -19,6 +22,13 @@ extern AnimationWrapper playerHurt;
 
 extern AnimationWrapper turtFrogWalk;
 extern AnimationWrapper turtFrogAttack;
+
+extern AnimationWrapper attackAntAnime;
+extern AnimationWrapper attackAntAttack;
+extern AnimationWrapper attackAntProjectile;
+
+extern AnimationWrapper dinosaurAnime;
+extern AnimationWrapper dinosaurAttackAnime;
 
 extern AnimationWrapper basicSoldierAnime;
 extern AnimationWrapper basicShootingAnime;

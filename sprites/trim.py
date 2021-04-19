@@ -27,7 +27,7 @@ def main(filename,newName):
     cv.imwrite(newName,np.array(copy))
 if __name__ == "__main__":
     if (len(sys.argv) < 2):
-        print("usage: python snip.py <image path> <new file name optional>")
+        print("usage: python trim.py <image path> <new file name optional>")
     else:
         if (len(sys.argv) < 3): #if they didn't provide a new file name, use the old name
             sys.argv.append(sys.argv[1])
