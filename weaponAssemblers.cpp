@@ -16,7 +16,9 @@ Entity* WeaponAssembler::assemble(Unit* unit)
     return ent;
 }
 
-WeaponComponent::WeaponComponent(Entity& ent, Unit* owner_, Attack* at1, Attack* at2) : Component(ent),ComponentContainer<WeaponComponent>(ent),owner(owner_), attack1(at1), attack2(at2)
+WeaponComponent::WeaponComponent(Entity& ent, Unit* owner_, WeaponAttack a1, WeaponAttack a2, WeaponAttack a3) : Component(ent),
+                                                                                                                ComponentContainer<WeaponComponent>(ent),owner(owner_),
+                                                                                                                attacks({a1,a2,a3})
 {
 
 }
@@ -26,42 +28,90 @@ Unit* WeaponComponent::getOwner()
     return owner;
 }
 
+AttackStorage& WeaponComponent::getAttacks()
+{
+    return attacks;
+}
+
+void WeaponComponent::processAttack(void (*weaponFunc)(int i,WeaponAttack& attack))
+{
+    if (weaponFunc)
+    {
+        for (int i = 0; i < numAttacks; ++i)
+        {
+            weaponFunc(i,attacks[i]);
+        }
+    }
+
+}
+
 void WeaponComponent::update()
 {
     glm::vec2 mousePos = GameWindow::getCamera().toWorld(pairtoVec(MouseManager::getMousePos()));
-    /*RectComponent* rect = entity->getComponent<RectComponent>();
-    if (rect)
+    if (MouseManager::isPressed(SDL_BUTTON_LEFT) && attacks[ATTACK1].attack->offCooldown())
     {
-        glm::vec4 ownerRect = owner->getRect().getRect();
-        rect->setPos(glm::vec2(ownerRect.x + ownerRect.z - (1*ownerRect.z + rect->getRect().z/2),ownerRect.y + ownerRect.a/2 - rect->getRect().a/2));
-        AnimationComponent* animation = entity->getComponent<AnimationComponent>();
-        if (animation)
+        attacks[ATTACK1].attack->attack(owner,mousePos);
+    }
+    if (MouseManager::isPressed(SDL_BUTTON_RIGHT)&& attacks[ATTACK2].attack->offCooldown())
+    {
+        attacks[ATTACK2].attack->attack(owner,mousePos);
+    }
+    if (KeyManager::findNumber(SDLK_SPACE) != -1&& attacks[ATTACK3].attack->offCooldown())
+    {
+        attacks[ATTACK3].attack->attack(owner,mousePos);
+    }
+}
+
+void PistolAssembler::PistolSpreadAttack::doAttack(Object* attacker, const glm::vec2& pos)
+{
+    if (attacker)
+    {
+        glm::vec2 center = attacker->getCenter();
+        float dist = pointDistance(center,pos);
+        float angle = atan2(pos.y - center.y, pos.x - center.x);
+        float altAngle = M_PI/8;
+        ProjectileAttack::doAttack(attacker,{center.x + dist*cos(angle + altAngle),center.y + dist*sin(angle + altAngle)});
+        ProjectileAttack::doAttack(attacker,pos);
+        ProjectileAttack::doAttack(attacker,{center.x + dist*cos(angle + -1*altAngle),center.y + dist*sin(angle + -1*altAngle)});
+    }
+}
+
+PistolAssembler::PistolSpreadAttack::PistolSpreadAttack() : ProjectileAttack(bullet,3000,0)
+{
+
+}
+
+void PistolAssembler::PistolSpecialAttack::doAttack(Object* attacker, const glm::vec2& pos)
+{
+    if (attacker)
+    {
+        glm::vec2 center = attacker->getCenter();
+        float dist = pointDistance(center,pos);
+        float angle = atan2(pos.y - center.y, pos.x - center.x);
+        int amount = 8; //amount of bullets;
+        float altAngle = M_PI/amount*2;
+        for (int i = 0; i < amount; ++i)
         {
-            SpriteParameter param;
-           // param.effect = MIRROR;
-            param.radians = atan2(mousePos.y - rect->getCenter().y, mousePos.x - rect->getCenter().x);
-            animation->setParam(param,AnimationParameter());
+            ProjectileAttack::doAttack(attacker,{center.x + dist*cos(angle + i*altAngle),center.y + dist*sin(angle + i*altAngle)});
         }
-    }*/
-    if (MouseManager::isPressed(SDL_BUTTON_LEFT))
-    {
-        attack1->attack(owner,mousePos);
+        //ProjectileAttack::doAttack(attacker,pos);
+        //ProjectileAttack::doAttack(attacker,{center.x + dist*cos(angle + -1*altAngle),center.y + dist*sin(angle + -1*altAngle)});
     }
-    if (MouseManager::isPressed(SDL_BUTTON_RIGHT))
-    {
-        attack2->attack(owner,mousePos);
-    }
-    if (KeyManager::findNumber(SDLK_r) != -1)
-    {
-      //  attack3->update();
-    }
+}
+
+PistolAssembler::PistolSpecialAttack::PistolSpecialAttack() : ProjectileAttack(bullet,5000,0)
+{
+
 }
 
 PistolAssembler::PistolBulletAssembler::PistolBulletAssembler() : ProjectileAssembler(1,"Pistol Bullet",{50,50},tankRocketAnime,1,true)
 {
 
 }
-PistolAssembler::PistolAssembler() : WeaponAssembler({45,15},&pistolAnime,1)
+
+PistolAssembler::PistolBulletAssembler PistolAssembler::bullet;
+
+PistolAssembler::PistolAssembler() : WeaponAssembler({21,23},&pistolAnime,1)
 {
 
 }
@@ -70,8 +120,9 @@ Entity* PistolAssembler::assemble(Unit* user)
 {
     Entity* pistol = WeaponAssembler::assemble(user);
     pistol->addComponent(*(new WeaponComponent(*pistol,user,
-                                                new ProjectileAttack(bullet,1000,0),
-                                               new ProjectileAttack(bullet,3,0))));
+                                                {&pistolAttack1,new ProjectileAttack(bullet,500,0)},
+                                               {&pistolAttack2,new PistolSpreadAttack()},
+                                               {&pistolAttackSpecial,new PistolSpecialAttack()})));
     return pistol;
 }
 

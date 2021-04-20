@@ -43,6 +43,7 @@ AnimationWrapper tankAnime;
 AnimationWrapper commanderAnime;
 AnimationWrapper iceTurretAnime;
 
+SpriteWrapper pistolAttack1, pistolAttack2,pistolAttackSpecial;
 AnimationWrapper pistolAnime;
 
 AnimationWrapper explosionAnime;
@@ -60,7 +61,11 @@ void initSprites()
     playerAnime.init(new BaseAnimation("sprites/astro/astro2.png",4,4,1,{0,0,4,1}));
     playerArm.init(new BaseAnimation("sprites/astro/astroArm.png",1,1,1));
     playerHurt.init(new BaseAnimation("sprites/astro/astrohurt.png",0,1,1));
-    pistolAnime.init(new BaseAnimation("sprites/gun2.png",1,1,1));
+
+    pistolAnime.init(new BaseAnimation("sprites/pistol/pistol2.png",1,1,1));
+    pistolAttack1.init("sprites/pistol/action1.png");
+    pistolAttack2.init("sprites/pistol/action2.png");
+    pistolAttackSpecial.init("sprites/pistol/action3.png");
 
     turtFrogWalk.init(new BaseAnimation("sprites/frog2.png",5,5,2,{0,0,5,1}));
     turtFrogAttack.init(new BaseAnimation("sprites/frog2.png",5,5,2,{0,.5,5,1}));

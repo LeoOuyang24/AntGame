@@ -5,12 +5,6 @@
 #include "friendlyAssemblers.h"
 
 
-struct SequencerData
-{
-    Uint8 frameStart;
-
-};
-
 class EvilMoonAssembler : public UnitAssembler
 {
 public:
@@ -74,7 +68,7 @@ class Dinosaur : public UnitAssembler
        /* AnimationSequencer dinosaurAttackSequencer = AnimationSequencer({
                                                                                         {1000,5}
                                                                                           });*/
-       // void doAttack(Object* attacker, const glm::vec2& pos);
+        void doAttack(Object* attacker, const glm::vec2& pos);
     public:
         DinosaurAttack();
     };

@@ -901,9 +901,14 @@ bool Attack::offCooldown()
     return coolDownTimer.timePassed(modData.endLag) || !coolDownTimer.isSet();
 }
 
+int Attack::getCooldownRemaining()
+{
+    return offCooldown() ? 0 : modData.endLag - coolDownTimer.getTimePassed();
+}
+
 ImgParameter Attack::attack(Object* attacker, const glm::vec2& pos)
 {
-    if (offCooldown() && startAttack == -1)
+    if (offCooldown() && (startAttack == -1 || !sequencer))
     {
         startAttack = SDL_GetTicks();
         coolDownTimer.set();

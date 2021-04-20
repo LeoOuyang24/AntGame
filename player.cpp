@@ -2,6 +2,7 @@
 #include "vanilla.h"
 #include "FreeTypeHelper.h"
 
+#include "weaponAssemblers.h"
 #include "player.h"
 #include "game.h"
 #include "navigation.h"
@@ -302,7 +303,46 @@ void Player::addGold(int g)
     gold = std::max(gold + g, 0);
 }
 
-
+void Player::renderUI()
+{
+    if (player)
+    {
+      glm::vec2 screenDimen = RenderProgram::getScreenDimen();
+        const int space = screenDimen.x/20;
+        const float iconDimen = screenDimen.x/10;
+        if (InventoryComponent* inv = player->getComponent<InventoryComponent>())
+        {
+            if (Entity* weaponEnt = inv->getWeapon())
+            {
+                if (WeaponComponent* weapon = weaponEnt->getComponent<WeaponComponent>() )
+                {
+                    AttackStorage arr = weapon->getAttacks();
+                    for (int i = 0; i < numAttacks; ++i)
+                    {
+                        if (arr[i].icon)
+                        {
+                            SpriteParameter param = {{screenDimen.x/2 - iconDimen/2-space + (iconDimen + space)*i,
+                                                    screenDimen.y*.8,
+                                                    iconDimen,
+                                                    iconDimen
+                                                  }};
+                            if (arr[i].attack && !arr[i].attack->offCooldown())
+                            {
+                                auto cooldownLeft = arr[i].attack->getCooldownRemaining();
+                                auto cooldown = arr[i].attack->getEndLag();
+                                float ratio = 1-(float)cooldownLeft/cooldown;
+                                param.tint = {ratio,ratio,ratio,1};
+                                Font::tnr.requestWrite({convert(ceil(cooldownLeft/1000.0)),param.rect,0,{1,1,1,1},GameWindow::interfaceZ + .1});
+                            }
+                            param.z = GameWindow::interfaceZ;
+                            arr[i].icon->request(param);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 InactiveComponent::InactiveComponent(double duration, Entity& entity) : waitTime(duration), Component(entity), ComponentContainer<InactiveComponent>(entity)
 {

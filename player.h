@@ -56,7 +56,7 @@ public:
 
 class Player //tracks player stats (resources, money). Also handles player inputs
 {
-   PlayerAssembler playerAssembler;
+    PlayerAssembler playerAssembler;
 
     int resource;
     int gold = 100;
@@ -70,6 +70,7 @@ public:
     void addResource(int r); //used to increase or decrease resources. Resources can't be negative
     int getGold();
     void addGold(int g);
+    void renderUI();
 };
 
 class InactiveComponent : public Component, public ComponentContainer<InactiveComponent> //represents how long an entity is inactive for. Usually because a building is under construction

@@ -130,12 +130,21 @@ Dinosaur::DinosaurAttackHitboxAssembler::DinosaurAttackHitboxAssembler() : Hitbo
 Dinosaur::DinosaurAttackHitboxAssembler Dinosaur::DinosaurAttack::hitbox;
 
 AnimationSequencer Dinosaur::DinosaurAttack::dinosaurAttackSequencer = AnimationSequencer({
-                                                                                        {1000,5}
+                                                                                          {400,1},
+                                                                                        {600,4}
                                                                                           });
+
+void Dinosaur::DinosaurAttack::doAttack(Object* attacker, const glm::vec2& pos)
+{
+    if (sequencer && sequencer->getStateIndex(startAttack) == 1)
+    {
+        HitboxAttack::doAttack(attacker,pos);
+    }
+}
 
 Dinosaur::DinosaurAttack::DinosaurAttack() : HitboxAttack(hitbox,1000,0,&dinosaurAttackAnime,&dinosaurAttackSequencer)
 {
-    sequencer = new AnimationSequencer({{1000,5}});
+    //sequencer = new AnimationSequencer({{1000,5}});
 }
 
 Dinosaur::Dinosaur() : UnitAssembler("Dinosaur",{87,58},dinosaurAnime,false,100,.2,false)

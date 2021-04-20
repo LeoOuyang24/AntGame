@@ -46,6 +46,7 @@ extern AnimationWrapper tankAnime;
 extern AnimationWrapper commanderAnime;
 extern AnimationWrapper iceTurretAnime;
 
+extern SpriteWrapper pistolAttack1, pistolAttack2,pistolAttackSpecial;
 extern AnimationWrapper pistolAnime;
 
 extern AnimationWrapper explosionAnime;

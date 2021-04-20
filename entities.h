@@ -279,16 +279,17 @@ protected:
     };
     AttackData modData;
     DeltaTime coolDownTimer;
-    int startAttack = -1; //represents the time at which we started attacking
+    int startAttack = -1; //represents the time at which we started attacking. Really only useful if there is a sequencer
     AnimationSequencer* sequencer = nullptr;
     AnimationWrapper* attackAnime = nullptr;
-    virtual void doAttack(Object* attacker, const glm::vec2& pos); //the actual hitbox spawning attack
+    virtual void doAttack(Object* attacker, const glm::vec2& pos); //the actual hitbox spawning attack.
     virtual ImgParameter getParam(Object* attacker, const glm::vec2& pos);
 public:
     const AttackData baseData;
     Attack( float damage_, int endLag_, float range_,AnimationWrapper* attackAnime_ = nullptr, AnimationSequencer* sequencer_ = nullptr);
     virtual bool canAttack(Object* owner = nullptr,Object* ptr = nullptr); //returns true if we can attack the target. Doesn't take into account coolDownTimer. Returns false if either pointer is null
     bool offCooldown();//returns true if the attack is off cooldown
+    int getCooldownRemaining(); //gets the remaining cooldown. 0 if off cooldown (offCooldown() returns true)
     virtual ImgParameter attack(Object* attacker,const glm::vec2& pos); //wrapper function for doAttack that also incorporates cooldowns. Returns animation info.
     AnimationWrapper* getAnimation();
     float getRange();

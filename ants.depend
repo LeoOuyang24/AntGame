@@ -1454,10 +1454,10 @@
 	"render.h"
 	"components.h"
 
-1618795019 source:c:\users\leoou\onedrive\desktop\projects\spacegame\animation.cpp
+1618859247 source:c:\users\leoou\onedrive\desktop\projects\spacegame\animation.cpp
 	"animation.h"
 
-1618795019 c:\users\leoou\onedrive\desktop\projects\spacegame\animation.h
+1618861182 c:\users\leoou\onedrive\desktop\projects\spacegame\animation.h
 	"render.h"
 
 1615348833 source:c:\users\leoou\onedrive\desktop\projects\spacegame\antmanager.cpp
@@ -1468,7 +1468,7 @@
 	<memory>
 	"entities.h"
 
-1618805341 c:\users\leoou\onedrive\desktop\projects\spacegame\entities.h
+1618941939 c:\users\leoou\onedrive\desktop\projects\spacegame\entities.h
 	"glInterface.h"
 	"SDLhelper.h"
 	"render.h"
@@ -1500,7 +1500,7 @@
 	"tiles.h"
 	"friendlyAssemblers.h"
 
-1618810823 c:\users\leoou\onedrive\desktop\projects\spacegame\friendlyassemblers.h
+1618856575 c:\users\leoou\onedrive\desktop\projects\spacegame\friendlyassemblers.h
 	"entities.h"
 
 1615352433 c:\users\leoou\onedrive\desktop\projects\spacegame\ants.h
@@ -1509,7 +1509,7 @@
 	"components.h"
 	"friendlyAssemblers.h"
 
-1617167887 c:\users\leoou\onedrive\desktop\projects\spacegame\player.h
+1618875881 c:\users\leoou\onedrive\desktop\projects\spacegame\player.h
 	<set>
 	"glInterface.h"
 	"friendlyAssemblers.h"
@@ -1545,14 +1545,14 @@
 1615352433 c:\users\leoou\onedrive\desktop\projects\spacegame\effects.h
 	"render.h"
 
-1618811241 source:c:\users\leoou\onedrive\desktop\projects\spacegame\enemyassemblers.cpp
+1618858946 source:c:\users\leoou\onedrive\desktop\projects\spacegame\enemyassemblers.cpp
 	"enemyAssemblers.h"
 
-1618204914 c:\users\leoou\onedrive\desktop\projects\spacegame\enemyassemblers.h
+1618861182 c:\users\leoou\onedrive\desktop\projects\spacegame\enemyassemblers.h
 	"animation.h"
 	"friendlyAssemblers.h"
 
-1618802806 source:c:\users\leoou\onedrive\desktop\projects\spacegame\entities.cpp
+1618938789 source:c:\users\leoou\onedrive\desktop\projects\spacegame\entities.cpp
 	<math.h>
 	"SDLHelper.h"
 	"render.h"
@@ -1617,7 +1617,7 @@
 	"entities.h"
 	"game.h"
 
-1617055105 source:c:\users\leoou\onedrive\desktop\projects\spacegame\game.cpp
+1618884249 source:c:\users\leoou\onedrive\desktop\projects\spacegame\game.cpp
 	"SDLHelper.h"
 	"vanilla.h"
 	"debug.h"
@@ -1641,9 +1641,10 @@
 	"game.h"
 	"animation.h"
 
-1618796810 source:c:\users\leoou\onedrive\desktop\projects\spacegame\player.cpp
+1618938771 source:c:\users\leoou\onedrive\desktop\projects\spacegame\player.cpp
 	"vanilla.h"
 	"FreeTypeHelper.h"
+	"weaponAssemblers.h"
 	"player.h"
 	"game.h"
 	"navigation.h"
@@ -1651,13 +1652,13 @@
 	"enemyAssemblers.h"
 	"weaponAssemblers.h"
 
-1617573951 source:c:\users\leoou\onedrive\desktop\projects\spacegame\weaponassemblers.cpp
+1618938704 source:c:\users\leoou\onedrive\desktop\projects\spacegame\weaponassemblers.cpp
 	"weaponAssemblers.h"
 	"animation.h"
 	"game.h"
 	"entities.h"
 
-1617231511 c:\users\leoou\onedrive\desktop\projects\spacegame\weaponassemblers.h
+1618941951 c:\users\leoou\onedrive\desktop\projects\spacegame\weaponassemblers.h
 	"friendlyAssemblers.h"
 
 1615614389 c:\users\leoou\onedrive\desktop\projects\spacegame\tiles.h

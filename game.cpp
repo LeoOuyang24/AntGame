@@ -336,6 +336,7 @@ void GameWindow::updateTop(float z)
     // std::cout << camera.getRect().x << " " << camera.getRect().x + camera.getRect().z << std::endl;
        // camera.reserveZoom();
         renderTopBar();
+        player.renderUI();
         //renderSelectedUnits();
 
         if (level.lock().get()->getChangeLevel())

@@ -70,7 +70,8 @@ class HitboxAssembler : public ProjectileAssembler //assembles a hitbox, which i
 class HitboxAttack : public ProjectileAttack
 {
     Object* hitbox = nullptr;
-    void doAttack(Object* attacker, const glm::vec2& target);
+protected:
+    virtual void doAttack(Object* attacker, const glm::vec2& target);
 public:
     HitboxAttack(HitboxAssembler& ass, int endLag, double range, AnimationWrapper* attackAnime_ = nullptr, AnimationSequencer* sequencer_ = nullptr);
 };
