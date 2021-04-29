@@ -123,7 +123,7 @@ void MouseCamera::update()
     }
 }
 
-WorldMapWindow::LevelButton::LevelButton(LevelButton* prev_, LevelButton* next_,WorldMapWindow& window, Map& level, const glm::vec4& rect) :
+WorldMapWindow::LevelButton::LevelButton(LevelButton* prev_, LevelButton* next_,WorldMapWindow& window, Level& level, const glm::vec4& rect) :
                                                                                             Button(rect,nullptr,nullptr,{},nullptr,{1,1,0,1}),
                                                                                             window(&window), level(&level), prev(prev_),next(next_)
 {
@@ -137,7 +137,7 @@ void WorldMapWindow::LevelButton::setNext(LevelButton* next_)
 
 void WorldMapWindow::LevelButton::press()
 {
-    if (window && level && !level->getChangeLevel()) //if we haven't already beaten this level
+    if (window && level && !level->getCompleted()) //if we haven't already beaten this level
     {
         window->setCurrentLevel(*level);
     }
@@ -145,7 +145,7 @@ void WorldMapWindow::LevelButton::press()
 
 void WorldMapWindow::LevelButton::update(float x, float y, float z, const glm::vec4& blit)
 {
-    if (level->getChangeLevel())
+    if (level->getCompleted())
     {
         backgroundColor.g = 0;
         backgroundColor.b = 0;
@@ -170,16 +170,16 @@ void WorldMapWindow::LevelButton::update(float x, float y, float z, const glm::v
 }
 
 
-void WorldMapWindow::setCurrentLevel(Map& level)
+void WorldMapWindow::setCurrentLevel(Level& level)
 {
     currentLevel = &level;
 }
 
-WorldMapWindow::LevelButton* WorldMapWindow::addLevel(Map& level,LevelButton* prev, LevelButton* next)
+WorldMapWindow::LevelButton* WorldMapWindow::addLevel(Level& level,LevelButton* prev, LevelButton* next)
 {
     int width = 64;
     int height = 64;
-    levels[&level] = std::shared_ptr<Map>(&level);
+    levels[&level] = std::shared_ptr<Level>(&level);
     glm::vec2 screenDimen = RenderProgram::getScreenDimen();
     glm::vec2 pos;
     if (prev)
@@ -226,10 +226,7 @@ WorldMapWindow::LevelButton* WorldMapWindow::generate(int count, LevelButton* st
     }
     else
     {
-        if(start)
-        printRect(start->getRect());
-
-        Map* level = Map::generateLevel();
+        Level* level = new Level();
         auto butt = addLevel(*level,start,nullptr);
         auto next = generate(count - 1,butt,end);
         if (next != butt) //happens if count = 1
@@ -246,7 +243,7 @@ void WorldMapWindow::update(float x, float y, float z, const glm::vec4& blit)
     Window::update(x,y,z,blit);
 }
 
-Map* WorldMapWindow::getCurrentLevel()
+Level* WorldMapWindow::getCurrentLevel()
 {
     return currentLevel;
 }
@@ -262,22 +259,22 @@ const MouseCamera& WorldMapWindow::getCamera()
 }
 
 
-WorldMapWindow::WorldSwitchToGame::WorldSwitchToGame(const glm::vec4& box, Interface& interface, Window& to, WorldMapWindow& worldMap) :
-                                                CondSwitchButton(box,nullptr,interface,to,{"Switch"},&Font::tnr,{1,0,1,1},nullptr), worldMap(&worldMap)
+WorldMapWindow::WorldSwitchToGame::WorldSwitchToGame(const glm::vec4& box, Interface& interface, Window& to, WorldMapWindow& worldRoom) :
+                                                CondSwitchButton(box,nullptr,interface,to,{"Switch"},&Font::tnr,{1,0,1,1},nullptr), worldRoom(&worldRoom)
 {
 
 }
 
 bool WorldMapWindow::WorldSwitchToGame::doSwitch()
 {
-    return worldMap && worldMap->getCurrentLevel();
+    return worldRoom && worldRoom->getCurrentLevel();
 }
 
 void WorldMapWindow::WorldSwitchToGame::press()
 {
     if (doSwitch())
     {
-        worldMap->switchToGame();
+        worldRoom->switchToGame();
         WindowSwitchButton::press();
     }
 }

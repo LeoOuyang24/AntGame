@@ -298,7 +298,7 @@ public:
     void setRange(float range);
     void setDamage(float damage);
     void setAttackSpeed(float increase);
-    ~Attack();
+    virtual ~Attack();
 
 };
 
@@ -333,7 +333,7 @@ class UnitAttackComponent : public ApproachComponent, public ComponentContainer<
     bool notFriendly = false; //the type of enemy to attack
     bool ignore = false; //whether to ignore enemies or not
     double searchRange = 0; //aggro range
-    std::list<Attack*> attacks;
+    std::list<std::unique_ptr<Attack>> attacks;
     void processAttack(Attack& attack);
 public:
     UnitAttackComponent(double damage_, int endLag_, double range_,double searchRange_,bool f, Entity& entity);
@@ -348,7 +348,7 @@ class ProjectileAssembler;
 class ProjectileAttack : public Attack //attack that shoots a projectile
 {
 protected:
-    ProjectileAssembler* assembler = nullptr;
+    ProjectileAssembler* assembler = nullptr; //warning: ProjectileAttack does not own the assembler. The assembler can be a member variable, which will be cleaned up automatically, or a static variable that will have to be cleaned up by itself.
     void doAttack(Object* attacker, const glm::vec2& target);
 public:
     ProjectileAttack(ProjectileAssembler& ass,int endLag, double range,

@@ -63,11 +63,8 @@ class Dinosaur : public UnitAssembler
     };
     class DinosaurAttack : public HitboxAttack
     {
-        static DinosaurAttackHitboxAssembler hitbox;
         static AnimationSequencer dinosaurAttackSequencer;
-       /* AnimationSequencer dinosaurAttackSequencer = AnimationSequencer({
-                                                                                        {1000,5}
-                                                                                          });*/
+        DinosaurAttackHitboxAssembler dinoHitbox;
         void doAttack(Object* attacker, const glm::vec2& pos);
     public:
         DinosaurAttack();

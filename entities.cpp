@@ -631,7 +631,7 @@ void EntityForces::update()
         applyAllForces();
         glm::vec2 adjPos = move->getPos() + finalForce; //adjusted position in case we are being pushed into a wall
         glm::vec4 rect = move->getRect();
-        NavMesh* mesh = &GameWindow::getLevel()->getMesh();
+        NavMesh* mesh = &GameWindow::getLevel()->getCurrentRoom()->getMesh();
         if (!pointInVec(curNodeRect,adjPos,0)) //we can try to save some time by keeping track of the last node that we were moved to and trying to see if the new point is in that node as well
             {
                 curNodeRect = mesh->getNearestNodeRect(adjPos);
@@ -700,7 +700,7 @@ void PathComponent::setTarget(const glm::vec2& point)
         }
         else
         {
-            NavMesh* mesh = &(GameWindow::getLevel()->getMesh());
+            NavMesh* mesh = &(GameWindow::getLevel()->getCurrentRoom()->getMesh());
             auto time = SDL_GetTicks();
             path = mesh->getPath(getCenter(),point, entity->getComponent<RectComponent>()->getRect().z/2*sqrt(2));
            // std::cout << SDL_GetTicks() - time << std::endl;
@@ -785,7 +785,7 @@ void WanderMove::update()
         int maxDimen = std::max(rect.z,rect.a);
         double radius = rand()%(100 - 10) + maxDimen + 10;
         glm::vec2 point = {rect.x + rect.z/2 + cos(angle)*radius, rect.y + rect.a/2 + sin(angle)*radius}; //target point, currenlty randomly generated
-        Map* level = (GameWindow::getLevel());
+        Room* level = (GameWindow::getLevel()->getCurrentRoom());
         const glm::vec4* levelRect = &(level->getRect());
         point.x = std::max(levelRect->x, std::min(point.x, levelRect->x + levelRect->z - rect.z)); //clamp point to levelREct
         point.y = std::max(levelRect->y, std::min(point.y, levelRect->y + levelRect->a - rect.a));
@@ -1048,14 +1048,14 @@ ComponentContainer<UnitAttackComponent>(entity), damage(damage_),notFriendly(f),
 
 void UnitAttackComponent::addAttack(Attack& attack)
 {
-    attacks.push_back(&attack);
+    attacks.emplace_back(&attack);
 }
 
 void UnitAttackComponent::update()
 {
 
     Object* ent = targetUnit.lock().get();
-    Map* level = GameWindow::getLevel();
+    Room* level = GameWindow::getLevel()->getCurrentRoom();
     if (!ent && level) //if we aren't already fighting something, find something nearby
     {
         Object* nearby = findNearestUnit<HealthComponent>(searchRange,notFriendly,*(level->getTree()));
@@ -1090,11 +1090,7 @@ void UnitAttackComponent::collide(Entity& other)
 
 UnitAttackComponent::~UnitAttackComponent()
 {
-    auto end = attacks.end();
-    for (auto it = attacks.begin(); it != end; ++it)
-    {
-        delete *it;
-    }
+
 }
 
 
@@ -1112,8 +1108,8 @@ void ProjectileAttack::doAttack(Object* attacker, const glm::vec2& mousePos)
     {
         glm::vec2 center = attacker->getComponent<RectComponent>()->getCenter();
         float angle = atan2(center.y - mousePos.y, center.x - mousePos.x);
-        glm::vec4 levelRect = GameWindow::getLevel()->getRect(); //we want projectile to travel to the end of the map
-        GameWindow::getLevel()->addUnit(*assembler->assemble(*attacker,center,mousePos - glm::vec2(cos(angle)*levelRect.z, sin(angle)*levelRect.a)),assembler->friendly);
+        glm::vec4 levelRect = GameWindow::getLevel()->getCurrentRoom()->getRect(); //we want projectile to travel to the end of the map
+        GameWindow::getLevel()->getCurrentRoom()->addUnit(*assembler->assemble(*attacker,center,mousePos - glm::vec2(cos(angle)*levelRect.z, sin(angle)*levelRect.a)),assembler->friendly);
     }
 }
 

@@ -88,14 +88,14 @@ Object* PickUpResource::assemble()
     return obj;
 }
 
-const glm::vec4 Map::playerArea = {chunkDimen/2 - 500,chunkDimen/2 - 500,1000,1000};
+const glm::vec4 Room::playerArea = {chunkDimen/2 - chunkDimen/12,chunkDimen/2 - chunkDimen/12,chunkDimen/6,chunkDimen/6};
 
-Map::Map(const glm::vec4& rect) : rect(rect)
+Room::Room(const glm::vec4& rect) : rect(rect)
 {
     init(rect);
 }
 
-void Map::init(const glm::vec4& region)
+void Room::init(const glm::vec4& region)
 {
    // rect = region;
     nextLevel();
@@ -109,7 +109,7 @@ void Map::init(const glm::vec4& region)
     }
 }
 
-void Map::nextLevel()
+void Room::nextLevel()
 {
     entities.clear();
     terrain.clear();
@@ -118,43 +118,53 @@ void Map::nextLevel()
 //    generateLevel();
 }
 
-std::shared_ptr<Object> Map::addUnit(Object& entity, bool friendly)
+std::shared_ptr<Object> Room::addUnit(Object& entity, bool friendly)
 {
-    std::shared_ptr<Object> ptr = std::shared_ptr<Object>(&entity);
-    //std::shared_ptr<Object> obj = std::shared_ptr<Object>((new Bug(200,200)));
-    //obj.reset();
-    entity.setFriendly(friendly);
-    entities[&entity] = ptr;
-    if (!entity.getComponent<ProjectileComponent>())
+    if (entities.count(&entity) == 0)
     {
-        tree->add(entity.getRect());
-    }
-    if (!entity.getMovable())
-    {
-        mesh->smartAddNode(entity.getRect().getRect());
-    }
-    //ptr.reset();
-   // remove(entity);
+        std::shared_ptr<Object> ptr = std::shared_ptr<Object>(&entity);
+        //std::shared_ptr<Object> obj = std::shared_ptr<Object>((new Bug(200,200)));
+        //obj.reset();
+        entity.setFriendly(friendly);
 
-    return ptr;
+        entities[&entity] = ptr;
+
+        if (!entity.getComponent<ProjectileComponent>())
+        {
+            tree->add(entity.getRect());
+        }
+        if (!entity.getMovable())
+        {
+            mesh->smartAddNode(entity.getRect().getRect());
+        }
+        //ptr.reset();
+       // remove(entity);
+
+        return ptr;
+    }
+    else
+    {
+        return entities[&entity];
+    }
 }
 
-std::shared_ptr<Object> Map::addUnit(Object& entity,int x, int y, bool friendly)
+std::shared_ptr<Object> Room::addUnit(Object& entity,int x, int y, bool friendly)
 {
+
     auto asdf = addUnit(entity,friendly);
     moveObject(entity,x,y);
     return asdf;
 }
 
 
-void Map::addTerrain(const glm::vec4& rect)
+void Room::addTerrain(const glm::vec4& rect)
 {
     Terrain* terr = (new Terrain(rect.x,rect.y,rect.z,rect.a));
     terrain.emplace_back(terr);
     mesh->smartAddNode(rect);
 }
 
-std::shared_ptr<Object>& Map::getUnit(Object* unit)
+std::shared_ptr<Object>& Room::getUnit(Object* unit)
 {
     if (unit)
     {
@@ -162,15 +172,15 @@ std::shared_ptr<Object>& Map::getUnit(Object* unit)
         {
             return entities[unit];
         }
-        throw std::runtime_error("Map.GetUnit: Can't find unit!");
+        throw std::runtime_error("Room.GetUnit: Can't find unit!");
     }
     else
     {
-        throw std::runtime_error ("Map.GetUnit:Unit is null!");
+        throw std::runtime_error ("Room.GetUnit:Unit is null!");
     }
 }
 
-void Map::moveObject(Object& obj, double x, double y)
+void Room::moveObject(Object& obj, double x, double y)
 {
 
     obj.getRect().setPos({x - obj.getRect().getRect().z/2,y - obj.getRect().getRect().a/2});
@@ -179,13 +189,13 @@ void Map::moveObject(Object& obj, double x, double y)
    // std::cout << getChunk(obj).ants.size() << oldChunk->ants.size() << std::endl;
 }
 
-UnitAssembler& Map::generateCreature()
+UnitAssembler& Room::generateCreature()
 {
     int random = rand()%5;
     return evilMoonAssembler;
 }
 
-void Map::spawnCreature()
+void Room::spawnCreature()
 {
     UnitAssembler* toSpawn = &generateCreature();
   //  const glm::vec4* camera = &(GameWindow::getCamera().getRect());
@@ -193,13 +203,13 @@ void Map::spawnCreature()
     auto area = getMesh().getRandomArea({rect.x + rect.z/2, rect.y + rect.a/2}, 0, std::min(rect.z/2,rect.a/2));
     if (area.z - entityRect.x > 0 && area.a - entityRect.y > 0) //if we have enough space
     {
-        int x = rand()%((int)(area.z -  entityRect.x)) + area.x; //we want to make sure our object spawns outside of the camera's view and doesn't spawn partially out of the map
+        int x = rand()%((int)(area.z -  entityRect.x)) + area.x; //we want to make sure our object spawns outside of the camera's view and doesn't spawn partially out of the Room
         int y = rand() % ((int)(area.a - entityRect.y)) + area.y;
         addUnit(*static_cast<Unit*>(toSpawn->assemble()),x + entityRect.x/2,y + entityRect.y/2,false);//adjust for center
     }
 }
 
-void Map::remove(Object& unit)
+void Room::remove(Object& unit)
 {
     if (!unit.getMovable())
     {
@@ -210,7 +220,7 @@ void Map::remove(Object& unit)
     entities.erase(&unit);
 }
 
-void Map::clearEnemies()
+void Room::clearEnemies()
 {
     auto end = entities.end();
     for (auto i = entities.begin(); i != end; ++i)
@@ -222,22 +232,22 @@ void Map::clearEnemies()
     }
 }
 
-ObjectStorage& Map::getEntities()
+ObjectStorage& Room::getEntities()
 {
     return entities;
 }
 
-NavMesh& Map::getMesh()
+NavMesh& Room::getMesh()
 {
     auto ptr = mesh.get();
     if (ptr)
     {
         return *mesh.get();
     }
-    throw std::logic_error("Map::getMesh(): Tried to return null mesh!");
+    throw std::logic_error("Room::getMesh(): Tried to return null mesh!");
 }
 
-void Map::render()
+void Room::render()
 {
     auto end = tiles.end();
     for (auto start = tiles.begin(); start != end; ++start)
@@ -257,36 +267,27 @@ void Map::render()
   //  mesh->render();
 }
 
-void Map::update()
+void Room::update()
 {
     render();
 
 }
 
-const glm::vec4& Map::getRect() //returns rect of the current Chunk
+const glm::vec4& Room::getRect() //returns rect of the current Chunk
 {
    return rect;
 }
-RawQuadTree* Map::getTree()
+RawQuadTree* Room::getTree()
 {
     return tree.get();
 }
 
-void Map::reset()
+void Room::reset()
 {
 
 }
 
-void Map::setChangeLevel(bool l)
-{
-    changeLevel = l;
-}
-bool Map::getChangeLevel()
-{
-    return changeLevel;
-}
-
-bool Map::finishedLevel()
+bool Room::finishedLevel()
 {
      bool noEnemies = true;
     for (auto it = entities.begin(); it != entities.end(); ++it)
@@ -300,9 +301,9 @@ bool Map::finishedLevel()
     return  noEnemies;
 }
 
-Map* Map::generateLevel(const glm::vec4& levelRect) // Doesn't generate terrain on the bottom most row. It's simply too big a hassle to ensure that inaccessible areas don't spawn on the bottom row
+Room* Room::generateLevel(const glm::vec4& levelRect) // Doesn't generate terrain on the bottom most row. It's simply too big a hassle to ensure that inaccessible areas don't spawn on the bottom row
 {
-    Map* chunk = new Map(levelRect);
+    Room* chunk = new Room(levelRect);
     //currentChunk = new Chunk({0,0,chunkDimen,chunkDimen});
     glm::vec2 points = {chunkDimen/maxObjectSize,chunkDimen/maxObjectSize};
     //addTerrain({100,100,100,100});
@@ -401,48 +402,87 @@ Map* Map::generateLevel(const glm::vec4& levelRect) // Doesn't generate terrain 
     //chunk->addUnit(*(attackAnt.assemble()),chunkDimen/2 - 100,chunkDimen/2,false);
     //chunk->addUnit(*(turtFrog.assemble()),chunkDimen/2 + 100,chunkDimen/2,false);
     chunk->addUnit(*(dinosaur.assemble()),chunkDimen/2 + 100,chunkDimen/2 + 10,false);
-    chunk->addUnit(*(new Gate(*chunk,chunkDimen/2,chunkDimen/2)),true);
+    //chunk->addUnit(*(new Gate(*chunk,chunkDimen/2,chunkDimen/2)),true);
     return chunk;
 }
 
-Map::~Map()
+Room::~Room()
 {
 
 }
 
-Map::Gate::NextAreaComponent::NextAreaComponent(Map& map_, Entity& entity) : Component(entity), ComponentContainer<NextAreaComponent>(&entity), level(&map_)
+Gate::NextAreaComponent::NextAreaComponent(std::shared_ptr<Room>& level_, std::shared_ptr<Room>& next_, Entity& entity) : Component(entity), ComponentContainer<NextAreaComponent>(&entity), level(level_), next(next_)
 {
 
 }
 
-Map* Map::Gate::NextAreaComponent::getLevel()
+Room* Gate::NextAreaComponent::getLevel()
 {
-    return level;
+    return level.lock().get();
 }
 
-void Map::Gate::NextAreaComponent::collide(Entity& entity)
+void Gate::NextAreaComponent::collide(Entity& entity)
 {
-    if (&entity == GameWindow::getPlayer().getPlayer() && level && KeyManager::findNumber(SDLK_e) != -1)
+    if (&entity == GameWindow::getPlayer().getPlayer() && level.lock().get() && KeyManager::getJustPressed() == SDLK_e)
     {
-        level->setChangeLevel(true);
+        if (next.lock().get())
+        {
+            GameWindow::setCurrentRoom(next.lock());
+            next.lock().get()->addUnit(*GameWindow::getPlayer().getPlayer(),Room::chunkDimen/2,Room::chunkDimen/2,true); //REMOVE THIs LATER
+        }
         GameWindow::getPlayer().addGold(10);
     }
 }
 
-Map::Gate::Gate(Map& level, int x, int y) : Object(*(new ClickableComponent("Gate",*this)),*(new RectComponent({x,y,64,64},*this)), *(new AnimationComponent(portalAnime,*this)))
+Gate::Gate(std::shared_ptr<Room>& level_, std::shared_ptr<Room>& next, int x, int y) : Object(*(new ClickableComponent("Gate",*this)),*(new RectComponent({x,y,64,64},*this)), *(new AnimationComponent(portalAnime,*this)))
 {
-    addComponent(*(new NextAreaComponent(level, *this)));
+    addComponent(*(new NextAreaComponent(level_,next, *this)));
     addComponent(*(new TangibleComponent([](Entity* entity){
-                                         return entity->getComponent<Map::Gate::NextAreaComponent>()->getLevel()->finishedLevel();
+                                         return entity->getComponent<Gate::NextAreaComponent>()->getLevel()->finishedLevel();
                                          },*this)));
    // getClickable().addButton(*(new NextAreaButton()));
 }
 
-Map::Gate::~Gate()
+Gate::~Gate()
 {
 
 }
 
+Level::Level(int roomNum)
+{
+    for (int i = 0; i < roomNum; ++i)
+    {
+        rooms.emplace_back(Room::generateLevel());
+    }
+    for (int i =0; i< roomNum - 1; ++i)
+    {
+        rooms[i]->addUnit(*(new Gate(rooms[i],rooms[i+1],Room::chunkDimen/2,Room::chunkDimen/2)),true);
+    }
+    setCurrentRoom(rooms[0].get());
+}
 
+Level::Level() : Level(4)
+{
 
+}
+
+Room* Level::getCurrentRoom()
+{
+    return currentRoom;
+}
+
+void Level::setCurrentRoom(Room* room)
+{
+    currentRoom = room;
+}
+
+bool Level::getCompleted()
+{
+    return completed;
+}
+
+void Level::setCompleted(bool comp)
+{
+    completed = comp;
+}
 

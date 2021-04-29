@@ -1,5 +1,5 @@
-#ifndef WORLDMAP_H_INCLUDED
-#define WORLDMAP_H_INCLUDED
+#ifndef WORLDRoom_H_INCLUDED
+#define WORLDRoom_H_INCLUDED
 
 #include "glInterface.h"
 
@@ -43,33 +43,33 @@ class WorldMapWindow : public Window
     {
         LevelButton* prev = nullptr, *next = nullptr;
         WorldMapWindow* window = nullptr;
-        Map* level = nullptr;
+        Level* level = nullptr;
     public:
-        LevelButton(LevelButton* prev_, LevelButton* next_,WorldMapWindow& window, Map& level, const glm::vec4& rect);
+        LevelButton(LevelButton* prev_, LevelButton* next_,WorldMapWindow& window, Level& level, const glm::vec4& rect);
         void setNext(LevelButton* next_);
         void press();
         void update(float x, float y, float z,const glm::vec4& blit);
     };
 
     int planetPlanetDistance; //distance between each planet
-    std::unordered_map<Map*,std::shared_ptr<Map>> levels;
-    Map* currentLevel = nullptr;
-    void setCurrentLevel(Map& level);
-    LevelButton* addLevel(Map& level, LevelButton* prev, LevelButton* next); //generates a levelbutton given a map and adds it to the panels. Returns the levelButton generated
+    std::unordered_map<Level*,std::shared_ptr<Level>> levels;
+    Level* currentLevel = nullptr;
+    void setCurrentLevel(Level& level);
+    LevelButton* addLevel(Level& level, LevelButton* prev, LevelButton* next); //generates a levelbutton given a Room and adds it to the panels. Returns the levelButton generated
     void switchToGame(); //called when switching to the gamewindow
     MouseCamera camera;
 public:
     WorldMapWindow();
     LevelButton* generate(int count = -1, LevelButton* start = nullptr, LevelButton* end = nullptr); //generates count levelButtons and levels. If count is -1, will generate a random # of levels. The first level generated will have start as its prev and the last level generated will have end as its end. Returns the first levelButton generated
     void update(float x,float y, float z, const glm::vec4& blit);
-    Map* getCurrentLevel();
+    Level* getCurrentLevel();
     int getPlanetPlanetDistance();
     const MouseCamera& getCamera();
     class WorldSwitchToGame : public CondSwitchButton
     {
-        WorldMapWindow* worldMap =nullptr;
+        WorldMapWindow* worldRoom =nullptr;
     public:
-        WorldSwitchToGame(const glm::vec4& box, Interface& interface, Window& to, WorldMapWindow& worldMap);
+        WorldSwitchToGame(const glm::vec4& box, Interface& interface, Window& to, WorldMapWindow& worldRoom);
         bool doSwitch();
         void press();
     };
@@ -77,4 +77,4 @@ public:
     friend WorldSwitchToGame;
 };
 
-#endif // WORLDMAP_H_INCLUDED
+#endif // WORLDRoom_H_INCLUDED

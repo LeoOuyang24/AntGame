@@ -86,7 +86,10 @@ void Debug::DebugGameWindow::update()
         if (!Debug::spawnCreatures)
         {
             on = "OFF";
-            GameWindow::getLevel()->clearEnemies();
+            if (Room* curRoom = GameWindow::getLevel()->getCurrentRoom())
+            {
+                curRoom->clearEnemies();
+            }
         }
 
         fastPrint("Spawning creature status turned " + on + "\n");
@@ -106,9 +109,9 @@ Debug::Debug()
 
 void Debug::init()
 {
-    if (GameWindow::getLevel())
+    if (GameWindow::getLevel() && GameWindow::getLevel()->getCurrentRoom())
     {
-        meshDB.mesh = &(GameWindow::getLevel()->getMesh());
+        meshDB.mesh = &(GameWindow::getLevel()->getCurrentRoom()->getMesh());
     }
 }
 

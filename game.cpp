@@ -25,7 +25,7 @@ void Manager::init(const glm::vec4& region)
 
 void Manager::updateEntities()
 {
-    Map* level = (GameWindow::getLevel());
+    Room* level = (GameWindow::getLevel()->getCurrentRoom());
     glm::vec4 levelRect = level->getRect();
     ObjectStorage* entities = &(level->getEntities());
     RawQuadTree* tree = level->getTree();
@@ -65,7 +65,8 @@ void Manager::updateEntities()
                     for (int j = vec.size() - 1; j >= 0; j --)
                     {
                         Entity* ptr = &(((RectComponent*)vec[j])->getEntity());
-                        if ( ptr != i->first && (!static_cast<Object*>(ptr)->getDead()) && vec[j]->collides(rectPos->getRect()))
+                        TangibleComponent* tang = ptr->getComponent<TangibleComponent>();
+                        if ( ptr != i->first && (!tang || tang->getTangible()) && (!static_cast<Object*>(ptr)->getDead()) && vec[j]->collides(rectPos->getRect()))
                         {
                             i->second->collide(*ptr);
                             ptr->collide(*(i->second.get()));
@@ -94,17 +95,6 @@ void Manager::updateEntities()
             level->remove(*(current));
         }
         index ++;
-    }
-    if (clicked)
-    {
-        if (!newSelected)
-        {
-            selectedUnit.reset();
-        }
-        else
-        {
-            selectedUnit = entities->at(newSelected);
-        }
     }
 }
 
@@ -252,8 +242,9 @@ Camera::~Camera()
 
 float GameWindow::menuHeight = 1; //is set in the GameWindow constructor
 Camera GameWindow::camera;
+std::weak_ptr<Room> GameWindow::upcomingRoom;
 Manager GameWindow::manager;
-std::weak_ptr<Map> GameWindow::level;
+std::weak_ptr<Level> GameWindow::level;
 Debug GameWindow::debug;
 Window* GameWindow::gameOver = nullptr;
 GameWindow* GameWindow::actualWindow = nullptr;
@@ -287,16 +278,15 @@ void GameWindow::onSwitch(Window& from)
 {
     camera.resetZoom();
     glm::vec2 screenDimen = RenderProgram::getScreenDimen();
-    Map* levelPtr = level.lock().get();
+    Room* levelPtr = level.lock().get()->getCurrentRoom();
     if (levelPtr)
     {
         glm::vec4 levelRect = levelPtr->getRect();
-        camera.setBounds({levelRect.x,levelRect.y,levelRect.z,levelRect.a + menuHeight});
+        camera.setBounds(levelRect);
         camera.center({levelRect.z/2,levelRect.a/2});
         levelPtr->addUnit(*player.getPlayer(),levelRect.z/2,levelRect.a/2,true);
-        gameOver = new Window({screenDimen.x/10, screenDimen.y/10},nullptr, {1,0,0,1});
-        gameOver->addPanel(*(new QuitButton(*this)));
-        manager.init(levelPtr->getRect());
+      //  gameOver = new Window({screenDimen.x/10, screenDimen.y/10},nullptr, {1,0,0,1});
+       // gameOver->addPanel(*(new QuitButton(*this)));
         //levelPtr->addUnit(*(playerAssembler.assemble()),levelRect.z/2 + 100,levelRect.a/2 + 100,true);
     }
     debug.init();
@@ -313,24 +303,15 @@ void GameWindow::updateTop(float z)
     else */if (KeyManager::getJustPressed() == SDLK_n)
     {
         //level.nextLevel();
-        level.lock().get()->setChangeLevel(true);
     }
     else
     {
         renderAbsolute = false;
         camera.update();
 
-        int size = labels.size();
-        for (int i = 0; i < size; ++i)
-        {
-            if (!labels[i]->isDead())
-            {
-                labels[i]->update();
-            }
-        }
 
         debug.update();
-        level.lock().get()->update();
+        level.lock().get()->getCurrentRoom()->update();
         manager.update();
         renderAbsolute = true;
     // std::cout << camera.getRect().x << " " << camera.getRect().x + camera.getRect().z << std::endl;
@@ -339,12 +320,17 @@ void GameWindow::updateTop(float z)
         player.renderUI();
         //renderSelectedUnits();
 
-        if (level.lock().get()->getChangeLevel())
+        /*if (level.lock().get()->getChangeLevel())
         {
-            switchToMap->press();
-        }
+            switchToRoom->press();
+        }*/
 
         Window::updateTop(z);
+        if (upcomingRoom.lock().get())
+        {
+            level.lock().get()->setCurrentRoom(upcomingRoom.lock().get());
+            upcomingRoom.reset();
+        }
                 //camera.goBack();
         //requestRect({0,0,320,320},{1,0,1,1},true,0,1,1);
 
@@ -416,14 +402,27 @@ const Manager& GameWindow::getManager()
 {
     return manager;
 }
-Map* GameWindow::getLevel()
+Level* GameWindow::getLevel()
 {
     return level.lock().get();
 }
 
-void GameWindow::setLevel(std::shared_ptr<Map>& map)
+Room* GameWindow::getRoom()
 {
-    level = map;
+    auto lev = getLevel();
+    if (lev && lev->getCurrentRoom())
+    {
+        return lev->getCurrentRoom();
+    }
+    else
+    {
+        throw std::logic_error("Null level or current room!");
+    }
+}
+
+void GameWindow::setLevel(std::shared_ptr<Level>& level_)
+{
+    level = level_;
 }
 
 Player& GameWindow::getPlayer()
@@ -439,6 +438,11 @@ FogMaker& GameWindow::getFogMaker()
 void GameWindow::setWorldMap(WindowSwitchButton& butt)
 {
     switchToMap = &butt;
+}
+
+void GameWindow::setCurrentRoom(const std::shared_ptr<Room>& next)
+{
+    upcomingRoom = next;
 }
 
 void GameWindow::staticAddPanel(Panel& panel, bool absolute)

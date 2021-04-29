@@ -69,9 +69,12 @@ public:
     Object* assemble();
 };
 
-struct Map
+struct Room
 {
-    Map(const glm::vec4& rect);
+    constexpr static int chunkDimen = 1500;
+    constexpr static int maxObjectSize = 100; //the longest any one dimension of an entity can be
+    const int tileDimen = 125; //size of the tiles for rendering the background
+    Room(const glm::vec4& rect);
     void init(const glm::vec4& region);
     void nextLevel();
 
@@ -94,43 +97,55 @@ struct Map
     void setChangeLevel(bool l);
     bool getChangeLevel();
     bool finishedLevel(); //returns whether or not the portal should spawn and end the level
-    static Map* generateLevel(const glm::vec4& rect = {0,0,chunkDimen,chunkDimen}); //generates terrain and shards. Should only be called when mesh is not null.
-    ~Map();
+    static Room* generateLevel(const glm::vec4& rect = {0,0,chunkDimen,chunkDimen}); //generates terrain and shards
+    ~Room();
 
-    class Gate : public Object
-    {
-        class NextAreaComponent : public Component, public ComponentContainer<NextAreaComponent>
-        {
-            Map* level = nullptr;
-        public:
-            NextAreaComponent(Map& level_, Entity& entity);
-            Map* getLevel();
-            void collide(Entity& entity);
-        };
-    public:
-        Gate(Map& level, int x, int y);
-        ~Gate();
-    };
+
 private:
 
-    constexpr static int chunkDimen = 2500;
-    constexpr static int maxObjectSize = 100; //the longest any one dimension of an entity can be
-    const int tileDimen = 125;
+
     const static glm::vec4 playerArea; //area that walls can't spawn because the player's stuff will be there
-    bool changeLevel = false; //whether or not to changeLevel
     ObjectStorage entities;
     glm::vec4 rect;
     SPStorage<Terrain> terrain;
-  //  std::vector<std::shared_ptr<Label>> labels;
     std::shared_ptr<RawQuadTree> tree;
     std::list<std::pair<glm::vec2,SpriteWrapper*>> tiles;
     int foundShards = 0;
-
     friend class GameWindow;
   //  glm::vec4 rect = {0,0,0,0};
     std::shared_ptr<NavMesh> mesh;
 };
 
+class Gate : public Object
+{
+    class NextAreaComponent : public Component, public ComponentContainer<NextAreaComponent>
+    {
+        std::weak_ptr<Room> level;
+        std::weak_ptr<Room> next;
+    public:
+        NextAreaComponent(std::shared_ptr<Room>& level_, std::shared_ptr<Room>& next, Entity& entity);
+        Room* getLevel();
+        void collide(Entity& entity);
+    };
+public:
+    Gate(std::shared_ptr<Room>& level_, std::shared_ptr<Room>& next, int x, int y);
+    ~Gate();
+};
+
+typedef std::vector<std::shared_ptr<Room>> RoomStorage;
+class Level
+{
+    RoomStorage rooms;
+    Room* currentRoom;
+    bool completed = false;
+public:
+    Level(int roomNum);
+    Level(); //generate a random number of rooms
+    Room* getCurrentRoom();
+    void setCurrentRoom(Room* room);
+    bool getCompleted();
+    void setCompleted(bool comp);
+};
 
 
 #endif // WORLD_H_INCLUDED

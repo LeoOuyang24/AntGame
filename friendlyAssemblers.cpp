@@ -132,8 +132,7 @@ void HitboxAttack::doAttack(Object* attacker, const glm::vec2& pos)
         glm::vec2 newPos = center + glm::vec2(cos(angle)*(modData.range + rect->getRect().z/2), sin(angle)*(modData.range+ rect->getRect().a/2));
         if (!hitbox)
         {
-            hitbox = assembler->assemble(*attacker,newPos,newPos);
-            GameWindow::getLevel()->addUnit(*hitbox,assembler->friendly);
+            hitbox = GameWindow::getRoom()->addUnit(*assembler->assemble(*attacker,newPos,newPos),assembler->friendly);
         }
         HitboxAssembler::HitboxComponent* hit = hitbox->getComponent<HitboxAssembler::HitboxComponent>();
        // if (hit && !hit->getActive())
@@ -152,7 +151,13 @@ HitboxAttack::HitboxAttack(HitboxAssembler& ass, int endLag, double range, Anima
 
 }
 
-
+HitboxAttack::~HitboxAttack()
+{
+    if (hitbox)
+    {
+        hitbox->setDead(true);
+    }
+}
 
 HitboxAssembler::HitboxComponent::HitboxComponent( int duration, float damage, bool friendly, const glm::vec2& target,
                                                   const glm::vec4& rect,Object& entity, ProjectileComponent::ProjCollideFunc func) :
@@ -202,10 +207,6 @@ void HitboxAssembler::HitboxComponent::update()
         active = false;
 }
 
-HitboxAssembler::HitboxComponent::~HitboxComponent()
-{
-
-}
 
 UnitBucket allUnits; //vector of all units and structures
 UnitBucket allStructures;

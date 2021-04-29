@@ -131,7 +131,7 @@ void PlayerAssembler::PlayerControls::update()
             float angle = atan2(move.y,move.x);
             move = {cos(angle)*speed*DeltaTime::deltaTime,sin(angle)*speed*DeltaTime::deltaTime};
             glm::vec4 wall;
-            if ((wall = GameWindow::getLevel()->getMesh().getWallRect(rect + glm::vec4(move.x,0,0,0) )) != glm::vec4(0))
+            if ((wall = GameWindow::getRoom()->getMesh().getWallRect(rect + glm::vec4(move.x,0,0,0) )) != glm::vec4(0))
             {
                 if (rect.x < wall.x)
                 {
@@ -142,7 +142,7 @@ void PlayerAssembler::PlayerControls::update()
                     move.x = (wall.x + wall.z + 1) - rect.x;
                 }
             }
-            if ((wall = GameWindow::getLevel()->getMesh().getWallRect(rect + glm::vec4(0,move.y,0,0))) != glm::vec4(0))
+            if ((wall = GameWindow::getRoom()->getMesh().getWallRect(rect + glm::vec4(0,move.y,0,0))) != glm::vec4(0))
             {
                 if (rect.y < wall.y)
                 {

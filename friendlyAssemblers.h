@@ -60,7 +60,6 @@ class HitboxAssembler : public ProjectileAssembler //assembles a hitbox, which i
             void activate();
             void deactivate();
             void update();
-            ~HitboxComponent();
         };
         HitboxAssembler(int duration, float damage, std::string name, bool friendly, const glm::vec2& dimen, ProjectileComponent::ProjCollideFunc func);
         Object* assemble(Object& shooter, const glm::vec2& point, const glm::vec2& target);
@@ -69,11 +68,12 @@ class HitboxAssembler : public ProjectileAssembler //assembles a hitbox, which i
 
 class HitboxAttack : public ProjectileAttack
 {
-    Object* hitbox = nullptr;
+    std::shared_ptr<Object> hitbox;
 protected:
     virtual void doAttack(Object* attacker, const glm::vec2& target);
 public:
     HitboxAttack(HitboxAssembler& ass, int endLag, double range, AnimationWrapper* attackAnime_ = nullptr, AnimationSequencer* sequencer_ = nullptr);
+    ~HitboxAttack();
 };
 
 

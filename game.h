@@ -75,7 +75,8 @@ class GameWindow : public Window //the gamewindow is mostly static because most 
 
     static float menuHeight;
     static Camera camera;
-    static std::weak_ptr<Map> level;
+    static std::weak_ptr<Room> upcomingRoom;
+    static std::weak_ptr<Level> level;
     static Manager manager;
     static Window* gameOver;
     static GameWindow* actualWindow; //the singleton window
@@ -87,7 +88,7 @@ class GameWindow : public Window //the gamewindow is mostly static because most 
     static bool renderAbsolute; //whether or not to renderAbsolute
 
     ObjPtr anthill; //pointer to the anthill. Keeps track of whether or not the player has lost
-    WindowSwitchButton* switchToMap = nullptr; //button that swaps back to the world map
+    WindowSwitchButton* switchToMap = nullptr; //button that swaps back to the world Room
     std::vector<std::shared_ptr<SequenceUnit>> labels;
     struct QuitButton : public Button
     {
@@ -101,11 +102,13 @@ public:
     bool quit = false;
     static Camera& getCamera();
     static const Manager& getManager();
-    static Map* getLevel();
-    static void setLevel(std::shared_ptr<Map>& map);
+    static Level* getLevel();
+    static Room* getRoom(); //throws if either level or room is null. use getLevel()->getRoom(), if you don't want the error.
+    static void setLevel(std::shared_ptr<Level>& level_);
     static Player& getPlayer();
     static FogMaker& getFogMaker();
     void setWorldMap(WindowSwitchButton& butt);
+    static void setCurrentRoom(const std::shared_ptr<Room>& next); //sets level->currentRoom after next gameplay loop
     static void staticAddPanel(Panel& panel, bool absolute);
     static void requestNGon(int n, const glm::vec2& center, double side, const glm::vec4& color, double angle, bool filled, float z, bool absolute = false); //easier way to render polygons without having to call getCamera();
     static void requestRect(const glm::vec4& rect, const glm::vec4& color, bool filled, double angle, float z, bool absolute = false); //if absolute is true, the coordinates are taken as screen coordinates
