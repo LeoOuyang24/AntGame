@@ -7,6 +7,8 @@
 #include "components.h"
 #include "tiles.h"
 #include "friendlyAssemblers.h"
+#include "assemblerInit.h"
+#include "entities.h"
 
 class NavMesh;
 
@@ -74,6 +76,7 @@ struct Room
     constexpr static int chunkDimen = 1500;
     constexpr static int maxObjectSize = 100; //the longest any one dimension of an entity can be
     const int tileDimen = 125; //size of the tiles for rendering the background
+    UnitBucket* bucket =nullptr;
     Room(const glm::vec4& rect);
     void init(const glm::vec4& region);
     void nextLevel();

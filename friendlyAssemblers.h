@@ -3,6 +3,7 @@
 
 #include "entities.h"
 
+
 struct ObjectAssembler
 {
     AnimationWrapper* const sprite;
@@ -75,19 +76,5 @@ public:
     HitboxAttack(HitboxAssembler& ass, int endLag, double range, AnimationWrapper* attackAnime_ = nullptr, AnimationSequencer* sequencer_ = nullptr);
     ~HitboxAttack();
 };
-
-
-
-
-typedef std::vector<UnitAssembler*> UnitBucket;
-
-extern UnitBucket allUnits; //vector of all units and structures
-extern UnitBucket allStructures;
-extern UnitBucket allShopItems;
-
-void initAssemblers();
-
-UnitAssembler* getRandomAssembler(UnitBucket& bucket);
-void addUnitToBucket(UnitAssembler& ass, UnitBucket& bucket);
 
 #endif // FRIENDLYASSEMBLERS_H_INCLUDED

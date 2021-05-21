@@ -112,6 +112,8 @@
 		<Unit filename="ants.h">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
+		<Unit filename="assemblerInit.cpp" />
+		<Unit filename="assemblerInit.h" />
 		<Unit filename="creature.h">
 			<Option target="Release" />
 		</Unit>

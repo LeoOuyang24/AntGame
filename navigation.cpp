@@ -389,50 +389,16 @@ glm::vec4 NavMesh::validMove(const glm::vec4& start, const glm::vec2& displaceme
 {
     auto near = negativeTree.getNearest(start);
     auto end = near.end();
-    glm::vec4 bottomLine, topLine;
-    if (displacement.x < 0)
-    {
-        if (displacement.y < 0)
-        {
-            bottomLine = {start.x,start.y + start.a,start.x + displacement.x, start.y + start.a + displacement.y};
-            topLine = {start.x + start.z,start.y,start.x + start.z + displacement.x, start.y + displacement.y};
-        }
-        else
-        {
-            bottomLine = {start.x + start.z,start.y + start.a, start.x + start.z + displacement.x, start.y + start.a + displacement.y};
-            topLine = {start.x,start.y, start.x + displacement.x, start.y + displacement.y};
-        }
-    }
-    else
-    {
-        if (displacement.y < 0)
-        {
-            topLine =  {start.x,start.y, start.x + displacement.x, start.y + displacement.y};
-            bottomLine = {start.x + start.z,start.y + start.a, start.x + start.z + displacement.x, start.y + start.a + displacement.y};
-        }
-        else
-        {
-             bottomLine = {start.x,start.y + start.a,start.x + displacement.x, start.y + start.a + displacement.y};
-            topLine = {start.x + start.z,start.y,start.x + start.z + displacement.x, start.y + displacement.y};
-        }
-    }
     glm::vec4 finalRect = {start.x + displacement.x, start.y + displacement.y, start.z, start.a};
-    float minDist = std::max(bounds.z,bounds.a);
-    /*for (auto it = near.begin(); it != end; ++it)
+    //this section makes sure we never move out of the navmesh
+    if (displacement.y != 0)
     {
-        glm::vec4 wallRect = static_cast<RectPositional*>(*it)->getRect();
-        GameWindow::requestRect(wallRect,{1,1,0,1},true,0,9);
-        if ((*it)->collidesLine(topLine) || (*it)->collidesLine(bottomLine) || (*it)->collides(finalRect))
-        {
-            float dist = vecDistance(start,wallRect);
-            if (dist < minDist)
-            {
-                closestWall = wallRect;
-                minDist = dist;
-            }
-        }
-    }*/
-
+        finalRect.y = moveRect(start,{bounds.x,bounds.y + bounds.a*(convertTo1(displacement.y)),bounds.z,bounds.a},{0,displacement.y}).y;
+    }
+    if (displacement.x != 0)
+    {
+         finalRect.x = moveRect(start,{bounds.x + bounds.z*(convertTo1(displacement.x)),bounds.y,bounds.z,bounds.a},{displacement.x,0}).x;
+    }
     glm::vec4 closestWall;
     if ((closestWall = getWallRect({start.x+displacement.x,start.y,start.z, start.a})) != glm::vec4(0))
     {
@@ -443,12 +409,6 @@ glm::vec4 NavMesh::validMove(const glm::vec4& start, const glm::vec2& displaceme
         else
         {
             finalRect.x = closestWall.x + closestWall.z + 1;
-            if (vecIntersect(start,closestWall))
-            {
-             std::cout << "FInal: ";
-             printRect(start);
-            printRect(closestWall);
-            }
         }
     }
     if ((closestWall = getWallRect({start.x,displacement.y + start.y,start.z, start.a})) != glm::vec4(0))
@@ -463,8 +423,6 @@ glm::vec4 NavMesh::validMove(const glm::vec4& start, const glm::vec2& displaceme
         }
     }
 
-    GameWindow::requestRect(finalRect,{1,0,0,1},true,0,10);
-    GameWindow::requestRect(closestWall,{1,0,0,1},true,0,10);
     return finalRect;
 
 }

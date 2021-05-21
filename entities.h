@@ -84,7 +84,9 @@ class ObjectComponent : public Component, public ComponentContainer<ObjectCompon
     bool friendly = false; //whether or not the player can target the unit
     bool inactive = false; //whether or not to update this entity
 public:
-    ObjectComponent(bool dead_, bool movable_, bool friendly_, Entity& entity);
+    const std::string name= "";
+
+    ObjectComponent(std::string name_,bool dead_, bool movable_, bool friendly_, Entity& entity);
     bool getDead();
     bool getMovable();
     bool getFriendly();
@@ -335,6 +337,7 @@ class UnitAttackComponent : public ApproachComponent, public ComponentContainer<
     double searchRange = 0; //aggro range
     std::list<std::unique_ptr<Attack>> attacks;
     void processAttack(Attack& attack);
+    virtual void doPassive();
 public:
     UnitAttackComponent(double damage_, int endLag_, double range_,double searchRange_,bool f, Entity& entity);
     void addAttack(Attack& attack);

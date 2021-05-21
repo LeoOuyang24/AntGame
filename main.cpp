@@ -16,6 +16,8 @@
 #include "worldMap.h"
 #include "tiles.h"
 #include "animation.h"
+#include "enemyAssemblers.h"
+#include "assemblerInit.h"
 
 struct A
 {
@@ -102,6 +104,8 @@ int main(int args, char* argsc[])
 
             std::cout << "Time to setup everything before worldMap: " << SDL_GetTicks() << "\n";
 
+    initBuckets();
+
     WorldMapWindow worldMap;
     interface.switchCurrent(&worldMap);
     worldMap.generate();
@@ -116,6 +120,8 @@ int main(int args, char* argsc[])
     worldMap.addPanel(*(new WindowSwitchButton({100,100,100,100},nullptr,interface,shopWindow,{"Shop"},&Font::tnr,{1,1,1,1})),true);
 
     game.setWorldMap(*(new WindowSwitchButton({0,0,0,0},nullptr,interface,worldMap,{},nullptr,{0,0,0,0})));
+
+
    SpriteWrapper spr;
     spr.init("image.png");
     AnimationWrapper anime;

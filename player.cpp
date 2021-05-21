@@ -130,30 +130,10 @@ void PlayerAssembler::PlayerControls::update()
         {
             float angle = atan2(move.y,move.x);
             move = {cos(angle)*speed*DeltaTime::deltaTime,sin(angle)*speed*DeltaTime::deltaTime};
-            glm::vec4 wall;
-            if ((wall = GameWindow::getRoom()->getMesh().getWallRect(rect + glm::vec4(move.x,0,0,0) )) != glm::vec4(0))
-            {
-                if (rect.x < wall.x)
-                {
-                    move.x = wall.x - rect.z - rect.x - 1;
-                }
-                else
-                {
-                    move.x = (wall.x + wall.z + 1) - rect.x;
-                }
-            }
-            if ((wall = GameWindow::getRoom()->getMesh().getWallRect(rect + glm::vec4(0,move.y,0,0))) != glm::vec4(0))
-            {
-                if (rect.y < wall.y)
-                {
-                    move.y = wall.y - rect.a - rect.y - 1;
-                }
-                else
-                {
-                    move.y = wall.y + wall.a + 1 - rect.y;
-                }
-            }
-            setTarget(getCenter() + move);
+            glm::vec4 target = GameWindow::getLevel()->getCurrentRoom()->getMesh().validMove(rect,move);
+           // GameWindow::requestRect(target,{1,0,1,1},true,0,2);
+            setTarget({target.x + target.z/2, target.y + target.a/2});
+            //printRect(target);
         }
         else
         {
@@ -221,7 +201,7 @@ PlayerAssembler::PlayerAssembler() : UnitAssembler("Player",{25,47},playerAnime,
 Object* PlayerAssembler::assemble()
 {
     Unit* player = new Unit();
-    player->addObject(new ObjectComponent(false,movable,friendly,*player));
+    player->addObject(new ObjectComponent(name,false,movable,friendly,*player));
     player->addHealth(new PlayerHealth(*player,maxHealth));
     player->addRect(new PlayerControls(speed,{0,0,dimen.x,dimen.y},*player));
     player->addRender(new PlayerRender(&playerArm,{3,49},*sprite,*player));

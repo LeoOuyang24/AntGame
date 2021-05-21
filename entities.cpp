@@ -274,9 +274,9 @@ RectRenderComponent::~RectRenderComponent()
 
 }
 
-ObjectComponent::ObjectComponent(bool dead_, bool movable_, bool friendly_, Entity& entity) : Component(entity),
+ObjectComponent::ObjectComponent(std::string name_, bool dead_, bool movable_, bool friendly_, Entity& entity) : Component(entity),
                                                                                                 ComponentContainer<ObjectComponent>(entity),
-                                                                                                dead(dead_),movable(movable_),friendly(friendly_)
+                                                                                                name(name_), dead(dead_),movable(movable_),friendly(friendly_)
 {
 
 }
@@ -314,7 +314,7 @@ void ObjectComponent::setInactive(bool i)
     inactive = i;
 }
 Object::Object(ClickableComponent& click, RectComponent& rect_, RenderComponent& render_, bool mov) : Entity(),
- clickable(&click), rect(&rect_), render(&render_),    object(new ObjectComponent(false,mov,false,*this))
+ clickable(&click), rect(&rect_), render(&render_),    object(new ObjectComponent("Unamed",false,mov,false,*this))
 {
     addComponent(click);
     addComponent(rect_);
@@ -325,7 +325,7 @@ Object::Object(ClickableComponent& click, RectComponent& rect_, RenderComponent&
 
 Object::Object(std::string name, const glm::vec4& vec, AnimationWrapper* rapper, bool mov) : Entity(),
     clickable(new ClickableComponent(name, *this)), rect(new RectComponent(vec, *this)), render(new AnimationComponent(*rapper, *this)),
-    object(new ObjectComponent(false,mov,false,*this))
+    object(new ObjectComponent(name,false,mov,false,*this))
 {
     addComponent(*(clickable));
     addComponent(*(rect));
@@ -632,24 +632,22 @@ void EntityForces::update()
         glm::vec2 adjPos = move->getPos() + finalForce; //adjusted position in case we are being pushed into a wall
         glm::vec4 rect = move->getRect();
         NavMesh* mesh = &GameWindow::getLevel()->getCurrentRoom()->getMesh();
-        if (!pointInVec(curNodeRect,adjPos,0)) //we can try to save some time by keeping track of the last node that we were moved to and trying to see if the new point is in that node as well
+        bool inNode = !pointInVec(curNodeRect,adjPos,0) ; //if
+        if ((!vecContains({adjPos.x,adjPos.y,rect.z,rect.a},curNodeRect))) //if we are completely contained in the same node as last frame,no real reason to do anything
             {
-                curNodeRect = mesh->getNearestNodeRect(adjPos);
+                if (!pointInVec(curNodeRect,adjPos)) //if we have moved to a different node, update the curNodeRect
+                {
+                    curNodeRect = mesh->getNearestNodeRect(adjPos);
+                }
+
+                glm::vec4 newRect = mesh->validMove(rect,finalForce);
+                if (newRect.x != adjPos.x || newRect.y != adjPos.y) //if there was a wall in our way
+                {
+                    forces.clear(); //clear our forces
+                }
+                adjPos = {newRect.x,newRect.y};
+
             }
-        if (curNodeRect == glm::vec4(0)) //should never happen, but may happen if we are moved out of bounds
-        {
-            std::cerr << "attempted to move entity outside of world boundaries to point " << adjPos.x << " "<< adjPos.y <<"\n";
-            throw std::logic_error("attempted to move entity outside of world boundaries");
-        }
-        else if (!vecContains({adjPos.x,adjPos.y,rect.z,rect.a},curNodeRect)) //there is a possibility of being moved into a wall
-        {
-            glm::vec4 newRect = mesh->validMove(rect,finalForce);
-            if (newRect.x != adjPos.x || newRect.y != adjPos.y) //if there was a wall in our way
-            {
-                forces.clear(); //clear our forces
-            }
-           adjPos = {newRect.x,newRect.y};
-        }
         move->setPos(adjPos);
         finalForce = glm::vec2(0);
     }
@@ -702,7 +700,8 @@ void PathComponent::setTarget(const glm::vec2& point)
         {
             NavMesh* mesh = &(GameWindow::getLevel()->getCurrentRoom()->getMesh());
             auto time = SDL_GetTicks();
-            path = mesh->getPath(getCenter(),point, entity->getComponent<RectComponent>()->getRect().z/2*sqrt(2));
+            path = mesh->getPath(getCenter(),point, std::max(entity->getComponent<RectComponent>()->getRect().z,
+                                                             entity->getComponent<RectComponent>()->getRect().a)/2*sqrt(2));
            // std::cout << SDL_GetTicks() - time << std::endl;
             if (path.size() > 0)
             {
@@ -1032,12 +1031,18 @@ void UnitAttackComponent::processAttack(Attack& attack)
     if (attack.canAttack(obj,target))
     {
         ImgParameter param = attack.attack(obj,target->getCenter());
+
         UnitAnimationComponent* anime = entity->getComponent<UnitAnimationComponent>();
         if (anime && attack.getAnimation())
         {
             anime->request(*attack.getAnimation(),param.first,param.second);
         }
     }
+}
+
+void UnitAttackComponent::doPassive()
+{
+    //GameWindow::getLevel()->getCurrentRoom()->getMesh().get
 }
 
 UnitAttackComponent::UnitAttackComponent(double damage_, int endLag_, double range_,double searchRange_, bool f, Entity& entity) : ApproachComponent(entity),
@@ -1058,18 +1063,24 @@ void UnitAttackComponent::update()
     Room* level = GameWindow::getLevel()->getCurrentRoom();
     if (!ent && level) //if we aren't already fighting something, find something nearby
     {
-        Object* nearby = findNearestUnit<HealthComponent>(searchRange,notFriendly,*(level->getTree()));
+        /*Object* nearby = findNearestUnit<HealthComponent>(searchRange,notFriendly,*(level->getTree()));
         if (nearby)
         {
             ApproachComponent::setTarget(level->getUnit(nearby));
-        }
+        }*/
+        ApproachComponent::setTarget(level->getUnit(GameWindow::getPlayer().getPlayer()));
     }
     if (ent && level) //don't use else if because there's a chance that both ifs can trigger
     {
         for (auto it = attacks.begin();it != attacks.end(); ++it)
         {
-            processAttack(**it);
+            processAttack((*(*it).get()));
         }
+
+    }
+    else if (level) //if ent is still null, wander around
+    {
+        doPassive();
     }
 
     ApproachComponent::update();

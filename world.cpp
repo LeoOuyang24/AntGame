@@ -98,6 +98,7 @@ Room::Room(const glm::vec4& rect) : rect(rect)
 void Room::init(const glm::vec4& region)
 {
    // rect = region;
+    bucket = &grassEnemies;
     nextLevel();
     tree.reset(new RawQuadTree(region));
     for (int i = 0; i < chunkDimen/tileDimen; ++i)
@@ -191,8 +192,11 @@ void Room::moveObject(Object& obj, double x, double y)
 
 UnitAssembler& Room::generateCreature()
 {
-    int random = rand()%5;
-    return evilMoonAssembler;
+    if (bucket)
+    {
+        return *getRandomAssembler(*bucket);
+    }
+    throw std::logic_error("Room::generateCreature: bucket is null!");
 }
 
 void Room::spawnCreature()
@@ -394,14 +398,14 @@ Room* Room::generateLevel(const glm::vec4& levelRect) // Doesn't generate terrai
         }
     }
 
-    int rando = 1;
+    int rando = 10;
     for (int i = 0; i < rando; ++i)
     {
-        //chunk->spawnCreature();
+        chunk->spawnCreature();
     }
     //chunk->addUnit(*(attackAnt.assemble()),chunkDimen/2 - 100,chunkDimen/2,false);
     //chunk->addUnit(*(turtFrog.assemble()),chunkDimen/2 + 100,chunkDimen/2,false);
-    chunk->addUnit(*(dinosaur.assemble()),chunkDimen/2 + 100,chunkDimen/2 + 10,false);
+    //chunk->addUnit(*(dinosaur.assemble()),chunkDimen/2 + 100,chunkDimen/2 + 10,false);
     //chunk->addUnit(*(new Gate(*chunk,chunkDimen/2,chunkDimen/2)),true);
     return chunk;
 }

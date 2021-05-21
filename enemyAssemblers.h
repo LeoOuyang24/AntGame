@@ -74,8 +74,5 @@ public:
     Object* assemble();
 };
 
-extern EvilMoonAssembler evilMoonAssembler;
-extern TurtFrog turtFrog;
-extern AttackAnt attackAnt;
-extern Dinosaur dinosaur;
+
 #endif // ENEMYASSEMBLERS_H_INCLUDED

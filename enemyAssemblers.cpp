@@ -24,6 +24,7 @@ AnimationSequencer TurtFrog::TurtFrogAttack::turtFrogAttackSequencer({
 
 void TurtFrog::TurtFrogAttack::doAttack(Object* attacker, const glm::vec2& pos)
 {
+
     attacker->getComponent<MoveComponent>()->setSpeed(0);
     if (sequencer->getStateIndex(startAttack) == 2)
     {
@@ -48,7 +49,7 @@ bool TurtFrog::TurtFrogAttack::canAttack(Object* owner, Object* ptr)
 
 TurtFrog::TurtFrog() : UnitAssembler("TurtFrog",{100,100},turtFrogWalk,true,100,.05,false)
 {
-
+  //  addUnitToBucket(*this,grassEnemies);
 }
 
 Object* TurtFrog::assemble()
@@ -86,6 +87,7 @@ AttackAnt::AttackAntAttack::AttackAntAttack() : ProjectileAttack(antProjectile,3
 
 AttackAnt::AttackAnt() : UnitAssembler("Attack Ant",{60,30},attackAntAnime,true,20,.1,false)
 {
+    //addUnitToBucket(*this,grassEnemies);
 
 }
 
@@ -148,7 +150,7 @@ Dinosaur::DinosaurAttack::DinosaurAttack() : HitboxAttack(dinoHitbox,1000,0,&din
 
 Dinosaur::Dinosaur() : UnitAssembler("Dinosaur",{87,58},dinosaurAnime,false,5,.2,false)
 {
-
+    //addUnitToBucket(*this,grassEnemies);
 }
 Object* Dinosaur::assemble()
 {
@@ -158,8 +160,5 @@ Object* Dinosaur::assemble()
     return ent;
 }
 
-EvilMoonAssembler evilMoonAssembler;
-TurtFrog turtFrog;
-AttackAnt attackAnt;
-Dinosaur dinosaur;
+//UnitBucket grassEnemies;
 //AttackAnt::AntProjectile antProjectile;

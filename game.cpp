@@ -57,6 +57,7 @@ void Manager::updateEntities()
             InactiveComponent* inactive = current->getComponent<InactiveComponent>();
             if (!inactive || inactive->done())
             {
+
                 current->update();
                 if (vecIntersect(rectPos->getRect(),levelRect))
                 {
@@ -311,8 +312,11 @@ void GameWindow::updateTop(float z)
 
 
         debug.update();
+       // std::cout << "LEvel\n";
         level.lock().get()->getCurrentRoom()->update();
+       // std::cout <<"Manager\n";
         manager.update();
+        //std::cout <<"Post Manager\n";
         renderAbsolute = true;
     // std::cout << camera.getRect().x << " " << camera.getRect().x + camera.getRect().z << std::endl;
        // camera.reserveZoom();

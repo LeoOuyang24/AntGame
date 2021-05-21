@@ -206,7 +206,7 @@ void WorldMapWindow::switchToGame()
 }
 
 
-WorldMapWindow::WorldMapWindow() : Window({0,0,10000,10000},nullptr,{0,0,1,1})
+WorldMapWindow::WorldMapWindow() : Window({0,0,1000,1000},nullptr,{0,0,1,1})
 {
     camera.init(RenderProgram::getScreenDimen().x,RenderProgram::getScreenDimen().y,rect);
     setCamera(&camera);
