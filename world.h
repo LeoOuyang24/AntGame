@@ -97,8 +97,6 @@ struct Room
     const glm::vec4& getRect();
     RawQuadTree* getTree();
     void reset();
-    void setChangeLevel(bool l);
-    bool getChangeLevel();
     bool finishedLevel(); //returns whether or not the portal should spawn and end the level
     static Room* generateLevel(const glm::vec4& rect = {0,0,chunkDimen,chunkDimen}); //generates terrain and shards
     ~Room();
@@ -119,21 +117,6 @@ private:
     std::shared_ptr<NavMesh> mesh;
 };
 
-class Gate : public Object
-{
-    class NextAreaComponent : public Component, public ComponentContainer<NextAreaComponent>
-    {
-        std::weak_ptr<Room> level;
-        std::weak_ptr<Room> next;
-    public:
-        NextAreaComponent(std::shared_ptr<Room>& level_, std::shared_ptr<Room>& next, Entity& entity);
-        Room* getLevel();
-        void collide(Entity& entity);
-    };
-public:
-    Gate(std::shared_ptr<Room>& level_, std::shared_ptr<Room>& next, int x, int y);
-    ~Gate();
-};
 
 typedef std::vector<std::shared_ptr<Room>> RoomStorage;
 class Level
@@ -148,7 +131,33 @@ public:
     void setCurrentRoom(Room* room);
     bool getCompleted();
     void setCompleted(bool comp);
+    bool getAllCompleted(); //returns true if all rooms are completed
 };
 
 
+class Gate : public Object
+{
+    class NextAreaComponent : public Component, public ComponentContainer<NextAreaComponent>
+    {
+        std::weak_ptr<Room> room;
+        std::weak_ptr<Room> next;
+        Level* level = nullptr; //raw pointer because levels should always outlive any gates in the level
+    public:
+        NextAreaComponent(std::shared_ptr<Room>& room_, std::shared_ptr<Room>& next, Entity& entity);
+        NextAreaComponent(std::shared_ptr<Room>& room_, Level& level_, Entity& entity);
+        Room* getRoom();
+        Level* getLevel();
+        void collide(Entity& entity);
+    };
+    class GateRender : public AnimationComponent
+    {
+    public:
+        GateRender(Entity& entity);
+        void update();
+    };
+public:
+    Gate(std::shared_ptr<Room>& room_, std::shared_ptr<Room>& next, int x, int y);
+    Gate(std::shared_ptr<Room>& room_,Level& level_, int x, int y);
+    ~Gate();
+};
 #endif // WORLD_H_INCLUDED

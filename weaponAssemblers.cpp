@@ -104,7 +104,7 @@ PistolAssembler::PistolSpecialAttack::PistolSpecialAttack() : ProjectileAttack(b
 
 }
 
-PistolAssembler::PistolBulletAssembler::PistolBulletAssembler() : ProjectileAssembler(1,"Pistol Bullet",{50,50},tankRocketAnime,1,true)
+PistolAssembler::PistolBulletAssembler::PistolBulletAssembler() : ProjectileAssembler(10,"Pistol Bullet",{50,50},tankRocketAnime,1,true)
 {
 
 }

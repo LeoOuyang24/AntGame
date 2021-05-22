@@ -204,7 +204,7 @@ void Room::spawnCreature()
     UnitAssembler* toSpawn = &generateCreature();
   //  const glm::vec4* camera = &(GameWindow::getCamera().getRect());
     glm::vec2 entityRect = (toSpawn->dimen);
-    auto area = getMesh().getRandomArea({rect.x + rect.z/2, rect.y + rect.a/2}, 0, std::min(rect.z/2,rect.a/2));
+    auto area = getMesh().getRandomArea({rect.x + rect.z/2, rect.y + rect.a/2}, playerArea.z, std::min(rect.z/2,rect.a/2));
     if (area.z - entityRect.x > 0 && area.a - entityRect.y > 0) //if we have enough space
     {
         int x = rand()%((int)(area.z -  entityRect.x)) + area.x; //we want to make sure our object spawns outside of the camera's view and doesn't spawn partially out of the Room
@@ -296,12 +296,16 @@ bool Room::finishedLevel()
      bool noEnemies = true;
     for (auto it = entities.begin(); it != entities.end(); ++it)
     {
-        if (!it->first->getFriendly())
+            //a room is complete if it has no enemies left. An enemy in this case is any entity that is:
+        if (!it->first->getFriendly() && //not friendly,
+            (!it->first->getComponent<TangibleComponent>() ||it->first->getComponent<TangibleComponent>()->getTangible()) && //doesn't have a tangible component or is tangible,
+            !it->first->getComponent<ProjectileComponent>()) //and is not a projectile
         {
             noEnemies = false;
             break;
         }
     }
+
     return  noEnemies;
 }
 
@@ -398,7 +402,7 @@ Room* Room::generateLevel(const glm::vec4& levelRect) // Doesn't generate terrai
         }
     }
 
-    int rando = 10;
+    int rando = 3;
     for (int i = 0; i < rando; ++i)
     {
         chunk->spawnCreature();
@@ -415,42 +419,6 @@ Room::~Room()
 
 }
 
-Gate::NextAreaComponent::NextAreaComponent(std::shared_ptr<Room>& level_, std::shared_ptr<Room>& next_, Entity& entity) : Component(entity), ComponentContainer<NextAreaComponent>(&entity), level(level_), next(next_)
-{
-
-}
-
-Room* Gate::NextAreaComponent::getLevel()
-{
-    return level.lock().get();
-}
-
-void Gate::NextAreaComponent::collide(Entity& entity)
-{
-    if (&entity == GameWindow::getPlayer().getPlayer() && level.lock().get() && KeyManager::getJustPressed() == SDLK_e)
-    {
-        if (next.lock().get())
-        {
-            GameWindow::setCurrentRoom(next.lock());
-            next.lock().get()->addUnit(*GameWindow::getPlayer().getPlayer(),Room::chunkDimen/2,Room::chunkDimen/2,true); //REMOVE THIs LATER
-        }
-        GameWindow::getPlayer().addGold(10);
-    }
-}
-
-Gate::Gate(std::shared_ptr<Room>& level_, std::shared_ptr<Room>& next, int x, int y) : Object(*(new ClickableComponent("Gate",*this)),*(new RectComponent({x,y,64,64},*this)), *(new AnimationComponent(portalAnime,*this)))
-{
-    addComponent(*(new NextAreaComponent(level_,next, *this)));
-    addComponent(*(new TangibleComponent([](Entity* entity){
-                                         return entity->getComponent<Gate::NextAreaComponent>()->getLevel()->finishedLevel();
-                                         },*this)));
-   // getClickable().addButton(*(new NextAreaButton()));
-}
-
-Gate::~Gate()
-{
-
-}
 
 Level::Level(int roomNum)
 {
@@ -462,6 +430,7 @@ Level::Level(int roomNum)
     {
         rooms[i]->addUnit(*(new Gate(rooms[i],rooms[i+1],Room::chunkDimen/2,Room::chunkDimen/2)),true);
     }
+    rooms[roomNum-1]->addUnit(*(new Gate(rooms[roomNum-1],*this,Room::chunkDimen/2,Room::chunkDimen/2)),true);
     setCurrentRoom(rooms[0].get());
 }
 
@@ -490,3 +459,98 @@ void Level::setCompleted(bool comp)
     completed = comp;
 }
 
+bool Level::getAllCompleted()
+{
+    int size = rooms.size();
+    for (int i = 0; i < size; ++i)
+    {
+       if (!rooms[i]->finishedLevel())
+       {
+           return false;
+       }
+    }
+    return true;
+}
+
+Gate::NextAreaComponent::NextAreaComponent(std::shared_ptr<Room>& level_, std::shared_ptr<Room>& next_, Entity& entity) : Component(entity), ComponentContainer<NextAreaComponent>(&entity), room(level_), next(next_)
+{
+
+}
+
+Gate::NextAreaComponent::NextAreaComponent(std::shared_ptr<Room>& room_, Level& level_, Entity& entity) : Component(entity), ComponentContainer<NextAreaComponent>(entity), level(&level_), room(room_)
+{
+
+}
+
+Room* Gate::NextAreaComponent::getRoom()
+{
+    return room.lock().get();
+}
+
+Level* Gate::NextAreaComponent::getLevel()
+{
+    return level;
+}
+
+void Gate::NextAreaComponent::collide(Entity& entity)
+{
+    if (&entity == GameWindow::getPlayer().getPlayer() && KeyManager::getJustPressed() == SDLK_e)
+    {
+        if (next.lock().get())
+        {
+            GameWindow::setCurrentRoom(next.lock());
+            next.lock().get()->addUnit(*GameWindow::getPlayer().getPlayer(),Room::chunkDimen/2,Room::chunkDimen/2,true); //REMOVE THIs LATER
+        }
+        else if (level)
+        {
+            level->setCompleted(true);
+        }
+        GameWindow::getPlayer().addGold(10);
+    }
+}
+
+Gate::GateRender::GateRender(Entity& entity) : AnimationComponent(portalAnime,entity)
+{
+
+}
+
+void Gate::GateRender::update()
+{
+    Gate::NextAreaComponent* nextArea = nullptr;
+    if (sprite != &goldenPortalAnime && entity && (nextArea = entity->getComponent<Gate::NextAreaComponent>()))
+    {
+        if (nextArea->getLevel() && nextArea->getLevel()->getAllCompleted())
+        {
+            sprite = &goldenPortalAnime;
+        }
+    }
+    AnimationComponent::update();
+}
+
+Gate::Gate(std::shared_ptr<Room>& room_, std::shared_ptr<Room>& next, int x, int y) : Object(*(new ClickableComponent("Gate",*this)),
+                                                                                              *(new RectComponent({x,y,64,64},*this)),
+                                                                                              *(new AnimationComponent(portalAnime,*this)))
+{
+    setFriendly(true);
+    addComponent(*(new NextAreaComponent(room_,next, *this)));
+    addComponent(*(new TangibleComponent([](Entity* entity){
+                                         return entity->getComponent<Gate::NextAreaComponent>()->getRoom()->finishedLevel();
+                                         },*this)));
+   // getClickable().addButton(*(new NextAreaButton()));
+}
+
+Gate::Gate(std::shared_ptr<Room>& room_,Level& level,int x, int y) : Object(*(new ClickableComponent("Gate",*this)),
+                                              *(new RectComponent({x,y,64,64},*this)),
+                                              *(new GateRender(*this)))
+{
+    setFriendly(true);
+     addComponent(*(new NextAreaComponent(room_,level, *this)));
+    addComponent(*(new TangibleComponent([](Entity* entity){
+                                         return entity->getComponent<Gate::NextAreaComponent>()->getRoom()->finishedLevel();
+                                         },*this)));
+}
+
+Gate::~Gate()
+{
+
+}

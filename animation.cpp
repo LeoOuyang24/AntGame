@@ -52,6 +52,7 @@ AnimationWrapper radiation;
 
 
 AnimationWrapper portalAnime;
+AnimationWrapper goldenPortalAnime;
 
 
 void initSprites()
@@ -97,4 +98,5 @@ void initSprites()
     radiation.init(new BaseAnimation("sprites/radiation.png",0,1,1));
 
     portalAnime.init(new BaseAnimation("sprites/portal.png",.01,3,2));
+    goldenPortalAnime.init(new BaseAnimation("sprites/goldPortal.png",.01,3,2));
 }

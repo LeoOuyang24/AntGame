@@ -141,6 +141,7 @@ int main(int args, char* argsc[])
             if (e.type == SDL_QUIT)
             {
                 quit = true;
+                break;
             }
         }
         if (eventsEmpty)

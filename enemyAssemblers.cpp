@@ -47,7 +47,7 @@ bool TurtFrog::TurtFrogAttack::canAttack(Object* owner, Object* ptr)
     return Attack::canAttack(owner,ptr);
 }
 
-TurtFrog::TurtFrog() : UnitAssembler("TurtFrog",{100,100},turtFrogWalk,true,100,.05,false)
+TurtFrog::TurtFrog() : UnitAssembler("TurtFrog",{100,100},turtFrogWalk,true,10,.05,false)
 {
   //  addUnitToBucket(*this,grassEnemies);
 }

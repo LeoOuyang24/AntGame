@@ -324,10 +324,10 @@ void GameWindow::updateTop(float z)
         player.renderUI();
         //renderSelectedUnits();
 
-        /*if (level.lock().get()->getChangeLevel())
+        if (level.lock().get()->getCompleted())
         {
-            switchToRoom->press();
-        }*/
+            switchToMap->press();
+        }
 
         Window::updateTop(z);
         if (upcomingRoom.lock().get())

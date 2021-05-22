@@ -55,6 +55,7 @@ extern AnimationWrapper radiation;
 
 
 extern AnimationWrapper portalAnime;
+extern AnimationWrapper goldenPortalAnime;
 
 void initSprites();
 

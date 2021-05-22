@@ -48,6 +48,11 @@ ClickableComponent::ClickableComponent(std::string name, Entity& entity) : Compo
 
 }
 
+std::string ClickableComponent::getName()
+{
+    return name;
+}
+
 const glm::vec2 ClickableComponent::spacing = {10,5};
 
 void ClickableComponent::click(bool val)
@@ -314,7 +319,7 @@ void ObjectComponent::setInactive(bool i)
     inactive = i;
 }
 Object::Object(ClickableComponent& click, RectComponent& rect_, RenderComponent& render_, bool mov) : Entity(),
- clickable(&click), rect(&rect_), render(&render_),    object(new ObjectComponent("Unamed",false,mov,false,*this))
+ clickable(&click), rect(&rect_), render(&render_),    object(new ObjectComponent(click.getName(),false,mov,false,*this))
 {
     addComponent(click);
     addComponent(rect_);
@@ -820,7 +825,8 @@ void ApproachComponent::setTarget(const glm::vec2& target, std::shared_ptr<Objec
         else
         {
             targetUnit.reset();
-                move->setTarget(target);
+            glm::vec4 bounds = GameWindow::getLevel()->getCurrentRoom()->getRect() + glm::vec4(move->getRect().z/2,move->getRect().a/2,-1*(move->getRect().z),-1*(move->getRect().a));
+            move->setTarget({std::min(std::max(bounds.x,target.x),bounds.x + bounds.z), std::min(std::max(bounds.y,target.y),bounds.y + bounds.a)});
         }
     }
 }
@@ -1042,6 +1048,12 @@ void UnitAttackComponent::processAttack(Attack& attack)
 
 void UnitAttackComponent::doPassive()
 {
+    if (move && (move->atTarget() || move->getTarget() == (glm::vec2(move->getRect().z/2,move->getRect().a/2))))
+    {
+        const int radius = std::max(move->getRect().z,move->getRect().a); //wander radius;
+        float radians = rand()%360/180.0*M_PI;
+        ApproachComponent::setTarget(move->getCenter() + glm::vec2(cos(radians)*radius,sin(radians)*radius),nullptr);
+    }
     //GameWindow::getLevel()->getCurrentRoom()->getMesh().get
 }
 
@@ -1063,12 +1075,13 @@ void UnitAttackComponent::update()
     Room* level = GameWindow::getLevel()->getCurrentRoom();
     if (!ent && level) //if we aren't already fighting something, find something nearby
     {
-        /*Object* nearby = findNearestUnit<HealthComponent>(searchRange,notFriendly,*(level->getTree()));
+       /* Object* nearby = findNearestUnit<HealthComponent>(std::max(RenderProgram::getScreenDimen().x, RenderProgram::getScreenDimen().y)/2,notFriendly,*(level->getTree()));
         if (nearby)
         {
             ApproachComponent::setTarget(level->getUnit(nearby));
         }*/
         ApproachComponent::setTarget(level->getUnit(GameWindow::getPlayer().getPlayer()));
+       // doPassive();
     }
     if (ent && level) //don't use else if because there's a chance that both ifs can trigger
     {

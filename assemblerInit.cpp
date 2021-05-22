@@ -14,6 +14,12 @@ UnitAssembler* AssemblerWrapper<T>::getPtr()
 }
 
 template <typename T>
+UnitAssembler* StaticMount<T>::getPtr()
+{
+    return assembler.getPtr();
+}
+
+template <typename T>
 AssemblerWrapper<T>& getAssemblerWrapper()
 {
     if (!StaticMount<T>::assembler.ptr.get())

@@ -31,6 +31,7 @@ template <typename T>
 struct StaticMount //This class exists for the sole purpose of mounting a static Assemblers into the global definition for each assembler
 {
     static AssemblerWrapper<T> assembler;
+    static UnitAssembler* getPtr();
 };
 
 typedef std::vector<AssemblerParent*> UnitBucket; //we use a raw pointer because Assemblers are all just wrappers of static variables, which don't go out of scope until the program ends
