@@ -53,9 +53,10 @@ extern AnimationWrapper explosionAnime;
 extern AnimationWrapper fireBlastSprite;
 extern AnimationWrapper radiation;
 
-
 extern AnimationWrapper portalAnime;
 extern AnimationWrapper goldenPortalAnime;
+
+extern AnimationWrapper planetsAnime;
 
 void initSprites();
 

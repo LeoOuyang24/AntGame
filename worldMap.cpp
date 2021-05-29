@@ -123,16 +123,87 @@ void MouseCamera::update()
     }
 }
 
-WorldMapWindow::LevelButton::LevelButton(LevelButton* prev_, LevelButton* next_,WorldMapWindow& window, Level& level, const glm::vec4& rect) :
-                                                                                            Button(rect,nullptr,nullptr,{},nullptr,{1,1,0,1}),
-                                                                                            window(&window), level(&level), prev(prev_),next(next_)
+/*The way Levelbutton renders the planet sprite is by rendering a portion of the sprites/planets.png (planetsAnime)
+that corresponds to the right planet. spriteNum tells us which planet to render. Currently, which spriteNum corresponds
+to which portion is hard-coded. */
+
+void WorldMapWindow::LevelButton::setSprite()
 {
+    float width = 463.0;
+    float height = 375.0;
+    switch (spriteNum)
+    {
+        case 0: //cat planet
+            param.portion = {33/width,122/height,183/width,163/height};
+            break;
+        case 1: //top left blue planet
+            param.portion = {38/width,17/height,103/width,95/height};
+            break;
+        case 2: //skinny brown planet
+            param.portion = {169/width,16/height,83/width,97/height};
+            break;
+        case 3: //dark, green planet
+            param.portion = {287/width,14/height,108/width,108/height};
+            break;
+        case 4: //pink planet
+            param.portion = {226/width,125/height,90/width,90/height};
+            break;
+        case 5: //bottom left blue planet
+            param.portion = {278/width,218/height,148/width,140/height};
+            break;
+    }
+    rect.z = param.portion.z/param.portion.a*rect.a;
+    rect.a = param.portion.a/param.portion.z*rect.z;
+}
+
+WorldMapWindow::LevelButton::LevelButton(int prevs_, LevelButton* prev_,WorldMapWindow& window, Level& level, const glm::vec4& rect) :
+                                                                                            Button(rect,nullptr,&planetsAnime,{},nullptr,{1,1,0,1}),
+                                                                                            window(&window), level(&level), prev(prev_), prevs(prevs_)
+{
+    spriteNum = rand()%6;
 
 }
 
-void WorldMapWindow::LevelButton::setNext(LevelButton* next_)
+WorldMapWindow::LevelButton* WorldMapWindow::LevelButton::getLeft()
 {
-    this->next = next_;
+    return left;
+}
+
+WorldMapWindow::LevelButton* WorldMapWindow::LevelButton::getRight()
+{
+    return right;
+}
+
+void WorldMapWindow::LevelButton::addNext(LevelButton* next_)
+{
+    if (next_)
+    {
+
+        if (left) //if we already have a left, check if we got a new left or right
+        {
+            float y =next_->getRect().y;
+            if (y > left->getRect().y) //lower than left
+            {
+                if ((right && y > right->getRect().y) || !right) //no right or more right than current right
+                {
+                    right = next_;
+                }
+            }
+            else if (y == left->getRect().y)//as high if not higher than left
+            {
+                if (!right) //no right, so shift left to right. Note that if right is non-null, there is no way a value higher than left can be lower than right
+                {
+                    right = left;
+                }
+                left = next_;  //update left
+            }
+        }
+        else //left should always be filled before right
+        {
+            left= next_;
+        }
+        next.insert(next_);
+    }
 }
 
 void WorldMapWindow::LevelButton::press()
@@ -150,52 +221,73 @@ void WorldMapWindow::LevelButton::update(float x, float y, float z, const glm::v
         backgroundColor.g = 0;
         backgroundColor.b = 0;
     }
-    if (next)
+    if (next.size() > 0)
     {
-        int dotNumber = 4;
-        double minDist = window->getPlanetPlanetDistance()/dotNumber;
+        double dotDist = .05*window->getRect().z; //distance between each dot
         glm::vec2 center = {rect.x + rect.z/2, rect.y + rect.a/2};
-        float angle = atan2(next->getRect().y - rect.y,next->getRect().x - rect.x);
-        int framesPerDot = 120;
-        auto frame = SDL_GetTicks();
-        for (int i = 0; i < dotNumber; ++i)
+        auto end = next.end();
+        for (auto i = next.begin(); i != end; ++i)
         {
-            PolyRender::requestNGon(20,window->getCamera().toScreen({rect.x + (i+1)*minDist*cos(angle),rect.y + (i+1)*minDist*sin(angle)}),2,
-                                    {1,1,1,((frame%(dotNumber*framesPerDot))/framesPerDot == i)*((frame%framesPerDot) + 1)*(1.0/framesPerDot)},0,true,.01);
+            LevelButton* button = *i;
+            if (button)
+            {
+                const glm::vec4* buttonRect = &button->getRect();
+                glm::vec2 buttonCenter={buttonRect->x + buttonRect->z/2, buttonRect->y + buttonRect->a/2};
+                int dotNumber = pointDistance({rect.x,rect.y},{buttonRect->x,buttonRect->y})/dotDist;
+                //window->requestLine(glm::vec4(center,glm::vec2(button->getRect().x,button->getRect().y)),{0,1,0,1},1);
+                float angle = atan2(buttonRect->y - rect.y,buttonRect->x - rect.x);
+                glm::vec2 lineCenter ={(center.x + buttonCenter.x)/2, (center.y + buttonCenter.y)/2};
+                glm::vec2 dimen = {pointDistance(buttonCenter,center), 10};
+                window->requestRect({lineCenter.x - dimen.x/2,lineCenter.y -dimen.y/2, dimen.x,dimen.y},{1,1,1,1},true,angle,z - .1);
+            }
+
         }
+
     }
+    param.radians = cos(SDL_GetTicks()/5000.0 + 1000*spriteNum);
+    setSprite(); //param.portion gets wiped every time so we just reset it. <<< REFACTOR (inefficient?)
+
     //glm::vec2 point = window->getCamera().toScreen({x,y});
     Button::update(x,y,z,blit);
     //PolyRender::requestNGon(10,{x,y},10,{1,0,0,1},0,true,1);
 }
 
+std::unordered_set<WorldMapWindow::LevelButton*>& WorldMapWindow::LevelButton::getNext()
+{
+    return next;
+}
 
 void WorldMapWindow::setCurrentLevel(Level& level)
 {
     currentLevel = &level;
 }
 
-WorldMapWindow::LevelButton* WorldMapWindow::addLevel(Level& level,LevelButton* prev, LevelButton* next)
+WorldMapWindow::LevelButton* WorldMapWindow::addLevel(Level& level,LevelButton* prev)
 {
-    int width = 64;
-    int height = 64;
-    levels[&level] = std::shared_ptr<Level>(&level);
-    glm::vec2 screenDimen = RenderProgram::getScreenDimen();
-    glm::vec2 pos;
-    if (prev)
+    if (levels.find(&level) == levels.end())
     {
-        glm::vec4 prevRect = prev->getRect();
-        float angle = (rand()%90)*M_PI/180;
-        pos = {prevRect.x + prevRect.z/2 + cos(angle)*planetPlanetDistance,
-                prevRect.y + prevRect.a/2 + sin(angle)*planetPlanetDistance};
+        int width = 64;
+        int height = 64;
+        levels[&level] = std::shared_ptr<Level>(&level);
+        glm::vec2 screenDimen = RenderProgram::getScreenDimen();
+        glm::vec2 pos = {10,10};
+        auto butt = (new LevelButton(prev ? prev->prevs + 1: 0 //determine how many prevs based on prev88
+                                     ,prev,*this,level,{pos.x,pos.y,width,height}));
+        levelButtons[&level] = butt;
+        while (butt->prevs >= levelLayers.size())
+        {
+            levelLayers.push_back({});
+        }
+        levelLayers[butt->prevs].push_back(butt);
+        rerender = true;
+        addPanel(*butt);
+        if (!prev)
+        {
+            rootButton = butt;
+        }
+        return butt;
     }
-    else
-    {
-        pos = {10,10};
-    }
-    auto butt = (new LevelButton(prev,next,*this,level,{pos.x,pos.y,width,height}));
-    addPanel(*butt);
-    return butt;
+    return nullptr;
 }
 
 void WorldMapWindow::switchToGame()
@@ -205,8 +297,41 @@ void WorldMapWindow::switchToGame()
     currentLevel = nullptr;
 }
 
+void WorldMapWindow::buttonRerender()
+{
+    int layers = levelLayers.size();
+    for (int i = 0; i < layers; ++i)
+    {
+        int siblings = levelLayers[i].size();
+        for (int j = 0; j < siblings; ++j)
+        {
+            LevelButton* button = levelLayers[i][j];
+            glm::vec4 newRect = button->getRect();
+            int columnSpace = .1*rect.z; //space between each column
+            int vertSpace = (rect.a - siblings*newRect.a)/(siblings + 1); //vertical spacing between each level
+            int size = button->getNext().size();
+            newRect.x = columnSpace*(i + 1) + newRect.z*i;
+            newRect.y = rect.y + rect.a/2 + (j - siblings/2.0)*newRect.a + ((j + 1) - (siblings + 1)/2.0)*vertSpace;
+            button->changeRect(newRect);
+        }
+    }
+}
 
-WorldMapWindow::WorldMapWindow() : Window({0,0,1000,1000},nullptr,{0,0,1,1})
+void WorldMapWindow::clearLevels()
+{
+    rootButton = nullptr;
+    levels.clear();
+
+    auto end = levelButtons.end();
+    for (auto it = levelButtons.begin(); it != end; ++it)
+    {
+        removePanel(*(it->second));
+    }
+    levelButtons.clear();
+    levelLayers.clear();
+}
+
+WorldMapWindow::WorldMapWindow() : Window({0,0,2000,1500},nullptr,{0,0,1,1})
 {
     camera.init(RenderProgram::getScreenDimen().x,RenderProgram::getScreenDimen().y,rect);
     setCamera(&camera);
@@ -218,28 +343,54 @@ WorldMapWindow::LevelButton* WorldMapWindow::generate(int count, LevelButton* st
 {
     if (count < 0)
     {
-        return generate(rand()%6 + 3,start,end);
-    }
-    else if (count == 0)
-    {
-        return start;
+        return generate(rand()%2 + 3,start,end);
     }
     else
     {
-        Level* level = new Level();
-        auto butt = addLevel(*level,start,nullptr);
-        auto next = generate(count - 1,butt,end);
-        if (next != butt) //happens if count = 1
+        clearLevels();
+        auto root = addLevel(*(new Level()),nullptr); //initialize root
+        for (int layer = 0; layer < count; ++layer) //for each level layer
         {
-            butt->setNext(next);
+            int levelAmount = levelLayers[layer].size();
+            for (int level = 0; level < levelAmount; ++level) //for each level in each layer
+            {
+                int levelCount = (layer == 0) ?  5 : rand()%2 + 1 ; //generate 5 levels if start is null (level would therefore be the root)
+                for (int next = 0; next < levelCount; ++next) //for each level after each level in the layer
+                {
+                    if (next == 0 && rand()%3 == 0 && level > 0)
+                    {
+                        LevelButton* right = levelLayers[layer][level - 1]->getRight();
+                        levelLayers[layer][level]->addNext(right ? right : levelLayers[layer][level - 1]->getLeft());
+                    }
+                    else
+                    {
+                        Level* newLevel = new Level();
+                        LevelButton* butt = addLevel(*newLevel,levelLayers[layer][level]);//new currently generated level
+                        glm::vec4 newRect = butt->getRect();
+                        newRect.y = levels.size(); //we want addNext() to correctly set left and right, so we have to change the y value
+                                                    //this gets changed by rerender to a more visually appealing value later <<< REFACTOR (unintuitive)
+                        butt->changeRect(newRect);
+                        levelLayers[layer][level]->addNext(butt);
+                    }
+
+                }
+            }
         }
-        return butt;
+
+        rerender = true;
+        return root;
     }
 }
 
 void WorldMapWindow::update(float x, float y, float z, const glm::vec4& blit)
 {
     camera.update();
+    if (rerender)
+    {
+        buttonRerender();
+        rerender = false;
+    }
+    requestLine({rect.x,rect.y + rect.a/2,rect.z + rect.x,rect.y + rect.a/2},{1,0,0,1},z);
     Window::update(x,y,z,blit);
 }
 

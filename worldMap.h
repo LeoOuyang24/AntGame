@@ -1,6 +1,8 @@
 #ifndef WORLDRoom_H_INCLUDED
 #define WORLDRoom_H_INCLUDED
 
+#include <unordered_set>
+
 #include "glInterface.h"
 
 #include "world.h"
@@ -41,23 +43,37 @@ class WorldMapWindow : public Window
 {
     class LevelButton : public Button
     {
-        LevelButton* prev = nullptr, *next = nullptr;
+        LevelButton* prev;
+        std::unordered_set<LevelButton*> next;
         WorldMapWindow* window = nullptr;
         Level* level = nullptr;
+        int spriteNum= 0; //the planet sprite that this levelButton has
+        LevelButton* left = 0, *right =0; //left and right are perhaps misleading names; it's more like highest (left) vs lowest (right) child.
+        void setSprite(); //sets the planet's sprite portion so the correct planet sprite is rendered
     public:
-        LevelButton(LevelButton* prev_, LevelButton* next_,WorldMapWindow& window, Level& level, const glm::vec4& rect);
-        void setNext(LevelButton* next_);
+        const int prevs = 0; //number of levels precede this one.
+        LevelButton(int prevs_, LevelButton* prev_, WorldMapWindow& window, Level& level, const glm::vec4& rect);
+        LevelButton* getLeft(); //return read-only
+        LevelButton* getRight();
+        void addNext(LevelButton* next_);
         void press();
         void update(float x, float y, float z,const glm::vec4& blit);
+        std::unordered_set<LevelButton*>& getNext();
     };
 
     int planetPlanetDistance; //distance between each planet
     std::unordered_map<Level*,std::shared_ptr<Level>> levels;
+    std::unordered_map<Level*, LevelButton*> levelButtons;
+    std::vector<std::vector<LevelButton*>> levelLayers;
     Level* currentLevel = nullptr;
+    LevelButton* rootButton =nullptr; //pointer to the first level
     void setCurrentLevel(Level& level);
-    LevelButton* addLevel(Level& level, LevelButton* prev, LevelButton* next); //generates a levelbutton given a Room and adds it to the panels. Returns the levelButton generated
+    LevelButton* addLevel(Level& level, LevelButton* prev); //generates a levelbutton given a Room and adds it to the panels. Returns the levelButton generated
     void switchToGame(); //called when switching to the gamewindow
     MouseCamera camera;
+    bool rerender = false; //location of levelButtons have to be set when the render function is called. Rerender keeps track of if levelButton positions have changed since the last frame.
+    void buttonRerender(); //sets button positions to make it more visually appealing.
+    void clearLevels(); //sets root to null and empties all the levelButton storages
 public:
     WorldMapWindow();
     LevelButton* generate(int count = -1, LevelButton* start = nullptr, LevelButton* end = nullptr); //generates count levelButtons and levels. If count is -1, will generate a random # of levels. The first level generated will have start as its prev and the last level generated will have end as its end. Returns the first levelButton generated
