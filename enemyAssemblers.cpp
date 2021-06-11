@@ -66,7 +66,7 @@ AnimationSequencer AttackAnt::AttackAntAttack::attackAntAttackSequencer = Animat
                                                                                              {100,0}
                                                                                              });
 
-AttackAnt::AntProjectile::AntProjectile() : ProjectileAssembler(1,"Ant Projectile",{10,10},attackAntProjectile,1,false)
+AttackAnt::AntProjectile::AntProjectile() : ProjectileAssembler(1,"Ant Projectile",{10,10},attackAntProjectile,.1,false)
 {
 
 }

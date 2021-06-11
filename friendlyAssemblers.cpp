@@ -50,7 +50,7 @@ Unit* UnitAssembler::NPCUnitAssemble()
    ent->addRect(((new PathComponent(speed,{0,0,dimen.x,dimen.y},*ent))));
     ent->addRender((new UnitAnimationComponent(*sprite,*ent)));
     ent->addHealth(new HealthComponent(*ent,maxHealth));
-    ent->addObject(new ObjectComponent(name,false,movable,friendly,*ent));
+    ent->addObject(new ObjectComponent(name,false,movable,friendly,this,*ent));
    // ent->addComponent(*(new CommandableComponent(*ent)));
     ent->addComponent(*(new ForcesComponent(*ent)));
     return ent;
@@ -68,7 +68,7 @@ Object* ProjectileAssembler::assemble(Object& shooter, const glm::vec2& point, c
     obj->addRect(new ProjectileComponent(damage,friendly,target,speed,{point.x-dimen.x/2,point.y-dimen.y/2,dimen.x,dimen.y},*obj));
     obj->addRender(new AnimationComponent(*sprite,*obj));
     obj->getComponent<ProjectileComponent>()->setShooter(shooter);
-    obj->addObject(new ObjectComponent(name, false,movable,friendly,*obj));
+    obj->addObject(new ObjectComponent(name, false,movable,friendly,this,*obj));
     return obj;
 }
 
@@ -113,7 +113,7 @@ HitboxAssembler::HitboxAssembler(int duration, float damage, std::string name, b
 Object* HitboxAssembler::assemble(Object& shooter, const glm::vec2& point, const glm::vec2& target)
 {
     Object* obj = new Object();
-    obj->addObject(new ObjectComponent(name,false,movable,friendly,*obj));
+    obj->addObject(new ObjectComponent(name,false,movable,friendly,this,*obj));
     obj->addRect(new HitboxComponent(duration,damage,friendly,target,{point.x-dimen.x/2,point.y-dimen.y/2,dimen.x,dimen.y},*obj,projCollideFunc));
     obj->addRender(new HitboxRender(*obj));
     obj->getComponent<ProjectileComponent>()->setShooter(shooter);

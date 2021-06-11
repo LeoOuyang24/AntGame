@@ -279,9 +279,11 @@ RectRenderComponent::~RectRenderComponent()
 
 }
 
-ObjectComponent::ObjectComponent(std::string name_, bool dead_, bool movable_, bool friendly_, Entity& entity) : Component(entity),
+ObjectComponent::ObjectComponent(std::string name_, bool dead_, bool movable_, bool friendly_, ObjectAssembler* ass, Entity& entity) :
+                                                                                                Component(entity),
                                                                                                 ComponentContainer<ObjectComponent>(entity),
-                                                                                                name(name_), dead(dead_),movable(movable_),friendly(friendly_)
+                                                                                                name(name_), dead(dead_),movable(movable_),
+                                                                                                friendly(friendly_), assembler(ass)
 {
 
 }
@@ -318,8 +320,14 @@ void ObjectComponent::setInactive(bool i)
 {
     inactive = i;
 }
+
+ObjectComponent::~ObjectComponent()
+{
+
+}
+
 Object::Object(ClickableComponent& click, RectComponent& rect_, RenderComponent& render_, bool mov) : Entity(),
- clickable(&click), rect(&rect_), render(&render_),    object(new ObjectComponent(click.getName(),false,mov,false,*this))
+ clickable(&click), rect(&rect_), render(&render_),    object(new ObjectComponent(click.getName(),false,mov,false,nullptr, *this))
 {
     addComponent(click);
     addComponent(rect_);
@@ -330,7 +338,7 @@ Object::Object(ClickableComponent& click, RectComponent& rect_, RenderComponent&
 
 Object::Object(std::string name, const glm::vec4& vec, AnimationWrapper* rapper, bool mov) : Entity(),
     clickable(new ClickableComponent(name, *this)), rect(new RectComponent(vec, *this)), render(new AnimationComponent(*rapper, *this)),
-    object(new ObjectComponent(name,false,mov,false,*this))
+    object(new ObjectComponent(name,false,mov,false, nullptr, *this))
 {
     addComponent(*(clickable));
     addComponent(*(rect));
@@ -467,6 +475,8 @@ void HealthComponent::takeDamage(double amount, Object& attacker)
         }
         addHealth(-1*amount);
         invincible.set();
+        lastAttacker = GameWindow::getLevel()->getCurrentRoom()->getEntities()[&attacker];
+
     }
 
 }
@@ -575,6 +585,7 @@ Object* HealthComponent::getLastAttacker()
 {
     return lastAttacker.lock().get();
 }
+
 
 HealthComponent::~HealthComponent()
 {
@@ -973,7 +984,7 @@ void ProjectileComponent::onCollide(Unit& other)
     }
     else
     {
-        other.getHealth().takeDamage(damage,*shooter);
+        other.getHealth().takeDamage(damage,*getShooter()); //don't have to worry about getShooter being null because we already check it in the collide function
     }
 }
 
@@ -991,12 +1002,22 @@ ProjectileComponent::ProjectileComponent(double damage, bool friendly,const glm:
 
 void ProjectileComponent::setShooter(Object& obj)
 {
-    shooter = &obj;
+    shooter = GameWindow::getLevel()->getCurrentRoom()->getEntities()[&obj];
+    ObjectComponent* object;
+    if (object = obj.getComponent<ObjectComponent>())
+    {
+        assembler = object->assembler;
+    }
 }
 
 Object* ProjectileComponent::getShooter()
 {
-    return shooter;
+    return shooter.lock().get();
+}
+
+ObjectAssembler* ProjectileComponent::getAssembler()
+{
+    return assembler;
 }
 
 void ProjectileComponent::collide(Entity& other)
@@ -1008,7 +1029,7 @@ void ProjectileComponent::collide(Entity& other)
         if (obj && obj->getFriendly() != otherUnit->getFriendly() ) //if we collided with an enemy (or friendly unit if enemy projectile)
         {
             obj->setDead(true);
-            if (shooter)
+            if (getShooter())
             {
                 onCollide(*otherUnit);
             }

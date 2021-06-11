@@ -99,28 +99,18 @@ int main(int args, char* argsc[])
     bool quit = false;
     bool eventsEmpty = true;
         //std::cout << tree.count() << std::endl;
-    Interface interface;
-    GameWindow game;
-
-            std::cout << "Time to setup everything before worldMap: " << SDL_GetTicks() << "\n";
 
     initBuckets();
 
-    WorldMapWindow worldMap;
-    interface.switchCurrent(&worldMap);
-    worldMap.generate();
 
-    ShopWindow shopWindow;
+   /* ShopWindow shopWindow;
 
     shopWindow.addPanel(*(new WindowSwitchButton({.05*screenWidth,.9*screenHeight,64,64},nullptr,interface,worldMap,{"Map"},&Font::tnr,{1,1,1,1})));
     shopWindow.addPanel(*(new Message({.8*screenWidth,.1*screenHeight,128,64},nullptr,{"Player Gold: "},&Font::tnr,{1,1,1,0},
-                                      [](){return "Player Gold: " + convert(GameWindow::getPlayer().getGold());})));
-    worldMap.addPanel(*(new WorldMapWindow::WorldSwitchToGame({.8*screenWidth,.8*screenHeight,.1*screenWidth,.1*screenHeight},
-                                                interface,game,worldMap)),true);
-    worldMap.addPanel(*(new WindowSwitchButton({100,100,100,100},nullptr,interface,shopWindow,{"Shop"},&Font::tnr,{1,1,1,1})),true);
+                                      [](){return "Player Gold: " + convert(GameWindow::getPlayer().getGold());})));*/
 
-    game.setWorldMap(*(new WindowSwitchButton({0,0,0,0},nullptr,interface,worldMap,{},nullptr,{0,0,0,0})));
 
+    Game::game.init();
 
    SpriteWrapper spr;
     spr.init("image.png");
@@ -152,8 +142,8 @@ int main(int args, char* argsc[])
         }
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-        interface.update();
-        if (game.quit)
+        Game::game.update();
+        if (Game::game.getQuit())
         {
             quit = true;
         }
@@ -176,6 +166,6 @@ int main(int args, char* argsc[])
         //SDL_Delay(10);
       //  std::cout << DeltaTime::deltaTime << std::endl;
     }
-    game.close();
+    Game::game.close();
     return 0;
 }

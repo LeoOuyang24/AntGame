@@ -174,6 +174,11 @@ WorldMapWindow::LevelButton* WorldMapWindow::LevelButton::getRight()
     return right;
 }
 
+Level* WorldMapWindow::LevelButton::getLevel() const
+{
+    return level;
+}
+
 void WorldMapWindow::LevelButton::addNext(LevelButton* next_)
 {
     if (next_)
@@ -208,58 +213,74 @@ void WorldMapWindow::LevelButton::addNext(LevelButton* next_)
 
 void WorldMapWindow::LevelButton::press()
 {
-    if (window && level && !level->getCompleted()) //if we haven't already beaten this level
+    if (window && level && !level->getCompleted() && (window->getCurrentLevel() && window->getCurrentLevel()->getNext().count(this) != 0)) //if we haven't already beaten this level
     {
-        window->setCurrentLevel(*level);
+        window->setSelectedLevel(*this);
     }
 }
 
 void WorldMapWindow::LevelButton::update(float x, float y, float z, const glm::vec4& blit)
 {
-    if (level->getCompleted())
+    if (window)
     {
-        backgroundColor.g = 0;
-        backgroundColor.b = 0;
-    }
-    if (next.size() > 0)
-    {
-        double dotDist = .05*window->getRect().z; //distance between each dot
-        glm::vec2 center = {rect.x + rect.z/2, rect.y + rect.a/2};
-        auto end = next.end();
-        for (auto i = next.begin(); i != end; ++i)
+        if (next.size() > 0)
         {
-            LevelButton* button = *i;
-            if (button)
+            double dotDist = .05*window->getRect().z; //distance between each dot
+            glm::vec2 center = {rect.x + rect.z/2, rect.y + rect.a/2};
+            auto end = next.end();
+            for (auto i = next.begin(); i != end; ++i)
             {
-                const glm::vec4* buttonRect = &button->getRect();
-                glm::vec2 buttonCenter={buttonRect->x + buttonRect->z/2, buttonRect->y + buttonRect->a/2};
-                int dotNumber = pointDistance({rect.x,rect.y},{buttonRect->x,buttonRect->y})/dotDist;
-                //window->requestLine(glm::vec4(center,glm::vec2(button->getRect().x,button->getRect().y)),{0,1,0,1},1);
-                float angle = atan2(buttonRect->y - rect.y,buttonRect->x - rect.x);
-                glm::vec2 lineCenter ={(center.x + buttonCenter.x)/2, (center.y + buttonCenter.y)/2};
-                glm::vec2 dimen = {pointDistance(buttonCenter,center), 10};
-                window->requestRect({lineCenter.x - dimen.x/2,lineCenter.y -dimen.y/2, dimen.x,dimen.y},{1,1,1,1},true,angle,z - .1);
+                LevelButton* button = *i;
+                if (button)
+                {
+                    const glm::vec4* buttonRect = &button->getRect();
+                    glm::vec2 buttonCenter={buttonRect->x + buttonRect->z/2, buttonRect->y + buttonRect->a/2};
+                    int dotNumber = pointDistance({rect.x,rect.y},{buttonRect->x,buttonRect->y})/dotDist;
+                    //window->requestLine(glm::vec4(center,glm::vec2(button->getRect().x,button->getRect().y)),{0,1,0,1},1);
+                    float angle = atan2(buttonRect->y - rect.y,buttonRect->x - rect.x);
+                    glm::vec2 lineCenter ={(center.x + buttonCenter.x)/2, (center.y + buttonCenter.y)/2};
+                    glm::vec2 dimen = {pointDistance(buttonCenter,center), 10};
+                    window->requestRect({lineCenter.x - dimen.x/2,lineCenter.y -dimen.y/2, dimen.x,dimen.y},{1,1,1,1},true,angle,z - .1);
+                }
             }
-
         }
-
+        if (this == window->getSelectedLevel())
+        {
+            SpriteParameter spriteParam = {window->getCamera().toScreen({rect.x + rect.z/2 - rect.z/4, rect.y + rect.a/2 - rect.a/4,rect.z/2,rect.a/2})};
+            spriteParam.z = z + 1;
+            rocketIcon.request(spriteParam);
+        }
+        if (level->getCompleted())
+        {
+            SpriteParameter spriteParam = {window->getCamera().toScreen(rect)};
+            spriteParam.z = z + .5;
+            redX.request(spriteParam);
+        }
+        else if (window->getCurrentLevel() && window->getCurrentLevel()->getNext().count(this) == 0)
+        {
+            param.tint = {.3,.3,.3,1};
+        }
+        param.radians = cos(SDL_GetTicks()/5000.0 + 1000*spriteNum);
+        setSprite(); //param.portion gets wiped every time so we just reset it. <<< REFACTOR (inefficient?)
     }
-    param.radians = cos(SDL_GetTicks()/5000.0 + 1000*spriteNum);
-    setSprite(); //param.portion gets wiped every time so we just reset it. <<< REFACTOR (inefficient?)
-
     //glm::vec2 point = window->getCamera().toScreen({x,y});
     Button::update(x,y,z,blit);
     //PolyRender::requestNGon(10,{x,y},10,{1,0,0,1},0,true,1);
 }
 
-std::unordered_set<WorldMapWindow::LevelButton*>& WorldMapWindow::LevelButton::getNext()
+const std::unordered_set<WorldMapWindow::LevelButton*>& WorldMapWindow::LevelButton::getNext() const
 {
     return next;
 }
 
-void WorldMapWindow::setCurrentLevel(Level& level)
+void WorldMapWindow::setSelectedLevel(LevelButton& level)
 {
-    currentLevel = &level;
+    selectedLevel = &level;
+}
+
+void WorldMapWindow::setCurrentLevel(LevelButton& level)
+{
+    currentLevel =&level;
 }
 
 WorldMapWindow::LevelButton* WorldMapWindow::addLevel(Level& level,LevelButton* prev)
@@ -292,9 +313,10 @@ WorldMapWindow::LevelButton* WorldMapWindow::addLevel(Level& level,LevelButton* 
 
 void WorldMapWindow::switchToGame()
 {
-    GameWindow::setLevel(levels[currentLevel]);
+    GameWindow::setLevel(levels[selectedLevel->getLevel()]);
+    currentLevel = selectedLevel;
 
-    currentLevel = nullptr;
+
 }
 
 void WorldMapWindow::buttonRerender()
@@ -321,7 +343,6 @@ void WorldMapWindow::clearLevels()
 {
     rootButton = nullptr;
     levels.clear();
-
     auto end = levelButtons.end();
     for (auto it = levelButtons.begin(); it != end; ++it)
     {
@@ -348,10 +369,10 @@ WorldMapWindow::LevelButton* WorldMapWindow::generate(int count, LevelButton* st
     else
     {
         clearLevels();
-        auto root = addLevel(*(new Level()),nullptr); //initialize root
-        for (int layer = 0; layer < count; ++layer) //for each level layer
+        auto root = addLevel(*(new Level()),nullptr); //initialize root. Root is always the only level of the first layer
+        for (int layer = 0; layer < count - 1; ++layer) //for each level layer. Only go up to count - 1 because we already made the first layer (root)
         {
-            int levelAmount = levelLayers[layer].size();
+            int levelAmount = levelLayers[layer].size(); //number of levels in this layer
             for (int level = 0; level < levelAmount; ++level) //for each level in each layer
             {
                 int levelCount = (layer == 0) ?  5 : rand()%2 + 1 ; //generate 5 levels if start is null (level would therefore be the root)
@@ -376,7 +397,8 @@ WorldMapWindow::LevelButton* WorldMapWindow::generate(int count, LevelButton* st
                 }
             }
         }
-
+        setCurrentLevel(*root);
+        setSelectedLevel(*root);
         rerender = true;
         return root;
     }
@@ -394,9 +416,14 @@ void WorldMapWindow::update(float x, float y, float z, const glm::vec4& blit)
     Window::update(x,y,z,blit);
 }
 
-Level* WorldMapWindow::getCurrentLevel()
+const WorldMapWindow::LevelButton* WorldMapWindow::getCurrentLevel()
 {
     return currentLevel;
+}
+
+const WorldMapWindow::LevelButton* WorldMapWindow::getSelectedLevel()
+{
+    return selectedLevel;
 }
 
 int WorldMapWindow::getPlanetPlanetDistance()
@@ -409,6 +436,15 @@ const MouseCamera& WorldMapWindow::getCamera()
     return camera;
 }
 
+void WorldMapWindow::switchToRoot()
+{
+    if (!rootButton)
+    {
+        throw std::logic_error("WorldMapWindow::switchToRoot: rootButton is null!");
+    }
+    selectedLevel = rootButton;
+    switchToGame();
+}
 
 WorldMapWindow::WorldSwitchToGame::WorldSwitchToGame(const glm::vec4& box, Interface& interface, Window& to, WorldMapWindow& worldRoom) :
                                                 CondSwitchButton(box,nullptr,interface,to,{"Switch"},&Font::tnr,{1,0,1,1},nullptr), worldRoom(&worldRoom)
@@ -418,7 +454,7 @@ WorldMapWindow::WorldSwitchToGame::WorldSwitchToGame(const glm::vec4& box, Inter
 
 bool WorldMapWindow::WorldSwitchToGame::doSwitch()
 {
-    return worldRoom && worldRoom->getCurrentLevel();
+    return worldRoom && worldRoom->getSelectedLevel() && worldRoom->getSelectedLevel()->getLevel();
 }
 
 void WorldMapWindow::WorldSwitchToGame::press()

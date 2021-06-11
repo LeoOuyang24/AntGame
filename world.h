@@ -82,10 +82,11 @@ struct Room
     void nextLevel();
 
     std::shared_ptr<Object> addUnit(Object& entity,  bool friendly = false);//this method returns the shared_ptr in case any other class wants to share ownership. friendly determines if the unit is an enemy or not
-    std::shared_ptr<Object> addUnit(Object& entity,  int x, int y, bool friendly = false);
+    std::shared_ptr<Object> addUnit(Object& entity,  int x, int y, bool friendly = false); //x and y are the center of the entity
+    void addUnit(const std::shared_ptr<Object>& entity, int x, int y, bool friendly = false); //add an entity that already exists to the level (usually the player)
     std::shared_ptr<Object>& getUnit(Object* unit);
     void addTerrain(const glm::vec4& rect);
-    void moveObject(Object& obj, double x, double y); //can move either ants or objects. Sets their center
+    void moveObject(Object& obj, double x, double y); //Sets their center to x and y
     ObjectStorage& getEntities();
     NavMesh& getMesh(); //might be null if init hasn't been called
     UnitAssembler& generateCreature();
@@ -132,6 +133,7 @@ public:
     bool getCompleted();
     void setCompleted(bool comp);
     bool getAllCompleted(); //returns true if all rooms are completed
+    ~Level();
 };
 
 
@@ -139,8 +141,8 @@ class Gate : public Object
 {
     class NextAreaComponent : public Component, public ComponentContainer<NextAreaComponent>
     {
-        std::weak_ptr<Room> room;
-        std::weak_ptr<Room> next;
+        std::weak_ptr<Room> room; //current room
+        std::weak_ptr<Room> next; //next room to go to
         Level* level = nullptr; //raw pointer because levels should always outlive any gates in the level
     public:
         NextAreaComponent(std::shared_ptr<Room>& room_, std::shared_ptr<Room>& next, Entity& entity);

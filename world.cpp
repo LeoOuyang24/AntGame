@@ -121,42 +121,49 @@ void Room::nextLevel()
 
 std::shared_ptr<Object> Room::addUnit(Object& entity, bool friendly)
 {
-    if (entities.count(&entity) == 0)
-    {
-        std::shared_ptr<Object> ptr = std::shared_ptr<Object>(&entity);
-        //std::shared_ptr<Object> obj = std::shared_ptr<Object>((new Bug(200,200)));
-        //obj.reset();
-        entity.setFriendly(friendly);
 
-        entities[&entity] = ptr;
+    glm::vec2 center = entity.getCenter();
 
-        if (!entity.getComponent<ProjectileComponent>())
-        {
-            tree->add(entity.getRect());
-        }
-        if (!entity.getMovable())
-        {
-            mesh->smartAddNode(entity.getRect().getRect());
-        }
-        //ptr.reset();
-       // remove(entity);
-
-        return ptr;
-    }
-    else
-    {
-        return entities[&entity];
-    }
+    return addUnit(entity,center.x,center.y,friendly);
 }
 
 std::shared_ptr<Object> Room::addUnit(Object& entity,int x, int y, bool friendly)
 {
+    std::shared_ptr<Object> ptr = std::shared_ptr<Object>(&entity);
 
-    auto asdf = addUnit(entity,friendly);
-    moveObject(entity,x,y);
-    return asdf;
+    addUnit(ptr,x,y,friendly);
+    return ptr;
 }
 
+void Room::addUnit(const std::shared_ptr<Object>& ptr, int x, int y, bool friendly)
+{
+    Object* entity = ptr.get();
+    if (entity && entities.count(entity) == 0)
+    {
+        //std::shared_ptr<Object> obj = std::shared_ptr<Object>((new Bug(200,200)));
+        //obj.reset();
+        entity->setFriendly(friendly);
+
+        entities[entity] = ptr;
+        if (!entity->getComponent<ProjectileComponent>())
+        {
+            tree->add(entity->getRect());
+        }
+        if (!entity->getMovable())
+        {
+            mesh->smartAddNode(entity->getRect().getRect());
+        }
+        glm::vec2 center = entity->getCenter();
+        if (center.x != x || center.y != y)
+        {
+            moveObject(*entity,x,y);
+        }
+
+        //ptr.reset();
+       // remove(entity);
+
+    }
+}
 
 void Room::addTerrain(const glm::vec4& rect)
 {
@@ -183,9 +190,12 @@ std::shared_ptr<Object>& Room::getUnit(Object* unit)
 
 void Room::moveObject(Object& obj, double x, double y)
 {
-
-    obj.getRect().setPos({x - obj.getRect().getRect().z/2,y - obj.getRect().getRect().a/2});
-    tree->update(obj.getRect(), *tree.get());
+    glm::vec2 center=obj.getCenter();
+    if (center.x != x || center.y != y)
+    {
+        obj.getRect().setPos({x - obj.getRect().getRect().z/2,y - obj.getRect().getRect().a/2});
+        tree->update(obj.getRect(), *tree.get());
+    }
     //std::cout << obj.getCenter().x << std::endl;
    // std::cout << getChunk(obj).ants.size() << oldChunk->ants.size() << std::endl;
 }
@@ -416,7 +426,7 @@ Room* Room::generateLevel(const glm::vec4& levelRect) // Doesn't generate terrai
 
 Room::~Room()
 {
-
+  //  std::cout << "Deleted Room " << this << "\n";
 }
 
 
@@ -434,7 +444,7 @@ Level::Level(int roomNum)
     setCurrentRoom(rooms[0].get());
 }
 
-Level::Level() : Level(4)
+Level::Level() : Level(3)
 {
 
 }
@@ -472,6 +482,11 @@ bool Level::getAllCompleted()
     return true;
 }
 
+Level::~Level()
+{
+    //std::cout <<"Deleted Level: " << ;
+}
+
 Gate::NextAreaComponent::NextAreaComponent(std::shared_ptr<Room>& level_, std::shared_ptr<Room>& next_, Entity& entity) : Component(entity), ComponentContainer<NextAreaComponent>(&entity), room(level_), next(next_)
 {
 
@@ -499,7 +514,7 @@ void Gate::NextAreaComponent::collide(Entity& entity)
         if (next.lock().get())
         {
             GameWindow::setCurrentRoom(next.lock());
-            next.lock().get()->addUnit(*GameWindow::getPlayer().getPlayer(),Room::chunkDimen/2,Room::chunkDimen/2,true); //REMOVE THIs LATER
+            next.lock().get()->addUnit(GameWindow::getPlayer().getPlayerPtr(),Room::chunkDimen/2,Room::chunkDimen/2,true);
         }
         else if (level)
         {

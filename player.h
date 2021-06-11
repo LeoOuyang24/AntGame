@@ -38,9 +38,13 @@ class PlayerAssembler : public UnitAssembler
     };
     class PlayerHealth : public HealthComponent
     {
+        ObjectAssembler* assembler = nullptr; //in case the player dies, this keeps track of what entity killed us.
+                                            //We don't care about the specific entity but rather the properties of that entity, so this works even if the killer
+                                            //is dead
     public:
         PlayerHealth(Entity& entity, float health);
         void takeDamage(double amount, Object& attacker);
+        ObjectAssembler* getAssembler();
     };
     class PlayerRender : public WeaponAnimationComponent
     {
@@ -60,17 +64,20 @@ class Player //tracks player stats (resources, money). Also handles player input
 
     int resource;
     int gold = 100;
-    Unit* player = nullptr;
+    std::shared_ptr<Unit> player; //making this a shared pointer is convenient as each room will need their own copy. This ensures that all shared pointers of the player are the same
 public:
     static const glm::vec4 selectColor;
     Player();
     void init(); //initiaites the start state. Sets the starting amount of resources, starting buildings, etc.
+    void reset();
     Unit* getPlayer();
+    std::shared_ptr<Unit>& getPlayerPtr();
     int getResource();
     void addResource(int r); //used to increase or decrease resources. Resources can't be negative
     int getGold();
     void addGold(int g);
     void renderUI();
+    ~Player();
 };
 
 class InactiveComponent : public Component, public ComponentContainer<InactiveComponent> //represents how long an entity is inactive for. Usually because a building is under construction

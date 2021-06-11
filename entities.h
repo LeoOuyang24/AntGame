@@ -78,6 +78,7 @@ public:
     ~RectRenderComponent();
 };
 
+class ObjectAssembler;
 class ObjectComponent : public Component, public ComponentContainer<ObjectComponent>
 {
      bool dead = false; //whether or not to remove the object
@@ -86,8 +87,8 @@ class ObjectComponent : public Component, public ComponentContainer<ObjectCompon
     bool inactive = false; //whether or not to update this entity
 public:
     const std::string name= "";
-
-    ObjectComponent(std::string name_,bool dead_, bool movable_, bool friendly_, Entity& entity);
+    ObjectAssembler* const assembler = nullptr; //the assembler that assembled this entity. Raw pointer because ObjectAssemblers will outlive all entities
+    ObjectComponent(std::string name_,bool dead_, bool movable_, bool friendly_, ObjectAssembler* ass, Entity& entity);
     bool getDead();
     bool getMovable();
     bool getFriendly();
@@ -96,6 +97,7 @@ public:
     void setFriendly(bool val);
     void setDead(bool isDead);
     void setInactive(bool i);
+    ~ObjectComponent();
 };
 
 class Object : public Entity//environment objects. Can be seen, have a hitbox, and can be clicked on
@@ -149,6 +151,7 @@ class HealthComponent : public Component, public ComponentContainer<HealthCompon
     int displacement = 0; //height above the entity
     bool visible = true;
     std::weak_ptr<Object> lastAttacker;// the last thing that attacked this unit
+    ObjectAssembler* lastAssembler;
     std::map<SpriteWrapper*,std::list<StatusEffect>> effects; //ordered map because we frequently iterate through this map. Each status effect should be uniquely identified by its sprite
     void addHealth(double amount); //increases health by amount. Health cannot exceed maxHealth nor go below 0
 protected:
@@ -158,7 +161,7 @@ protected:
 public:
     HealthComponent(Entity& entity, double health_,  int displacement_ = 20);
     void addArmor(int val);
-    virtual void takeDamage(double amount, Object& attacker ); //the key difference between this and add health is that this keeps track of which attackComponent dealt the damage. Negative damage heals the target
+    virtual void takeDamage(double amount, Object& attacker); //the key difference between this and add health is that this keeps track of which attackComponent dealt the damage. Negative damage heals the target
     void addEffect(StatusEffect effect);
     double getHealth();
     double getMaxHealth();
@@ -314,6 +317,7 @@ public:
     ProjectileComponent(double damage, bool friendly, const glm::vec2& target, double xspeed, double yspeed, const glm::vec4& rect, Object& entity, ProjCollideFunc collideFun_ = nullptr);
     void setShooter(Object& obj);
     Object* getShooter();
+    ObjectAssembler* getAssembler();
     virtual void collide(Entity& other);
     virtual void update();
 private:
@@ -321,8 +325,9 @@ private:
     double damage = 0;
     ProjCollideFunc collideFunc = nullptr;
 protected:
-    Object* shooter = nullptr; //not the actual projectile unit, but whoever spawned the projectile unit. Primarily used to communicate who shot the projectile
-
+    std::weak_ptr<Object> shooter; //not the actual projectile unit, but whoever spawned the projectile unit. Primarily used to communicate who shot the projectile
+    ObjectAssembler* assembler = nullptr; //if the shooter is dead and  the projectile kills the player, this allows us to print how the player died without needing the shooter in memory
+                                          //raw pointer because ObjectAssemblers are only deleted when the game ends.
     virtual void onCollide(Unit& other); //what to actually call when we collide, since the collide code doesn't really change.
 };
 

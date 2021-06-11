@@ -1,6 +1,7 @@
 #include "SDLHelper.h"
 #include "vanilla.h"
 
+#include "worldMap.h"
 #include "debug.h"
 #include "game.h"
 #include "sequence.h"
@@ -116,13 +117,17 @@ Camera::Camera()
 
 }
 
-void Camera::init(Unit& play, int w, int h)
+void Camera::init( int w, int h)
 {
     RenderCamera::init(w,h);
     baseDimen = {w,h};
-    player = &play;
     move = new MoveComponent(1,rect,*this);
     addComponent(*(move));
+}
+
+void Camera::setPlayer(const std::shared_ptr<Unit>& play)
+{
+    player = play;
 }
 
 void Camera::update()
@@ -153,8 +158,9 @@ void Camera::update()
         {
             rect.y +=  absMin((mousePos.second - speed), (mousePos.second - screenDimen.y + 1+ speed ))*DeltaTime::deltaTime;
         }*/
-        rect.x = std::max(bounds.x,std::min(bounds.x + bounds.z - rect.z,player->getCenter().x - rect.z/2));
-        rect.y = std::max(bounds.y, std::min(bounds.y + bounds.a  - rect.a , player->getCenter().y - rect.a/2));
+        glm::vec2 center = player.lock().get()->getCenter();
+        rect.x = std::max(bounds.x,std::min(bounds.x + bounds.z - rect.z,center.x - rect.z/2));
+        rect.y = std::max(bounds.y, std::min(bounds.y + bounds.a  - rect.a , center.y - rect.a/2));
         zoomGoal = -1;
 
         auto mouseWheel = MouseManager::getMouseWheel();
@@ -262,9 +268,13 @@ GameWindow::GameWindow() : Window({0,0},nullptr,{0,0,0,0})
     rect.z = screenDimen.x;
     rect.a = screenDimen.y;
     player.init();
-    camera.init(*player.getPlayer(),screenDimen.x,screenDimen.y);
+    camera.init(screenDimen.x,screenDimen.y);
     actualWindow = this;
     Window::camera = &camera;
+    gameOver = new Window({.6*screenDimen.x,.6*screenDimen.y},nullptr,{1,1,0,1},1);
+    gameOver->addPanel(*(new QuitButton({100,100,100,100},*this)));
+   gameOver->addPanel(*(new WindowSwitchButton({100,200,100,100},nullptr,Game::game,*Game::game.getTitleScreen(),{"Title Screen"},&Font::tnr,{1,0,0,1})));
+    addPanel(*gameOver,true);
   /*  auto ptr = evilMoonAssembler.assemble();
     ptr->getComponent<UnitAttackComponent>()->setLongTarget({0,0},&level.getUnit(level.getAnthill()));
     level.addUnit(*ptr,0,0,false);*/
@@ -275,38 +285,53 @@ GameWindow::GameWindow() : Window({0,0},nullptr,{0,0,0,0})
    // manager.clear();
 }
 
-void GameWindow::onSwitch(Window& from)
+void GameWindow::reset()
 {
-    camera.resetZoom();
+    player.reset();
+    gameOver->setDoUpdate(false);
     glm::vec2 screenDimen = RenderProgram::getScreenDimen();
+    camera.setPlayer(player.getPlayerPtr());
+    camera.resetZoom();
     Room* levelPtr = level.lock().get()->getCurrentRoom();
     if (levelPtr)
     {
         glm::vec4 levelRect = levelPtr->getRect();
         camera.setBounds(levelRect);
         camera.center({levelRect.z/2,levelRect.a/2});
-        levelPtr->addUnit(*player.getPlayer(),levelRect.z/2,levelRect.a/2,true);
       //  gameOver = new Window({screenDimen.x/10, screenDimen.y/10},nullptr, {1,0,0,1});
        // gameOver->addPanel(*(new QuitButton(*this)));
         //levelPtr->addUnit(*(playerAssembler.assemble()),levelRect.z/2 + 100,levelRect.a/2 + 100,true);
     }
+}
+
+void GameWindow::onSwitch(Window& from)
+{
     debug.init();
+    glm::vec4 roomRect= level.lock().get()->getCurrentRoom()->getRect();
+    level.lock().get()->getCurrentRoom()->addUnit(std::static_pointer_cast<Object>(GameWindow::getPlayer().getPlayerPtr()),
+                                                         roomRect.x + roomRect.z/2,
+                                                         roomRect.y + roomRect.a/2,
+                                                         true);
    // player.init();
 }
 
 void GameWindow::updateTop(float z)
 {
-   /* if (!hill)
+    Unit* playerUnit = player.getPlayer();
+    if (!playerUnit)
     {
-        gameOver->update(x,y,clicked);
-        level.render();
-    }
-    else */if (KeyManager::getJustPressed() == SDLK_n)
-    {
+        throw std::logic_error("GameWindow::updateTop: Player is null in GameWindow main loop!");
         //level.nextLevel();
     }
     else
     {
+       if (playerUnit->getDead() || playerUnit->getHealth().getHealth() <= 0)
+        {
+            if (gameOver)
+            {
+                gameOver->setDoUpdate(true);
+            }
+        }
         renderAbsolute = false;
         camera.update();
 
@@ -522,15 +547,92 @@ void GameWindow::requestLine(const glm::vec4& line, const glm::vec4& color, floa
 
 void GameWindow::close()
 {
+    gameOver = nullptr; //~Window should clean up the actual memory
     camera.close();
     level.reset();
+    player.getPlayerPtr().reset();
 }
 
-GameWindow::QuitButton::QuitButton(GameWindow& window_) : Button({10,50,32,32},nullptr,nullptr, {"Quit"},&Font::tnr,{0,1,0,1}), window(&window_)
+QuitButton::QuitButton(const glm::vec4& rect, GameWindow& window_) : Button(rect,nullptr,nullptr, {"Quit"},&Font::tnr,{0,1,0,1}), window(&window_)
 {
 
 }
-void GameWindow::QuitButton::press()
+void QuitButton::press()
 {
-    window->quit = true;
+    Game::game.setQuit(true);
+}
+
+TitleScreen::TitleScreen() : Window({0,0},nullptr,{0,0,1,1})
+{
+
+}
+
+void TitleScreen::onSwitch(Window& previous)
+{
+    Game::game.reset();
+}
+
+Game Game::game;
+
+void Game::init()
+{
+
+    glm::vec2 screenDimen = RenderProgram::getScreenDimen();
+
+    title.reset(new TitleScreen());
+    worldMap.reset(new WorldMapWindow());
+    gameWindow.reset(new GameWindow());
+
+
+    title->addPanel(*(new WindowSwitchButton({100,100,100,100},nullptr,*this,*gameWindow.get(),{"Play"},&Font::tnr,{0,0,0,0})));
+    title->addPanel(*(new QuitButton({300,100,100,100},*gameWindow.get())));
+
+    worldMap->addPanel(*(new WorldMapWindow::WorldSwitchToGame({.8*screenDimen.x,.8*screenDimen.y,.1*screenDimen.x,.1*screenDimen.y},
+                                                *this,*gameWindow.get(),*worldMap.get())),true);
+    gameWindow->setWorldMap(*(new WindowSwitchButton({0,0,0,0},nullptr,*this,*worldMap.get(),{"Play"},nullptr,{1,1,1,1})));
+   // worldMap.addPanel(*(new WindowSwitchButton({100,100,100,100},nullptr,interface,shopWindow,{"Shop"},&Font::tnr,{1,1,1,1})),true);
+
+  //  reset();
+    switchCurrent(title.get());
+}
+
+void Game::reset()
+{
+    worldMap->generate();
+    worldMap->switchToRoot();
+
+    gameWindow->reset();
+}
+
+void Game::setQuit(bool val)
+{
+    quit = val;
+}
+
+bool Game::getQuit()
+{
+    return quit;
+}
+
+GameWindow* Game::getGameWindow()
+{
+    return gameWindow.get();
+}
+
+WorldMapWindow* Game::getWorldMap()
+{
+    return worldMap.get();
+}
+
+TitleScreen* Game::getTitleScreen()
+{
+    return title.get();
+}
+
+void Game::close()
+{
+    gameWindow->close();
+    gameWindow.reset();
+    worldMap.reset();
+    title.reset();
 }

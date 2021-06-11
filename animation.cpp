@@ -8,6 +8,7 @@ SpriteWrapper freezeIcon;
 SpriteWrapper coinIcon;
 SpriteWrapper redX;
 SpriteWrapper shieldIcon;
+SpriteWrapper rocketIcon;
 
 AnimationWrapper defaultAnime;
 AnimationWrapper shardAnime;
@@ -86,6 +87,7 @@ void initSprites()
     coinIcon.init("sprites/gold_icon.png");
     redX.init("sprites/redX.png");
     shieldIcon.init("sprites/shield.png");
+    rocketIcon.init("sprites/rocketIcon.png");
 
     defaultAnime.init(new BaseAnimation("sprites/oldMan.png",.001,6,1));
     shardAnime.init(new BaseAnimation("sprites/orb.png", .01, 12,8,{0,0,6,4}));

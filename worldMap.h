@@ -55,19 +55,22 @@ class WorldMapWindow : public Window
         LevelButton(int prevs_, LevelButton* prev_, WorldMapWindow& window, Level& level, const glm::vec4& rect);
         LevelButton* getLeft(); //return read-only
         LevelButton* getRight();
+        Level* getLevel() const;
         void addNext(LevelButton* next_);
         void press();
         void update(float x, float y, float z,const glm::vec4& blit);
-        std::unordered_set<LevelButton*>& getNext();
+        const std::unordered_set<LevelButton*>& getNext() const;
     };
 
     int planetPlanetDistance; //distance between each planet
     std::unordered_map<Level*,std::shared_ptr<Level>> levels;
     std::unordered_map<Level*, LevelButton*> levelButtons;
     std::vector<std::vector<LevelButton*>> levelLayers;
-    Level* currentLevel = nullptr;
+    LevelButton* currentLevel = nullptr; //level button of the level that the player should go to.
+    LevelButton* selectedLevel = nullptr; //level button of the level that the player has selected, but won't necessarily go to
     LevelButton* rootButton =nullptr; //pointer to the first level
-    void setCurrentLevel(Level& level);
+    void setSelectedLevel(LevelButton& level);
+    void setCurrentLevel(LevelButton& level);
     LevelButton* addLevel(Level& level, LevelButton* prev); //generates a levelbutton given a Room and adds it to the panels. Returns the levelButton generated
     void switchToGame(); //called when switching to the gamewindow
     MouseCamera camera;
@@ -78,9 +81,11 @@ public:
     WorldMapWindow();
     LevelButton* generate(int count = -1, LevelButton* start = nullptr, LevelButton* end = nullptr); //generates count levelButtons and levels. If count is -1, will generate a random # of levels. The first level generated will have start as its prev and the last level generated will have end as its end. Returns the first levelButton generated
     void update(float x,float y, float z, const glm::vec4& blit);
-    Level* getCurrentLevel();
+    const LevelButton* getCurrentLevel();
+    const LevelButton* getSelectedLevel();
     int getPlanetPlanetDistance();
     const MouseCamera& getCamera();
+    void switchToRoot(); //sets GameWindow currentLevel to root. Called at the beginning of a new run
     class WorldSwitchToGame : public CondSwitchButton
     {
         WorldMapWindow* worldRoom =nullptr;

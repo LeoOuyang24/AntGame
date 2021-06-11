@@ -160,8 +160,30 @@ void PlayerAssembler::PlayerHealth::takeDamage(double amount, Object& attacker)
             float angle = atan2(center.y - otherCenter.y, center.x - otherCenter.x);
             forces->addForce({angle,5});
         }
+
     }
     HealthComponent::takeDamage(amount,attacker);
+    if (getHealth() <= 0)
+    {
+        ProjectileComponent* proj = entity->getComponent<ProjectileComponent>();
+        if (proj)
+        {
+            assembler  = proj->getAssembler(); //get the assembler's attacker in case this kills us
+        }
+        else
+        {
+            ObjectComponent* obj = attacker.getComponent<ObjectComponent>();
+            if (obj)
+            {
+                assembler = obj->assembler;
+            }
+        }
+    }
+}
+
+ObjectAssembler* PlayerAssembler::PlayerHealth::getAssembler()
+{
+    return assembler;
 }
 
 PlayerAssembler::PlayerRender::PlayerRender(AnimationWrapper* arm_, const glm::vec2& offset, AnimationWrapper& wrap, Unit& owner) : WeaponAnimationComponent(arm_,offset,wrap,owner)
@@ -193,7 +215,7 @@ void PlayerAssembler::PlayerRender::update()
     }
 }
 
-PlayerAssembler::PlayerAssembler() : UnitAssembler("Player",{25,47},playerAnime,true,100,.5,true)
+PlayerAssembler::PlayerAssembler() : UnitAssembler("Player",{25,47},playerAnime,true,10,.5,true)
 {
 
 }
@@ -201,7 +223,7 @@ PlayerAssembler::PlayerAssembler() : UnitAssembler("Player",{25,47},playerAnime,
 Object* PlayerAssembler::assemble()
 {
     Unit* player = new Unit();
-    player->addObject(new ObjectComponent(name,false,movable,friendly,*player));
+    player->addObject(new ObjectComponent(name,false,movable,friendly,this,*player));
     player->addHealth(new PlayerHealth(*player,maxHealth));
     player->addRect(new PlayerControls(speed,{0,0,dimen.x,dimen.y},*player));
     player->addRender(new PlayerRender(&playerArm,{3,49},*sprite,*player));
@@ -254,14 +276,25 @@ void Player::init()
 {
    // addBuilding(factAssembler);
    // addBuilding(turretAssembler);
-    player = static_cast<Unit*>(playerAssembler.assemble());
+   // reset();
+}
+
+void Player::reset()
+{
+    player.reset(static_cast<Unit*>(playerAssembler.assemble()));
     addResource(100);
 }
 
 Unit* Player::getPlayer()
 {
+    return static_cast<Unit*>(player.get());
+}
+
+std::shared_ptr<Unit>& Player::getPlayerPtr()
+{
     return player;
 }
+
 
 int Player::getResource()
 {
@@ -322,6 +355,12 @@ void Player::renderUI()
             }
         }
     }
+}
+
+Player::~Player()
+{
+  //  std::cout << player.get()->getComponent<ObjectComponent>()->name;
+  //  player.get()->removeComponent<ObjectComponent>();
 }
 
 InactiveComponent::InactiveComponent(double duration, Entity& entity) : waitTime(duration), Component(entity), ComponentContainer<InactiveComponent>(entity)

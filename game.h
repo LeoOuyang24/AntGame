@@ -50,11 +50,12 @@ class Camera : public RenderCamera, Entity
     double zoomSpeed = .0001;
     double oldZoom;
     static double minZoom, maxZoom;
-    Unit* player = nullptr;
+    std::weak_ptr<Unit> player;
     MoveComponent* move;
 public:
     Camera();
-    void init(Unit& play, int w, int h);
+    void init(int w, int h);
+    void setPlayer(const std::shared_ptr<Unit>& player);
     void update();
     void setBounds(const glm::vec4& newBounds);
     void center(const glm::vec2& point); //centers the camera around point
@@ -87,19 +88,12 @@ class GameWindow : public Window //the gamewindow is mostly static because most 
 
     static bool renderAbsolute; //whether or not to renderAbsolute
 
-    ObjPtr anthill; //pointer to the anthill. Keeps track of whether or not the player has lost
     WindowSwitchButton* switchToMap = nullptr; //button that swaps back to the world Room
     std::vector<std::shared_ptr<SequenceUnit>> labels;
-    struct QuitButton : public Button
-    {
-        GameWindow* window = nullptr;
-        QuitButton(GameWindow& window_);
-        void press();
-    };
+
 public:
     static float interfaceZ;
     static float fontZ; //z for rendering text on top of the interface
-    bool quit = false;
     static Camera& getCamera();
     static const Manager& getManager();
     static Level* getLevel();
@@ -114,12 +108,47 @@ public:
     static void requestRect(const glm::vec4& rect, const glm::vec4& color, bool filled, double angle, float z, bool absolute = false); //if absolute is true, the coordinates are taken as screen coordinates
     static void requestLine(const glm::vec4& line, const glm::vec4& color, float z, bool absolute);
     GameWindow();
+    void reset();
     void onSwitch(Window& from);
     void updateTop(float z);
     void renderTopBar();
     void renderSelectedUnits();
     static float getMenuHeight();
     static void close();
+};
+
+class QuitButton : public Button
+{
+    GameWindow* window = nullptr;
+public:
+    QuitButton(const glm::vec4& rect, GameWindow& window_);
+    void press();
+};
+
+class TitleScreen : public Window
+{
+public:
+    TitleScreen();
+    void onSwitch(Window& previous);
+};
+
+class WorldMapWindow;
+class Game : public Interface //represents the game state
+{
+    std::unique_ptr<GameWindow> gameWindow;
+    std::unique_ptr<WorldMapWindow> worldMap;
+    std::unique_ptr<TitleScreen> title;
+    bool quit = false;
+public:
+    static Game game;
+    void init(); //one-time use function to set up all static variables
+    void reset(); //multiple use function to reset game state
+    void setQuit(bool val);
+    bool getQuit();
+    GameWindow* getGameWindow();
+    WorldMapWindow* getWorldMap();
+    TitleScreen* getTitleScreen();
+    void close();
 };
 
 #endif // GAME_H_INCLUDED

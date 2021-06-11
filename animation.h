@@ -11,6 +11,7 @@ extern SpriteWrapper freezeIcon;
 extern SpriteWrapper coinIcon;
 extern SpriteWrapper redX;
 extern SpriteWrapper shieldIcon;
+extern SpriteWrapper rocketIcon;
 
 extern AnimationWrapper defaultAnime;
 extern AnimationWrapper shardAnime;
