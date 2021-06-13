@@ -170,7 +170,7 @@ void AnimationComponent::setParam(const SpriteParameter& param, const AnimationP
 void AnimationComponent::update()
 {
     auto rect = entity->getComponent<RectComponent>();
-    if (rect && vecContains(rect->getRect(),camera->getRect()))
+    if (rect && vecIntersect(rect->getRect(),camera->getRect()))
     {
         double angle = 0;
         MoveComponent* move = entity->getComponent<MoveComponent>();
@@ -199,7 +199,8 @@ void AnimationComponent::update()
         {
             renderRect = camera->toScreen(renderRect);
         }
-        render({renderRect,angle,param.effect,param.tint,param.program,param.z});
+       // printRect(param.portion)
+        render({renderRect,angle,param.effect,param.tint,param.program,param.z,param.portion});
         param = SpriteParameter();
         animeParam = AnimationParameter();
     }

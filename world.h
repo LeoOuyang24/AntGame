@@ -24,10 +24,13 @@ using SPStorage = std::vector<std::shared_ptr<N>>; //Smart Point Storage
 
 class Terrain : public Object
 {
-    class TerrainRender : public RectRenderComponent, public ComponentContainer<TerrainRender>
+    class TerrainRender : public RenderComponent, public ComponentContainer<TerrainRender>
     {
+        SpriteWrapper* sprite = nullptr;
+        glm::vec4 portion;
     public:
-        TerrainRender(const glm::vec4& color, Entity& ent);
+        TerrainRender(SpriteWrapper& sprite, Entity& ent);
+        void render(const SpriteParameter& param);
         void update();
     };
 public:

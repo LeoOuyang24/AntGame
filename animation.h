@@ -31,21 +31,10 @@ extern AnimationWrapper attackAntProjectile;
 extern AnimationWrapper dinosaurAnime;
 extern AnimationWrapper dinosaurAttackAnime;
 
-extern AnimationWrapper basicSoldierAnime;
-extern AnimationWrapper basicShootingAnime;
-extern AnimationWrapper turretSprite;
-extern AnimationWrapper greenCross;
 extern AnimationWrapper basicEnemyAnime;
-extern AnimationWrapper blasterAnime;
 extern AnimationWrapper tankRocketAnime;
-extern AnimationWrapper incineratorAnime;
-extern AnimationWrapper freezeUnitAnime;
-extern AnimationWrapper mercenaryAnime;
-extern AnimationWrapper minigunEnthAnime;
-extern AnimationWrapper shrimpSuitAnime;
-extern AnimationWrapper tankAnime;
-extern AnimationWrapper commanderAnime;
-extern AnimationWrapper iceTurretAnime;
+
+extern AnimationWrapper grassWalls;
 
 extern SpriteWrapper pistolAttack1, pistolAttack2,pistolAttackSpecial;
 extern AnimationWrapper pistolAnime;

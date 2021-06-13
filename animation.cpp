@@ -28,21 +28,11 @@ AnimationWrapper attackAntProjectile;
 AnimationWrapper dinosaurAnime;
 AnimationWrapper dinosaurAttackAnime;
 
-AnimationWrapper basicSoldierAnime;
-AnimationWrapper basicShootingAnime;
-AnimationWrapper turretSprite;
-AnimationWrapper greenCross;
+
 AnimationWrapper basicEnemyAnime;
-AnimationWrapper blasterAnime;
 AnimationWrapper tankRocketAnime;
-AnimationWrapper incineratorAnime;
-AnimationWrapper freezeUnitAnime;
-AnimationWrapper mercenaryAnime;
-AnimationWrapper minigunEnthAnime;
-AnimationWrapper shrimpSuitAnime;
-AnimationWrapper tankAnime;
-AnimationWrapper commanderAnime;
-AnimationWrapper iceTurretAnime;
+
+AnimationWrapper grassWalls;
 
 SpriteWrapper pistolAttack1, pistolAttack2,pistolAttackSpecial;
 AnimationWrapper pistolAnime;
@@ -79,6 +69,8 @@ void initSprites()
 
     dinosaurAnime.init(new BaseAnimation("sprites/dinosaur.png",3,3,1));
     dinosaurAttackAnime.init(new BaseAnimation("sprites/dinosaurAttack.png",5,5,1));
+
+    grassWalls.init(new BaseAnimation("sprites/grassWalls.png",0,1,1));
 
     basicEnemyAnime.init(new BaseAnimation("sprites/evilMoon.png", .01,3,1));
 

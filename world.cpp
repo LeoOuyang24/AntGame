@@ -8,17 +8,49 @@
 #include "tiles.h"
 #include "enemyAssemblers.h"
 
-Terrain::TerrainRender::TerrainRender(const glm::vec4& color, Entity& ent) : RectRenderComponent(color, ent), ComponentContainer<Terrain::TerrainRender>(ent)
+Terrain::TerrainRender::TerrainRender(SpriteWrapper& spr, Entity& ent) : sprite(&spr), RenderComponent(ent,&GameWindow::getCamera()), ComponentContainer<Terrain::TerrainRender>(ent)
 {
+    glm::vec2 dimen = sprite->getDimen();
+    switch (rand()%4)
+    {
+    case 0:
+        portion = {10.0/dimen.x,36.0/dimen.y,66.0/dimen.x,52.0/dimen.y}; //top left
+        break;
+    case 1:
+        portion = {112.0/dimen.x,17.0/dimen.y,67.0/dimen.x,66/dimen.y}; //top right
+        break;
+    case 2:
+        portion = {6.0/dimen.x,102.0/dimen.y,80.0/dimen.x,50.0/dimen.y}; //bot left
+        break;
+    case 3:
+        portion = {102.0/dimen.x,90.0/dimen.y,85.0/dimen.x,78.0/dimen.y}; //bot right
+        break;
+    }
+}
+
+void Terrain::TerrainRender::render(const SpriteParameter& param)
+{
+    if (sprite)
+    {
+        SpriteParameter copy = param;
+        copy.portion = portion;
+        sprite->request(copy);
+    }
 
 }
 
 void Terrain::TerrainRender::update()
 {
-    GameWindow::requestRect(((Object*)entity)->getRect().getRect(),color,true,0,FogMaker::fogZ);
+    RectComponent* rect;
+    if (camera && entity && (rect = entity->getComponent<RectComponent>()))
+    {
+        render({camera->toScreen(rect->getRect())});
+    }
 }
 
-Terrain::Terrain(int x, int y, int w, int h) : Object(*(new ClickableComponent("Terrain", *this)), *(new RectComponent({x,y,w,h},*this)), *(new RectRenderComponent({.5,.5,.5,1},*this)))
+Terrain::Terrain(int x, int y, int w, int h) : Object(*(new ClickableComponent("Terrain", *this)),
+                                                      *(new RectComponent({x,y,w,h},*this)),
+                                                      *(new TerrainRender(grassWalls,*this)))
 {
 
 }
