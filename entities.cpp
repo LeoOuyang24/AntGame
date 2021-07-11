@@ -484,6 +484,14 @@ void HealthComponent::takeDamage(double amount, Object& attacker)
         addHealth(-1*amount);
         invincible.set();
         lastAttacker = GameWindow::getLevel()->getCurrentRoom()->getEntities()[&attacker];
+        if (attacker.getComponent<ProjectileComponent>())
+        {
+            lastAssembler = attacker.getComponent<ProjectileComponent>()->getAssembler();
+        }
+        else
+        {
+            lastAssembler = attacker.getObject().assembler;
+        }
 
     }
 
@@ -594,6 +602,10 @@ Object* HealthComponent::getLastAttacker()
     return lastAttacker.lock().get();
 }
 
+ObjectAssembler* HealthComponent::getLastAssembler()
+{
+    return lastAssembler;
+}
 
 HealthComponent::~HealthComponent()
 {

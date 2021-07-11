@@ -258,21 +258,21 @@ void GameOverWindow::update(float x, float y, float z, const glm::vec4& blit)
     if (!sprite && GameWindow::getPlayer().getPlayer())
     {
         HealthComponent* health = &GameWindow::getPlayer().getPlayer()->getHealth();
-        Object* attacker = health->getLastAttacker();
+        ObjectAssembler* attacker = health->getLastAssembler();
         if (attacker)
         {
-            ProjectileComponent* proj = attacker->getComponent<ProjectileComponent>();
-            if (proj && proj->getAssembler()) //if player died to a projectile, render the shooter
-            {
-                sprite = proj->getAssembler()->sprite;
-            }
-            else if (attacker->getObject().assembler)
-            {
-                sprite = attacker->getObject().assembler->sprite;
-            }
+            sprite = attacker->sprite;
+        }
+        else
+        {
+            sprite = &questionMarkIcon;
         }
         panel->setSprite(sprite);
       //  GameWindow::requestRect(panel->getRect(),{1,0,0,1},true,0,10);
+    }
+    else
+    {
+        sprite = &questionMarkIcon;
     }
     Window::update(x,y,z,blit);
 }

@@ -171,6 +171,7 @@ public:
     void render(const glm::vec3& rect, float z); //renders the healthbar at the given location with the given width. The height will always be height so rect.a is the z value to render at.
     void setVisible(bool value);
     Object* getLastAttacker(); //returns the lastAttacker. May be null;
+    ObjectAssembler* getLastAssembler();
     ~HealthComponent();
 };
 

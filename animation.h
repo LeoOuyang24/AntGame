@@ -16,6 +16,7 @@ extern SpriteWrapper rocketIcon;
 extern AnimationWrapper defaultAnime;
 extern AnimationWrapper shardAnime;
 extern AnimationWrapper resourceAnime;
+extern SpriteWrapper questionMarkIcon;
 
 extern AnimationWrapper playerAnime;
 extern AnimationWrapper playerArm;

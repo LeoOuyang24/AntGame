@@ -13,6 +13,7 @@ SpriteWrapper rocketIcon;
 AnimationWrapper defaultAnime;
 AnimationWrapper shardAnime;
 AnimationWrapper resourceAnime;
+SpriteWrapper questionMarkIcon;
 
 AnimationWrapper playerAnime;
 AnimationWrapper playerArm;
@@ -80,6 +81,7 @@ void initSprites()
     redX.init("sprites/redX.png");
     shieldIcon.init("sprites/shield.png");
     rocketIcon.init("sprites/rocketIcon.png");
+    questionMarkIcon.init("sprites/unknown.png");
 
     defaultAnime.init(new BaseAnimation("sprites/oldMan.png",.001,6,1));
     shardAnime.init(new BaseAnimation("sprites/orb.png", .01, 12,8,{0,0,6,4}));

@@ -215,7 +215,7 @@ void PlayerAssembler::PlayerRender::update()
     }
 }
 
-PlayerAssembler::PlayerAssembler() : UnitAssembler("Player",{25,47},playerAnime,true,10,.5,true)
+PlayerAssembler::PlayerAssembler() : UnitAssembler("Player",{25,47},playerAnime,true,1,.5,true)
 {
 
 }
