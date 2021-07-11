@@ -389,6 +389,12 @@ RenderComponent& Object::getRender()
 {
     return *render;
 }
+
+ObjectComponent& Object::getObject()
+{
+    return *object;
+}
+
 bool Object::clicked()
 {
     return clickable->getClicked();
@@ -459,6 +465,7 @@ HealthComponent::HealthComponent(Entity& entity, double health_,  int displaceme
 {
 
 }
+
 
 void HealthComponent::addArmor(int val)
 {
@@ -1080,7 +1087,7 @@ void UnitAttackComponent::doPassive()
 }
 
 UnitAttackComponent::UnitAttackComponent(double damage_, int endLag_, double range_,double searchRange_, bool f, Entity& entity) : ApproachComponent(entity),
-ComponentContainer<UnitAttackComponent>(entity), damage(damage_),notFriendly(f), searchRange(searchRange_), activated(false)//coincidentally, activated should always be the same value as f
+ComponentContainer<UnitAttackComponent>(entity), damage(damage_),notFriendly(f), searchRange(searchRange_), activated(false)
 {
 
 }
@@ -1092,33 +1099,57 @@ void UnitAttackComponent::addAttack(Attack& attack)
 
 void UnitAttackComponent::update()
 {
+    if (activated)
+    {
+        Object* ent = targetUnit.lock().get();
+        Room* level = GameWindow::getLevel()->getCurrentRoom();
+        if (!ent && level) //if we aren't already fighting something, find something nearby
+        {
+           /* Object* nearby = findNearestUnit<HealthComponent>(std::max(RenderProgram::getScreenDimen().x, RenderProgram::getScreenDimen().y)/2,notFriendly,*(level->getTree()));
+            if (nearby)
+            {
+                ApproachComponent::setTarget(level->getUnit(nearby));
+            }*/
+            ApproachComponent::setTarget(level->getUnit(GameWindow::getPlayer().getPlayer()));
+           // doPassive();
+        }
+        if (ent && level) //don't use else if because there's a chance that both ifs can trigger
+        {
+            for (auto it = attacks.begin();it != attacks.end(); ++it)
+            {
+                processAttack((*(*it).get()));
+            }
 
-    Object* ent = targetUnit.lock().get();
-    Room* level = GameWindow::getLevel()->getCurrentRoom();
-    if (!ent && level) //if we aren't already fighting something, find something nearby
-    {
-       /* Object* nearby = findNearestUnit<HealthComponent>(std::max(RenderProgram::getScreenDimen().x, RenderProgram::getScreenDimen().y)/2,notFriendly,*(level->getTree()));
-        if (nearby)
+        }
+        else if (level) //if ent is still null, wander around
         {
-            ApproachComponent::setTarget(level->getUnit(nearby));
-        }*/
-        ApproachComponent::setTarget(level->getUnit(GameWindow::getPlayer().getPlayer()));
-       // doPassive();
-    }
-    if (ent && level) //don't use else if because there's a chance that both ifs can trigger
-    {
-        for (auto it = attacks.begin();it != attacks.end(); ++it)
-        {
-            processAttack((*(*it).get()));
+            doPassive();
         }
 
     }
-    else if (level) //if ent is still null, wander around
+    else
     {
-        doPassive();
+        AnimationComponent* anime =nullptr;
+        Unit* player = nullptr;
+        RectComponent* rect = nullptr;
+        HealthComponent* health = nullptr;
+        if (entity && (player = GameWindow::getPlayer().getPlayer())  &&
+            (rect = entity->getComponent<RectComponent>()) &&
+            (vecDistance(player->getRect().getRect(),rect->getRect()) < 200 ||
+             ((health = entity->getComponent<HealthComponent>()) && health->getHealth() != health->getMaxHealth())))
+            {
+                activated = true;
+            }
+        else if (entity &&(anime = entity->getComponent<AnimationComponent>()))
+        {
+            SpriteParameter param;
+            param.tint = {.1,.1,.1,1};
+            anime->setParam(param);
+            setTarget(rect->getCenter(),nullptr);
+        }
     }
+            ApproachComponent::update();
 
-    ApproachComponent::update();
 }
 
 void UnitAttackComponent::collide(Entity& other)

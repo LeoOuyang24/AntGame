@@ -247,6 +247,36 @@ Camera::~Camera()
 
 }
 
+GameOverWindow::GameOverWindow(const glm::vec2& dimen) : Window(dimen,nullptr,{1,1,0,1},1)
+{
+    panel = (new Message({150,10,64,64},nullptr,{"Killed by: ", {10,10,64,64}},&Font::tnr,{},nullptr,1));
+    addPanel(*panel,true);
+}
+
+void GameOverWindow::update(float x, float y, float z, const glm::vec4& blit)
+{
+    if (!sprite && GameWindow::getPlayer().getPlayer())
+    {
+        HealthComponent* health = &GameWindow::getPlayer().getPlayer()->getHealth();
+        Object* attacker = health->getLastAttacker();
+        if (attacker)
+        {
+            ProjectileComponent* proj = attacker->getComponent<ProjectileComponent>();
+            if (proj && proj->getAssembler()) //if player died to a projectile, render the shooter
+            {
+                sprite = proj->getAssembler()->sprite;
+            }
+            else if (attacker->getObject().assembler)
+            {
+                sprite = attacker->getObject().assembler->sprite;
+            }
+        }
+        panel->setSprite(sprite);
+      //  GameWindow::requestRect(panel->getRect(),{1,0,0,1},true,0,10);
+    }
+    Window::update(x,y,z,blit);
+}
+
 float GameWindow::menuHeight = 1; //is set in the GameWindow constructor
 Camera GameWindow::camera;
 std::weak_ptr<Room> GameWindow::upcomingRoom;
@@ -271,7 +301,7 @@ GameWindow::GameWindow() : Window({0,0},nullptr,{0,0,0,0})
     camera.init(screenDimen.x,screenDimen.y);
     actualWindow = this;
     Window::camera = &camera;
-    gameOver = new Window({.6*screenDimen.x,.6*screenDimen.y},nullptr,{1,1,0,1},1);
+    gameOver = new GameOverWindow({.6*screenDimen.x,.6*screenDimen.y});
     gameOver->addPanel(*(new QuitButton({100,100,100,100},*this)));
    gameOver->addPanel(*(new WindowSwitchButton({100,200,100,100},nullptr,Game::game,*Game::game.getTitleScreen(),{"Title Screen"},&Font::tnr,{1,0,0,1})));
     addPanel(*gameOver,true);
@@ -288,7 +318,10 @@ GameWindow::GameWindow() : Window({0,0},nullptr,{0,0,0,0})
 void GameWindow::reset()
 {
     player.reset();
-    gameOver->setDoUpdate(false);
+    if (gameOver)
+    {
+        gameOver->setDoUpdate(false);
+    }
     glm::vec2 screenDimen = RenderProgram::getScreenDimen();
     camera.setPlayer(player.getPlayerPtr());
     camera.resetZoom();

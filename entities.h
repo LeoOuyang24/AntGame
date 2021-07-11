@@ -121,6 +121,7 @@ public:
     glm::vec2 getCenter();
     ClickableComponent& getClickable();
     RenderComponent& getRender();
+    ObjectComponent& getObject();
     bool clicked();
     bool getDead();
     bool getMovable();

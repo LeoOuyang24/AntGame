@@ -69,6 +69,15 @@ public:
     ~Camera();
 };
 
+class GameOverWindow : public Window
+{
+    SpriteWrapper* sprite = nullptr;
+    Panel* panel = nullptr;
+public:
+    GameOverWindow(const glm::vec2& dimen);
+    void update(float x, float y, float z, const glm::vec4& blit);
+};
+
 class SequenceUnit;
 class GameWindow : public Window //the gamewindow is mostly static because most of its functions/members are used everywhere in the program. These members can't be manipulated without first creating a GameWindow
 {

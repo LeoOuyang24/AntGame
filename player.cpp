@@ -318,7 +318,7 @@ void Player::addGold(int g)
 
 void Player::renderUI()
 {
-    if (player)
+    if (player.get())
     {
       glm::vec2 screenDimen = RenderProgram::getScreenDimen();
         const int space = screenDimen.x/20;
@@ -353,6 +353,15 @@ void Player::renderUI()
                     }
                 }
             }
+        }
+        glm::vec2 mousePos = GameWindow::getCamera().toWorld(pairtoVec(MouseManager::getMousePos()));
+        const int dots = 10;
+        glm::vec2 center = player->getCenter();
+        float dotDist = pointDistance(mousePos,center)/(dots + 1);
+        float angle = atan2(mousePos.y - center.y, mousePos.x - center.x);
+        for (int i = 0; i < dots; ++i)
+        {
+            GameWindow::requestNGon(10,GameWindow::getCamera().toScreen(center + glm::vec2(cos(angle)*dotDist*i,sin(angle)*dotDist*i)),2,{1,1,1,1},0,true,1);
         }
     }
 }
